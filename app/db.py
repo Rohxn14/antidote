@@ -18,15 +18,23 @@ DEFAULT_GRAPH = "antidote"
 load_dotenv(ROOT / os.getenv("ENV_FILE", ".env"))
 
 
+def connection_settings() -> dict:
+    """Host, port and credentials from the environment. Whitespace is stripped:
+    values pasted into a hosting dashboard often carry a trailing newline."""
+    def env(key: str, default: str = "") -> str:
+        return os.getenv(key, default).strip()
+    return {
+        "host": env("FALKORDB_HOST", "localhost") or "localhost",
+        "port": int(env("FALKORDB_PORT", "6379") or 6379),
+        "username": env("FALKORDB_USERNAME") or None,
+        "password": env("FALKORDB_PASSWORD") or None,
+    }
+
+
 @lru_cache(maxsize=1)
 def get_db() -> FalkorDB:
     """One shared client (it holds a connection pool) for the whole process."""
-    return FalkorDB(
-        host=os.getenv("FALKORDB_HOST", "localhost"),
-        port=int(os.getenv("FALKORDB_PORT", "6379")),
-        username=os.getenv("FALKORDB_USERNAME") or None,
-        password=os.getenv("FALKORDB_PASSWORD") or None,
-    )
+    return FalkorDB(**connection_settings())
 
 
 def get_graph(name: str | None = None):

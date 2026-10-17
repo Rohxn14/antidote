@@ -12,6 +12,7 @@ HealthResponse body that the web app reads.
 Requests and responses follow api/contract.py. Streams are NDJSON: one
 contract event per line.
 """
+import logging
 import os
 import re
 import time
@@ -31,10 +32,11 @@ from api import contract as c
 from api.session_store import Session, SessionStore
 from app import demo, evidence, gate, llm, memory, repair, runner, views
 from app.agents.buyer import order_label
-from app.db import ROOT, get_db
+from app.db import ROOT, connection_settings, get_db
 from app.schema import (ABOUT, AGENT, AUTHORED, DECISION, HOLDS, JUSTIFICATION, VALID,
                         VENDOR)
 
+log = logging.getLogger("antidote")
 EVENTS = TypeAdapter(c.Event)
 STREAM_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
 WEB = ROOT / "web" / "dist"
@@ -49,16 +51,20 @@ class ApiFailure(Exception):
         self.status, self.error, self.detail = status, error, detail
 
 
+def public_detail(e: Exception) -> str:
+    """What visitors may see about a lost connection: the error type only.
+    The full message names the database host, so it goes to the server log."""
+    log.warning("FalkorDB unreachable: %s: %s", type(e).__name__, e)
+    return f"{type(e).__name__}: the memory database cannot be reached"
+
+
 class MemoryProbe:
     """Is FalkorDB reachable? A separate, fast-failing client (2 s, no retries),
     checked at most every `ttl` seconds."""
 
     def __init__(self, client=None, ttl: float = 2.0):
         self.client = client or redis.Redis(
-            host=os.getenv("FALKORDB_HOST", "localhost"),
-            port=int(os.getenv("FALKORDB_PORT", "6379")),
-            username=os.getenv("FALKORDB_USERNAME") or None,
-            password=os.getenv("FALKORDB_PASSWORD") or None,
+            **connection_settings(),
             socket_connect_timeout=2, socket_timeout=2, retry=Retry(NoBackoff(), 0))
         self.ttl, self.checked, self.ok, self.detail = ttl, 0.0, False, None
 
@@ -68,7 +74,7 @@ class MemoryProbe:
                 self.client.ping()
                 self.ok, self.detail = True, None
             except Exception as e:  # any failure means: no memory
-                self.ok, self.detail = False, f"{type(e).__name__}: {e}"
+                self.ok, self.detail = False, public_detail(e)
             self.checked = time.time()
         return self.ok
 
@@ -510,7 +516,7 @@ def create_app(store: SessionStore | None = None, memory_probe: MemoryProbe | No
     @app.exception_handler(RedisTimeoutError)
     def _memory_lost(request: Request, e: Exception):
         return JSONResponse(status_code=503, content=c.ApiError(
-            error="memory_unreachable", detail=str(e)).model_dump())
+            error="memory_unreachable", detail=public_detail(e)).model_dump())
 
     @app.get("/api/health", response_model=c.HealthResponse)
     def health(request: Request):

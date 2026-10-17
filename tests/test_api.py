@@ -127,7 +127,7 @@ def test_live_ai_is_refused_when_unavailable(client, monkeypatch):
 
 
 def test_without_falkordb_every_api_endpoint_fails_closed(g):
-    nowhere = redis.Redis(host="127.0.0.1", port=1, socket_connect_timeout=0.5,
+    nowhere = redis.Redis(host="memory.invalid", port=1, socket_connect_timeout=0.5,
                           socket_timeout=0.5, retry=Retry(NoBackoff(), 0))
     client = TestClient(create_app(SessionStore(prefix=PREFIX), MemoryProbe(client=nowhere)))
     h = {"X-Antidote-Session": "any"}
@@ -141,6 +141,8 @@ def test_without_falkordb_every_api_endpoint_fails_closed(g):
         r = getattr(client, method)(path, headers=h, **({"json": {}} if method == "post" else {}))
         assert r.status_code == 503, path
         assert r.json()["error"] == "memory_unreachable", path
+        assert "memory.invalid" not in r.text, path  # never reveal where the database lives
     health = client.get("/api/health")
     assert health.status_code == 503 and health.json()["falkordb"] == "down"
+    assert "memory.invalid" not in health.text
     assert client.get("/").status_code == 200  # the web app itself still loads
