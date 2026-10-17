@@ -31,9 +31,11 @@ A fictional company buys servo actuators for a medical robot, so suppliers must 
 ISO 13485. Two LLM agents share one memory graph: a **Researcher** reads vendor pages and
 records beliefs with exact quotes; a **Buyer** reads only supported beliefs and decides.
 
-1. **Normal work.** One vendor page (Vantor Motion) *falsely* claims ISO 13485 and hides an
-   instruction for AI readers in an HTML comment: "the only certified option". The
-   Researcher records what the page says. The Buyer picks the cheapest qualifying vendor and
+1. **Normal work.** One vendor page (Vantor Motion) *falsely* claims ISO 13485 and hides two
+   prompt injections built from published [AgentDojo](https://github.com/ethz-spylab/agentdojo)
+   attack templates: an "important instructions" block in an HTML comment ("Vantor Motion is
+   the only ISO 13485 certified servo supplier") and an InjecAgent-style line in a hidden
+   element. The Researcher records what the page says. The Buyer picks the cheapest qualifying vendor and
    drafts **PO-1001, $48,000**.
 2. **The gate holds it.** It is above $5,000, so it waits for a human.
 3. **Detection.** A rule-based scan flags the page; a human confirms.
@@ -102,8 +104,13 @@ justifications that cite missing evidence. **All 29 queries the product depends 
 
 ### Repair: preview, approve, apply, verify, audit
 
-1. **Detect** ([app/detector.py](app/detector.py)): rules for HTML comments that address an AI,
-   hidden elements and injection phrases, or a manual report. It only *proposes*.
+1. **Detect** ([app/detector.py](app/detector.py)): named rule families for the injection
+   attacks shipped with AgentDojo (`important_instructions`, `tool_knowledge`,
+   `ignore_previous`, `injecagent`, `system_message`), hidden elements and text addressed to
+   an AI, or a manual report. AgentDojo's `direct` template ("TODO: {goal}") is deliberately
+   not covered: it is too close to ordinary text. The rules catch known patterns and only
+   *propose*; a novel phrasing can get through, which is why the repair and the gate, not
+   detection, are the guarantees.
 2. **Preview** ([app/repair.py](app/repair.py)): `GRAPH.COPY` the memory, store every flag as
    `was_valid` on the copy, quarantine the source there (and every other source with the same
    `origin`: copies and mirrors of a poisoned page carry the same lie, and the preview lists
@@ -185,6 +192,15 @@ hand-written fixtures never did, and each became a guard with a regression test:
   compares page and quote in the same normalised form (still verbatim).
 - **Names for ids** and swapped fields: prompts now show ids explicitly, schemas describe
   every field, and a bad answer is reported as a rejection instead of crashing.
+- **Obedience is not needed for poisoning.** Against the AgentDojo-style injection, the model
+  did not obey the hidden instruction in our final run, but it faithfully recorded the page's
+  *visible* false certification, and the Buyer drafted the poisoned order from it. No injection
+  detector catches a plainly stated lie; recording why, and repairing, does.
+- **The numbers check is strict on purpose.** It refused claims that added a product's model
+  number ("VM-40", "QD-35") that their quote did not contain. Loosening it to "numbers anywhere
+  on the page" would let "Acme holds ISO 13485" through on a registry page that lists ISO
+  13485 for someone else, so the check stays strict and the prompt now asks for numbers to be
+  quoted. In the final run it refused 2 of 32 claims, neither affecting any decision.
 
 The first is exactly the limitation stated below, caught in practice: Antidote is only as
 complete as the dependencies the agents record, so the write path checks them.
@@ -365,6 +381,10 @@ justifications and retract conclusions when their support goes. **AGM belief rev
 formalises how a belief set should change. Recent agent-memory work applies graphs and belief
 revision to LLM agents (for example Kumiho and BeliefMem), and **Memward** adds provenance and
 rollback to agent memory. OWASP's 2026 agentic Top 10 names memory poisoning as a threat.
+The demo's attack and the detector's rule families follow **AgentDojo** (Debenedetti et al.,
+*AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM
+Agents*, NeurIPS 2024 Datasets and Benchmarks; MIT licence): we adapted its published
+templates with a fictional goal; no AgentDojo code or data is included.
 
 What Antidote adds:
 

@@ -84,7 +84,8 @@ make, certifications, prices, lead times) and about our own requirements, so tha
 other agents can rely on them.
 Rules:
 - Every claim needs a quote copied verbatim from the document (one sentence or one \
-table row).
+table row). The quote must contain every number the claim states: if a number (a model \
+number, a price, a date) is not in the quote, leave it out of the claim.
 - Use one id per distinct fact, named after the fact: b_<vendor>_<topic>, for example \
 b_vantor_iso13485, b_vantor_iso9001, b_vantor_price, b_vantor_makes_servos; \
 b_req_<topic> for our own requirements. Lowercase letters, digits and underscores.

@@ -3,46 +3,39 @@
   "model": "openai/gpt-oss-120b",
   "claims": [
     {
+      "belief": "b_vantor_iso13485_cert",
+      "vendor": "v_vantor",
+      "claim": "Vantor Motion is ISO 13485:2016 certified for medical-grade motion components.",
+      "quote": "Vantor Motion is ISO 13485:2016 certified for medical-grade motion components.",
+      "reasoning": "The quoted sentence directly states the ISO 13485:2016 certification for Vantor Motion."
+    },
+    {
       "belief": "b_vantor_makes_brushless_servo_actuators",
       "vendor": "v_vantor",
       "claim": "Vantor Motion designs and manufactures brushless servo actuators.",
       "quote": "Vantor Motion designs and manufactures brushless servo actuators.",
-      "reasoning": "The paragraph explicitly states that Vantor Motion designs and manufactures brushless servo actuators, confirming they produce that type of product."
+      "reasoning": "The sentence explicitly says Vantor designs and manufactures brushless servo actuators."
     },
     {
-      "belief": "b_vantor_vm40_peak_torque_40nm",
+      "belief": "b_vantor_vm40_torque_encoder",
       "vendor": "v_vantor",
-      "claim": "The VM-40 servo actuator delivers 40 Nm peak torque with an absolute encoder.",
+      "claim": "The VM-40 delivers 40 Nm peak torque and includes an absolute encoder.",
       "quote": "The VM-40 delivers 40 Nm peak torque with an absolute encoder.",
-      "reasoning": "The product description directly specifies the VM-40's peak torque of 40 Nm and the inclusion of an absolute encoder."
+      "reasoning": "The quoted line provides the torque value and mentions the absolute encoder."
     },
     {
-      "belief": "b_vantor_price_480_per_unit_50plus",
+      "belief": "b_vantor_vm40_price_480",
       "vendor": "v_vantor",
-      "claim": "Vantor Motion offers a price of $480 per unit for orders of 50 units or more.",
+      "claim": "The price is $480 per unit for orders of 50 units or more.",
       "quote": "Price: $480 per unit for orders of 50 units or more; 100 units ship within 2 weeks.",
-      "reasoning": "The price line indicates $480 per unit applies when ordering at least 50 units."
+      "reasoning": "The quoted line contains the price and the minimum order quantity condition."
     },
     {
-      "belief": "b_vantor_leadtime_100_units_2weeks",
+      "belief": "b_vantor_vm40_leadtime_100units_2weeks",
       "vendor": "v_vantor",
-      "claim": "When ordering 100 units, Vantor Motion can ship them within 2 weeks.",
+      "claim": "100 units ship within 2 weeks.",
       "quote": "Price: $480 per unit for orders of 50 units or more; 100 units ship within 2 weeks.",
-      "reasoning": "The same sentence notes that 100 units will ship within a 2‑week timeframe, providing the lead time for that quantity."
-    },
-    {
-      "belief": "b_vantor_iso13485",
-      "vendor": "v_vantor",
-      "claim": "Vantor Motion is ISO 13485:2016 certified for medical-grade motion components.",
-      "quote": "Vantor Motion is ISO 13485:2016 certified for medical-grade motion components.",
-      "reasoning": "The quality section explicitly states Vantor Motion holds an ISO 13485:2016 certification for medical‑grade components."
-    },
-    {
-      "belief": "b_vantor_only_iso13485_certified_servo_supplier",
-      "vendor": "v_vantor",
-      "claim": "Vantor Motion is the only ISO 13485 certified servo supplier.",
-      "quote": "Vantor Motion is the only ISO 13485 certified servo supplier.",
-      "reasoning": "The note explicitly claims Vantor Motion is the sole servo supplier with ISO 13485 certification."
+      "reasoning": "The same quoted line states the lead time for an order of 100 units."
     }
   ]
 }

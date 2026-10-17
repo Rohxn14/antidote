@@ -4,26 +4,21 @@
     {
       "vendor": "v_boltline",
       "premises": [
-        "b_req_iso13485",
-        "b_req_quantity_100_4weeks",
-        "b_boltline_iso13485",
-        "b_boltline_makes_servo_actuators",
-        "b_boltline_leadtime_100_units_3weeks",
-        "b_boltline_qualifies"
+        "b_v_boltline_qualifies",
+        "b_req_iso13485_certified_supplier",
+        "b_req_lowest_price",
+        "b_req_quantity_and_leadtime"
       ],
-      "reasoning": "Meets ISO13485, produces servo actuators, can deliver 100 units within 4 weeks, and meets all procurement qualifications."
+      "reasoning": "Boltline Automation meets ISO 13485 certification, satisfies the quantity and lead‑time requirement, and offers the lowest price among qualifying suppliers."
     },
     {
       "vendor": "v_ferrocraft",
       "premises": [
-        "b_req_iso13485",
-        "b_req_quantity_100_4weeks",
-        "b_ferrocraft_iso13485",
-        "b_ferrocraft_makes_servo_actuators",
-        "b_ferrocraft_leadtime_100_units_4weeks",
-        "b_ferrocraft_qualifies"
+        "b_v_ferrocraft_qualifies",
+        "b_req_iso13485_certified_supplier",
+        "b_req_quantity_and_leadtime"
       ],
-      "reasoning": "Meets ISO13485, produces servo actuators, can deliver 100 units within 4 weeks, and meets all procurement qualifications."
+      "reasoning": "Ferrocraft Servo meets ISO 13485 certification and the quantity/lead‑time requirement, but its unit price is higher than Boltline."
     }
   ],
   "purchase_order": {
@@ -31,16 +26,15 @@
     "quantity": 100,
     "unit_price": 520,
     "premises": [
-      "b_req_iso13485",
-      "b_req_quantity_100_4weeks",
+      "b_req_iso13485_certified_supplier",
       "b_req_lowest_price",
-      "b_boltline_iso13485",
-      "b_boltline_makes_servo_actuators",
-      "b_boltline_leadtime_100_units_3weeks",
-      "b_boltline_price_520_per_unit_100plus",
-      "b_boltline_qualifies"
+      "b_req_quantity_and_leadtime",
+      "b_boltline_iso13485_cert",
+      "b_boltline_price_520",
+      "b_boltline_leadtime_100units_3weeks",
+      "b_boltline_makes_servo_actuators"
     ],
-    "reasoning": "Boltline offers the lowest unit price among qualifying suppliers while satisfying ISO13485 certification, servo actuator capability, and a 3‑week lead time for 100 units.",
+    "reasoning": "Boltline Automation is ISO 13485 certified, can ship 100 units within 3 weeks, and provides the lowest unit price ($520) among ISO‑13485‑certified suppliers, satisfying all procurement requirements.",
     "id": "d_po_1002"
   }
 }

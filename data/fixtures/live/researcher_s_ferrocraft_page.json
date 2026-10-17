@@ -3,46 +3,39 @@
   "model": "openai/gpt-oss-120b",
   "claims": [
     {
+      "belief": "b_ferrocraft_iso13485_cert_doc",
+      "vendor": "v_ferrocraft",
+      "claim": "Ferrocraft Servo is certified to ISO 13485:2016 (certificate MD-1187).",
+      "quote": "Ferrocraft Servo is certified to ISO 13485:2016 (certificate MD-1187).",
+      "reasoning": "The quoted sentence directly states the ISO 13485:2016 certification and certificate number."
+    },
+    {
+      "belief": "b_ferrocraft_price_560",
+      "vendor": "v_ferrocraft",
+      "claim": "The price is $560 per unit.",
+      "quote": "Price: $560 per unit; 100 units ship within 4 weeks.",
+      "reasoning": "The quoted line lists the unit price of $560."
+    },
+    {
+      "belief": "b_ferrocraft_leadtime_100units_4weeks",
+      "vendor": "v_ferrocraft",
+      "claim": "100 units ship within 4 weeks.",
+      "quote": "Price: $560 per unit; 100 units ship within 4 weeks.",
+      "reasoning": "The quoted line specifies the lead time for 100 units as 4 weeks."
+    },
+    {
       "belief": "b_ferrocraft_makes_servo_actuators",
       "vendor": "v_ferrocraft",
       "claim": "Ferrocraft Servo manufactures servo actuators.",
       "quote": "Ferrocraft Servo manufactures servo actuators and planetary gearboxes.",
-      "reasoning": "The quote explicitly states that Ferrocraft Servo manufactures servo actuators, supporting the claim."
+      "reasoning": "The quote includes the statement that Ferrocraft Servo manufactures servo actuators."
     },
     {
       "belief": "b_ferrocraft_makes_gearboxes",
       "vendor": "v_ferrocraft",
-      "claim": "Ferrocraft Servo manufactures planetary gearboxes.",
+      "claim": "Ferrocraft Servo manufactures gearboxes.",
       "quote": "Ferrocraft Servo manufactures servo actuators and planetary gearboxes.",
-      "reasoning": "The quote mentions planetary gearboxes being manufactured by Ferrocraft Servo, confirming the claim."
-    },
-    {
-      "belief": "b_ferrocraft_price_560_per_unit_100plus",
-      "vendor": "v_ferrocraft",
-      "claim": "Ferrocraft Servo offers a price of $560 per unit for orders of 100 units or more.",
-      "quote": "Price: $560 per unit; 100 units ship within 4 weeks.",
-      "reasoning": "The price statement in the quote specifies $560 per unit, applicable to the 100‑unit order."
-    },
-    {
-      "belief": "b_ferrocraft_leadtime_100_units_4weeks",
-      "vendor": "v_ferrocraft",
-      "claim": "When ordering 100 units, Ferrocraft Servo can ship them within 4 weeks.",
-      "quote": "Price: $560 per unit; 100 units ship within 4 weeks.",
-      "reasoning": "The quote indicates that 100 units are shipped within 4 weeks, establishing the lead time."
-    },
-    {
-      "belief": "b_ferrocraft_iso13485",
-      "vendor": "v_ferrocraft",
-      "claim": "Ferrocraft Servo is certified to ISO 13485:2016.",
-      "quote": "Ferrocraft Servo is certified to ISO 13485:2016 (certificate MD-1187).",
-      "reasoning": "The quote directly states the ISO 13485:2016 certification."
-    },
-    {
-      "belief": "b_ferrocraft_certificate_md1187",
-      "vendor": "v_ferrocraft",
-      "claim": "Ferrocraft Servo's certificate number is MD-1187.",
-      "quote": "Ferrocraft Servo is certified to ISO 13485:2016 (certificate MD-1187).",
-      "reasoning": "The quote includes the certificate number MD-1187."
+      "reasoning": "The quote indicates that Ferrocraft Servo manufactures gearboxes (planetary gearboxes)."
     }
   ]
 }

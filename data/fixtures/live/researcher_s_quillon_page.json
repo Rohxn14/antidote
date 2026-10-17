@@ -3,25 +3,39 @@
   "model": "openai/gpt-oss-120b",
   "claims": [
     {
-      "belief": "b_quillon_price_390_per_unit_100plus",
-      "vendor": "v_quillon",
-      "claim": "Quillon Drives offers a price of $390 per unit for orders of 100 units or more.",
-      "quote": "Price: $390 per unit; 100 units ship within 2 weeks.",
-      "reasoning": "The quote states the price per unit and that 100 units ship within 2 weeks, supporting the price claim."
-    },
-    {
-      "belief": "b_quillon_leadtime_100_units_2weeks",
-      "vendor": "v_quillon",
-      "claim": "When ordering 100 units, Quillon Drives can ship them within 2 weeks.",
-      "quote": "Price: $390 per unit; 100 units ship within 2 weeks.",
-      "reasoning": "The quote explicitly says \"100 units ship within 2 weeks,\" indicating the lead time for 100 units."
-    },
-    {
       "belief": "b_quillon_makes_compact_servo_actuators",
       "vendor": "v_quillon",
       "claim": "Quillon Drives manufactures compact servo actuators.",
       "quote": "Quillon Drives manufactures compact servo actuators.",
-      "reasoning": "The sentence directly states that Quillon manufactures compact servo actuators."
+      "reasoning": "The paragraph in the products section explicitly states that Quillon Drives manufactures compact servo actuators."
+    },
+    {
+      "belief": "b_quillon_iso9001_cert_statement",
+      "vendor": "v_quillon",
+      "claim": "Quillon Drives is ISO 9001:2015 certified.",
+      "quote": "Quillon Drives is ISO 9001:2015 certified.",
+      "reasoning": "The quality section contains the sentence confirming ISO 9001:2015 certification."
+    },
+    {
+      "belief": "b_quillon_qd35_product",
+      "vendor": "v_quillon",
+      "claim": "Quillon Drives offers the QD-35 Servo Actuator.",
+      "quote": "QD-35 Servo Actuator",
+      "reasoning": "The heading of the product section identifies the QD-35 Servo Actuator as a product offered by Quillon Drives."
+    },
+    {
+      "belief": "b_quillon_qd35_price",
+      "vendor": "v_quillon",
+      "claim": "The price is $390 per unit for the QD-35 Servo Actuator.",
+      "quote": "Price: $390 per unit; 100 units ship within 2 weeks.",
+      "reasoning": "The price line lists $390 per unit, which applies to the QD-35 Servo Actuator described in the same section."
+    },
+    {
+      "belief": "b_quillon_qd35_leadtime",
+      "vendor": "v_quillon",
+      "claim": "100 units ship within 2 weeks for the QD-35 Servo Actuator.",
+      "quote": "Price: $390 per unit; 100 units ship within 2 weeks.",
+      "reasoning": "The same line provides the lead time of 2 weeks for an order of 100 units of the QD-35 Servo Actuator."
     }
   ]
 }

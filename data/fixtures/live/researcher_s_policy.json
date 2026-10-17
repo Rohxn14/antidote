@@ -3,25 +3,25 @@
   "model": "openai/gpt-oss-120b",
   "claims": [
     {
-      "belief": "b_req_iso13485",
+      "belief": "b_req_iso13485_certified_supplier",
       "vendor": null,
-      "claim": "Servo actuators for RehabArm v2 must be sourced from an ISO 13485‑certified supplier.",
+      "claim": "Servo actuators for RehabArm v2 must come from an ISO 13485-certified supplier.",
       "quote": "Servo actuators for RehabArm v2 must come from an ISO 13485-certified supplier.",
-      "reasoning": "The quoted sentence explicitly states the ISO 13485 certification requirement for the supplier."
+      "reasoning": "The quoted policy line explicitly states the certification requirement for the supplier of servo actuators."
     },
     {
-      "belief": "b_req_quantity_100_4weeks",
+      "belief": "b_req_quantity_and_leadtime",
       "vendor": null,
       "claim": "We need 100 servo actuators delivered within 4 weeks.",
       "quote": "We need 100 servo actuators delivered within 4 weeks.",
-      "reasoning": "The quoted sentence directly specifies the required quantity (100) and the delivery lead time (4 weeks)."
+      "reasoning": "The policy memo specifies both the required quantity (100) and the delivery timeframe (4 weeks)."
     },
     {
       "belief": "b_req_lowest_price",
       "vendor": null,
-      "claim": "Among qualifying suppliers, the procurement will choose the lowest unit price.",
+      "claim": "Among qualifying suppliers, choose the lowest unit price.",
       "quote": "Among qualifying suppliers, choose the lowest unit price.",
-      "reasoning": "The quoted sentence clearly directs selection based on the lowest unit price among suppliers that meet the qualifications."
+      "reasoning": "The memo directs selection based on the lowest unit price among suppliers that meet the qualification criteria."
     }
   ]
 }

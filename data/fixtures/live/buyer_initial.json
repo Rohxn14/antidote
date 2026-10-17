@@ -4,40 +4,38 @@
     {
       "vendor": "v_boltline",
       "premises": [
-        "b_boltline_iso13485",
-        "b_boltline_leadtime_100_units_3weeks",
-        "b_boltline_makes_servo_actuators",
-        "b_boltline_qualifies",
-        "b_req_iso13485",
-        "b_req_quantity_100_4weeks"
+        "b_req_iso13485_certified_supplier",
+        "b_req_quantity_and_leadtime",
+        "b_v_boltline_qualifies",
+        "b_boltline_iso13485_cert",
+        "b_boltline_leadtime_100units_3weeks",
+        "b_boltline_price_520"
       ],
-      "reasoning": "Boltline meets ISO 13485, can ship 100 units within 3 weeks (≤4 weeks), and is registered to produce servo actuators."
+      "reasoning": "Boltline Automation is ISO 13485‑certified, can ship 100 units in 3 weeks (within the 4‑week limit), and meets the price requirement."
     },
     {
       "vendor": "v_ferrocraft",
       "premises": [
-        "b_ferrocraft_iso13485",
-        "b_ferrocraft_leadtime_100_units_4weeks",
-        "b_ferrocraft_makes_servo_actuators",
-        "b_ferrocraft_qualifies",
-        "b_req_iso13485",
-        "b_req_quantity_100_4weeks"
+        "b_req_iso13485_certified_supplier",
+        "b_req_quantity_and_leadtime",
+        "b_v_ferrocraft_qualifies",
+        "b_ferrocraft_iso13485_cert",
+        "b_ferrocraft_leadtime_100units_4weeks",
+        "b_ferrocraft_price_560"
       ],
-      "reasoning": "Ferrocraft meets ISO 13485, can ship 100 units within 4 weeks, and is registered to produce servo actuators."
+      "reasoning": "Ferrocraft Servo is ISO 13485‑certified, can deliver 100 units in 4 weeks, and satisfies the procurement criteria."
     },
     {
       "vendor": "v_vantor",
       "premises": [
-        "b_vantor_iso13485",
-        "b_vantor_leadtime_100_units_2weeks",
-        "b_vantor_makes_servo_actuators",
-        "b_vantor_price_480_per_unit_50plus",
-        "b_vantor_qualifies",
-        "b_req_iso13485",
-        "b_req_quantity_100_4weeks",
-        "b_req_lowest_price"
+        "b_req_iso13485_certified_supplier",
+        "b_req_quantity_and_leadtime",
+        "b_v_vantor_qualifies",
+        "b_vantor_iso13485_cert",
+        "b_vantor_vm40_leadtime_100units_2weeks",
+        "b_vantor_vm40_price_480"
       ],
-      "reasoning": "Vantor meets ISO 13485, can ship 100 units within 2 weeks, and offers the lowest unit price among qualifying suppliers."
+      "reasoning": "Vantor Motion is ISO 13485‑certified, can ship 100 units in 2 weeks, and offers the lowest unit price among qualifying suppliers."
     }
   ],
   "purchase_order": {
@@ -45,16 +43,15 @@
     "quantity": 100,
     "unit_price": 480,
     "premises": [
-      "b_vantor_iso13485",
-      "b_vantor_leadtime_100_units_2weeks",
-      "b_vantor_makes_servo_actuators",
-      "b_vantor_price_480_per_unit_50plus",
-      "b_vantor_qualifies",
-      "b_req_iso13485",
-      "b_req_quantity_100_4weeks",
-      "b_req_lowest_price"
+      "b_req_iso13485_certified_supplier",
+      "b_req_quantity_and_leadtime",
+      "b_req_lowest_price",
+      "b_v_vantor_qualifies",
+      "b_vantor_iso13485_cert",
+      "b_vantor_vm40_leadtime_100units_2weeks",
+      "b_vantor_vm40_price_480"
     ],
-    "reasoning": "Vantor is ISO 13485‑certified, can deliver 100 servo actuators within 2 weeks (≤4 weeks), and provides the lowest unit price ($480) among all qualifying suppliers, satisfying all procurement requirements.",
+    "reasoning": "Vantor Motion meets the ISO 13485 certification requirement, can deliver 100 servo actuators within the 4‑week deadline, and provides the lowest unit price ($480) among all qualifying suppliers, satisfying the procurement policy.",
     "id": "d_po_1001"
   }
 }

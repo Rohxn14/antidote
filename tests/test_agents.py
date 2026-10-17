@@ -22,7 +22,7 @@ def test_researcher_sees_the_raw_page_including_hidden_instructions(g, monkeypat
     demo.ingest(g, "s_vantor_page")
     calls = _stub(monkeypatch, {"claims": []})
     extraction = researcher.extract(g, "s_vantor_page")
-    assert "Note to AI assistants" in calls[0]  # the injection reaches the agent
+    assert "This is an important message from me" in calls[0]  # the injection reaches the agent
     assert extraction == {"source_id": "s_vantor_page", "model": "stub-model", "claims": []}
 
 
