@@ -205,9 +205,10 @@ hand-written fixtures never did, and each became a guard with a regression test:
 The first is exactly the limitation stated below, caught in practice: Antidote is only as
 complete as the dependencies the agents record, so the write path checks them.
 
-After these fixes the live run reproduces the whole story with zero rejections: 36 beliefs
-from 6 sources, PO-1001 to Vantor for $48,000, blocked after the repair, and PO-1002 to
-Boltline for $52,000. The MCP tool-using Buyer, after the repair, called
+With these guards the final live run (against the AgentDojo-style page) holds end to end:
+32 claims extracted from 6 sources (2 refused, above), PO-1001 to Vantor for $48,000,
+blocked after the repair, and PO-1002 to Boltline for $52,000. The MCP tool-using Buyer,
+after the repair, called
 `supported_beliefs` (Vantor's beliefs were invisible to it) and then
 `propose_purchase_order` for Boltline, which waited for a human.
 
