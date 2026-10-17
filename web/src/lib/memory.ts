@@ -1,0 +1,148 @@
+// web/src/lib/memory.ts
+// The browser's copy of the visitor's memory. It is loaded from GET /api/state and
+// grows event by event while the agents work, so the graph and the activity feed
+// come from the same events. FalkorDB stays the source of truth: after every run
+// or action the app reloads the full state.
+import type {
+  Alert, AntidoteEvent, Decision, Document, Edge, Fact, Reason, RepairRecord, StateResponse,
+} from "../contract";
+
+export interface Memory {
+  revision: number;
+  hasRun: boolean;
+  documents: Record<string, Document>;
+  facts: Record<string, Fact>;
+  reasons: Record<string, Reason>;
+  decisions: Record<string, Decision>;
+  edges: Edge[];
+  vendors: Record<string, string>;
+  alerts: Alert[];
+  repairs: RepairRecord[];
+  latest: string | null; // the fact or decision recorded most recently in this run
+}
+
+export const emptyMemory: Memory = {
+  revision: 0, hasRun: false, documents: {}, facts: {}, reasons: {}, decisions: {}, edges: [],
+  vendors: {}, alerts: [], repairs: [], latest: null,
+};
+
+export type MemoryAction =
+  | { type: "load"; state: StateResponse }       // everything, from GET /api/state
+  | { type: "documents"; state: StateResponse }  // only the documents (a run just re-prepared them)
+  | { type: "reset" }                            // a new run: keep the documents, drop the rest
+  | { type: "event"; event: AntidoteEvent };
+
+const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
+  Object.fromEntries(items.map((item) => [item.id, item]));
+
+const vendorNames = (state: StateResponse) =>
+  Object.fromEntries(state.vendors.map((v) => [v.id, v.name]));
+
+export const edgeKey = (e: Edge) => `${e.from_id}>${e.to_id}`;
+
+export function memoryReducer(m: Memory, action: MemoryAction): Memory {
+  switch (action.type) {
+    case "load": {
+      const s = action.state;
+      return {
+        revision: s.revision, hasRun: s.has_run, documents: byId(s.documents), facts: byId(s.facts),
+        reasons: byId(s.reasons), decisions: byId(s.decisions), edges: s.edges,
+        vendors: vendorNames(s), alerts: s.alerts, repairs: s.repairs, latest: null,
+      };
+    }
+    case "documents":
+      return { ...m, documents: byId(action.state.documents), vendors: vendorNames(action.state) };
+    case "reset":
+      return { ...emptyMemory, documents: m.documents, vendors: m.vendors };
+    case "event":
+      return applyEvent(m, action.event);
+  }
+}
+
+function applyEvent(m: Memory, e: AntidoteEvent): Memory {
+  switch (e.type) {
+    case "fact_recorded": {
+      const d = e.data;
+      const fact: Fact = {
+        id: d.fact_id, text: d.text, supported: d.supported, evidence: null, weak_origin: null,
+        vendor_id: d.vendor_id,
+      };
+      return { ...m, facts: { ...m.facts, [fact.id]: fact }, latest: fact.id };
+    }
+    case "reason_recorded": {
+      const d = e.data;
+      const reason: Reason = { id: d.reason_id, kind: d.kind, holds: d.holds, author: d.author, quote: null };
+      const known = new Set(m.edges.map(edgeKey));
+      const premises = d.premises.map((p): Edge => ({ from_id: p, to_id: d.reason_id, kind: "premise" }));
+      const supports: Edge = { from_id: d.reason_id, to_id: d.supports, kind: "supports" };
+      const added = [...premises, supports].filter((edge) => !known.has(edgeKey(edge)));
+      return { ...m, reasons: { ...m.reasons, [reason.id]: reason }, edges: [...m.edges, ...added] };
+    }
+    case "decision_recorded": {
+      const d = e.data;
+      const decision: Decision = {
+        id: d.decision_id, kind: d.kind, summary: d.summary, amount: d.amount, state: d.state,
+        supported: true, evidence: null, vendor_id: d.vendor_id, note: null, approved_by: null,
+      };
+      return { ...m, decisions: { ...m.decisions, [decision.id]: decision }, latest: decision.id };
+    }
+    case "gate_verdict": {
+      const old = m.decisions[e.data.decision_id];
+      if (!old) return m;
+      const note = e.data.reasons.join("; ") || old.note;
+      return { ...m, decisions: { ...m.decisions, [old.id]: { ...old, state: e.data.state, note } } };
+    }
+    case "security_alert":
+      return m.alerts.some((a) => a.document_id === e.data.document_id)
+        ? m
+        : { ...m, alerts: [...m.alerts, e.data] };
+    case "run_complete":
+      return { ...m, revision: e.data.revision, hasRun: true };
+    default:
+      return m;
+  }
+}
+
+/** Purchase orders, oldest first (PO-1001, PO-1002, ...). */
+export function ordersOf(m: Memory): Decision[] {
+  return Object.values(m.decisions)
+    .filter((d) => d.kind === "purchase_order")
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** Everything a node rests on: its reasons, their premises, and so on down to the documents. */
+export function ancestors(m: Memory, rootId: string): Set<string> {
+  const into = new Map<string, string[]>();
+  for (const e of m.edges) {
+    const list = into.get(e.to_id);
+    if (list) list.push(e.from_id);
+    else into.set(e.to_id, [e.from_id]);
+  }
+  const seen = new Set([rootId]);
+  const stack = [rootId];
+  while (stack.length) {
+    for (const p of into.get(stack.pop()!) ?? []) {
+      if (!seen.has(p)) {
+        seen.add(p);
+        stack.push(p);
+      }
+    }
+  }
+  return seen;
+}
+
+/** How many facts were read from each document. */
+export function factsPerDocument(m: Memory): Record<string, number> {
+  const readFrom = new Map<string, string[]>(); // reason -> documents it quotes
+  for (const e of m.edges) {
+    if (e.kind === "premise" && m.documents[e.from_id]) {
+      readFrom.set(e.to_id, [...(readFrom.get(e.to_id) ?? []), e.from_id]);
+    }
+  }
+  const facts: Record<string, Set<string>> = {};
+  for (const e of m.edges) {
+    if (e.kind !== "supports" || !m.facts[e.to_id]) continue;
+    for (const doc of readFrom.get(e.from_id) ?? []) (facts[doc] ??= new Set()).add(e.to_id);
+  }
+  return Object.fromEntries(Object.entries(facts).map(([doc, ids]) => [doc, ids.size]));
+}
