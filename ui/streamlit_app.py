@@ -6,6 +6,8 @@
 Every action calls the same tested functions as the terminal story
 (app/demo.py, app/repair.py, app/gate.py); this file only renders.
 """
+import asyncio
+import json
 import sys
 from pathlib import Path
 
@@ -13,8 +15,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st  # noqa: E402
 
+from mcp import Client  # noqa: E402
+
 from app import demo, detector, gate, llm, memory, repair, sessions, support, views  # noqa: E402
-from app.agents import buyer  # noqa: E402
+from app.agents import buyer, tool_agent  # noqa: E402
+from app.mcp_server import create_server  # noqa: E402
 from app.agents.buyer import order_label  # noqa: E402
 from app.config import AUTO_MAX_AMOUNT, MIN_INDEPENDENT_TRUSTED_ROOTS  # noqa: E402
 from app.db import ROOT, drop_graph, get_db  # noqa: E402
@@ -287,8 +292,8 @@ with right:
 
 # --- Tabs -------------------------------------------------------------------------------------
 
-tab_why, tab_orders, tab_audit, tab_cypher, tab_bench, tab_about = st.tabs(
-    ["Why?", "Orders & decisions", "Audit trail", "Cypher", "Benchmark", "About"])
+tab_why, tab_orders, tab_agents, tab_audit, tab_cypher, tab_bench, tab_about = st.tabs(
+    ["Why?", "Orders & decisions", "Agents (MCP)", "Audit trail", "Cypher", "Benchmark", "About"])
 
 with tab_why:
     explainable = [n for n in nodes if n["label"] in ("Belief", "Decision")]
@@ -319,6 +324,46 @@ with tab_orders:
     for d in decisions:
         if d["kind"] != PURCHASE_ORDER:
             st.markdown(f"- {'✅' if d['valid'] else '❌'} {md(d['summary'])}")
+
+with tab_agents:
+    st.markdown("Agents use the graph through **MCP tools** (`python -m app.mcp_server`). "
+                "They can read supported memory, record reasons, check orders and preview "
+                "a quarantine. There is **no tool to approve** a repair or a purchase: the "
+                "tool surface keeps those with humans.")
+
+    async def _list_tools():
+        async with Client(create_server(lambda: g)) as client:
+            return (await client.list_tools()).tools
+
+    for t in asyncio.run(_list_tools()):
+        ro = t.annotations and t.annotations.read_only_hint
+        st.markdown(f"- `{t.name}` {'· read-only' if ro else '· writes through memory.py'}: "
+                    f"{md((t.description or '').split(chr(10))[0])}")
+
+    def show_transcript(tr: dict) -> None:
+        st.caption(f"Model: {tr['model']}")
+        for i, step in enumerate(tr["steps"], 1):
+            with st.expander(f"{i}. {step['tool']}({', '.join(step['arguments'])})"):
+                st.json({"arguments": step["arguments"], "result": step["result"]})
+        if tr.get("final"):
+            st.markdown(f"**Agent:** {md(tr['final'])}")
+
+    recorded = ROOT / "data" / "fixtures" / "live" / "tool_agent.json"
+    if llm.configured() and st.button("Run the Buyer as a tool-using agent on my graph"):
+        with st.spinner("The agent is choosing tools…"):
+            try:
+                ss.agent_run = asyncio.run(tool_agent.run(create_server(lambda: g)))
+            except Exception as e:
+                st.error(f"{type(e).__name__}: {e}")
+    if ss.get("agent_run"):
+        st.markdown("**Your run**")
+        show_transcript(ss.agent_run)
+    elif recorded.exists():
+        st.markdown("**A recorded run** (after the repair: the agent finds Vantor unsupported "
+                    "and proposes a supported order)")
+        show_transcript(json.loads(recorded.read_text(encoding="utf-8")))
+    elif not llm.configured():
+        st.caption("No LLM key configured and no recorded run yet.")
 
 with tab_audit:
     found = views.repairs(g)
