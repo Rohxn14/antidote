@@ -10,6 +10,8 @@ knowledge that is independently supported.
 - **Live demo:** _link added at submission_ (first load may take a minute: free hosting wakes up)
 - **Demo video:** _link added at submission_
 - **Tracks:** 01 Agents That Act on Connected Data · 02 Agent Memory and Coordination
+- **New here?** [docs/explained.md](docs/explained.md) explains everything in plain words:
+  the graph, the agents, how the source is poisoned, what catches it, every file.
 - **Built for** Graph Hacks: Context for AI Agents (WeMakeDevs × FalkorDB), October 2026
 
 ---
