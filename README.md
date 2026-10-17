@@ -289,9 +289,40 @@ Antidote is slower than deleting a node, and at 100 vendors slower than restorin
 snapshot, because it recomputes and verifies. That is the trade: about a third of a second
 instead of 396 lost beliefs and decisions that would have to be re-learned.
 
+### An externally defined test set: RippleEdits
+
+Our scenarios are our own, so we also test on cases someone else defined.
+[RippleEdits](https://github.com/edenbiran/RippleEdits) (Cohen et al., TACL 2024) pairs a
+factual edit with the facts that should change because of it (logical generalisation,
+two kinds of composition, subject aliasing) and the facts that must not (relation
+specificity, forgetfulness). We loaded the structure of 15 cases (5 per subset, chosen by a
+fixed rule in [scripts/import_rippleedits.py](scripts/import_rippleedits.py)) into one graph:
+a trusted knowledge base, one unverified source per edit, and each dependent fact justified
+by the edit plus the knowledge-base hop it needs. Then each edit is retracted in turn.
+
+| Method | Exact cases | Residual contamination | Collateral withdrawal |
+|---|---|---|---|
+| **Antidote** | **15 / 15** | **0** of 362 | **0** |
+| Delete source only | 2 / 15 | 362 | 0 |
+| Full rollback | n/a: the dataset has no timeline to roll back to | | |
+
+Read this honestly:
+- **The facts and the must-not-change labels are theirs; the justification edges are our
+  encoding** of their categories, so this checks the engine on someone else's cases, not an
+  LLM's ability to record dependencies. The external part that matters most is collateral:
+  168 facts the dataset says must not change, and none were withdrawn.
+- **Ground truth is what loses all support**, computed from the dataset's own facts by the
+  independent reference solver. RippleEdits' labels describe *inserting* an edit: 32 of the 394
+  facts it says follow from the edits are also stated by its knowledge base (in 2 cases the
+  edit restates a known fact), so a *retraction* must keep them, and Antidote does.
+- **Real identities are removed.** RippleEdits is built from Wikidata facts about real people
+  with deliberately false edits, so only the structure is committed: every entity and alias is
+  a placeholder (E1, A1...). MIT licence notice in
+  [data/rippleedits/cases.json](data/rippleedits/cases.json).
+
 ## Correctness
 
-108 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+118 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
 
 - Required cases: alternative justifications; a multi-premise justification losing one
   premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
@@ -323,7 +354,7 @@ python -m venv .venv
 pip install -r requirements.txt
 cp .env.example .env                  # Windows PowerShell: copy .env.example .env
 
-python -m pytest                      # 108 tests
+python -m pytest                      # 118 tests
 python -m scripts.seed_demo --story   # the whole story in the terminal
 streamlit run ui/streamlit_app.py     # the UI: http://localhost:8501
 python -m scripts.benchmark           # the benchmark table
@@ -385,7 +416,9 @@ rollback to agent memory. OWASP's 2026 agentic Top 10 names memory poisoning as 
 The demo's attack and the detector's rule families follow **AgentDojo** (Debenedetti et al.,
 *AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM
 Agents*, NeurIPS 2024 Datasets and Benchmarks; MIT licence): we adapted its published
-templates with a fictional goal; no AgentDojo code or data is included.
+templates with a fictional goal; no AgentDojo code or data is included. The external test
+set comes from **RippleEdits** (Cohen, Biran, Yoran, Globerson, Geva, *Evaluating the Ripple
+Effects of Knowledge Editing in Language Models*, TACL 2024; MIT licence), anonymised.
 
 What Antidote adds:
 

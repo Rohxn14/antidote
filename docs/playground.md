@@ -101,7 +101,7 @@ JSON are reported before anything is written, so your previous world stays intac
 
 ## 6. Beyond the UI
 
-- **Terminal:** `python -m scripts.seed_demo --story` (the story), `python -m pytest` (108
+- **Terminal:** `python -m scripts.seed_demo --story` (the story), `python -m pytest` (118
   tests), `python -m scripts.benchmark` (the comparison table).
 - **FalkorDB Browser** at http://localhost:3000: open the graph named in the sidebar (your
   playground graph ends in `_play`) and watch it change as you click.

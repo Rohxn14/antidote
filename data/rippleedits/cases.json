@@ -1,0 +1,9790 @@
+{
+ "notice": "Structure derived from RippleEdits (Cohen, Biran, Yoran, Globerson, Geva, TACL 2024), https://github.com/edenbiran/RippleEdits. MIT License, Copyright (c) 2023 Eden Biran. Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files, to deal in the Software without restriction, subject to including this copyright and permission notice. Entity ids, names and aliases are replaced with placeholders; only relations and the dependency structure are kept.",
+ "selection": "(deterministic): from each subset file, in file order, the first 5\ncases that have a logical-generalization test, a multi-hop test\n(compositionality I or II) and a must-not-change test (relation specificity or\nforgetfulness).",
+ "cases": [
+  {
+   "case": 1,
+   "subset": "popular",
+   "edit": [
+    "E1",
+    "COUNTRY",
+    "E2"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E1",
+      "CONTINENT",
+      "E3"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E1",
+      "OFFICIAL_LANGUAGE",
+      "E4"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E1",
+      "COUNTRY>CAPITAL",
+      "E5"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ],
+      [
+       "E2",
+       "CAPITAL",
+       "E5"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E1",
+      "COUNTRY>CONTINENT",
+      "E3"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ],
+      [
+       "E2",
+       "CONTINENT",
+       "E3"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E1",
+      "COUNTRY>OFFICIAL_LANGUAGE",
+      "E4"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ],
+      [
+       "E2",
+       "OFFICIAL_LANGUAGE",
+       "E4"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A1",
+      "COUNTRY",
+      "E2"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ],
+      [
+       "A1",
+       "ALIAS_OF",
+       "E1"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A2",
+      "COUNTRY",
+      "E2"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ],
+      [
+       "A2",
+       "ALIAS_OF",
+       "E1"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A3",
+      "COUNTRY",
+      "E2"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ],
+      [
+       "A3",
+       "ALIAS_OF",
+       "E1"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A4",
+      "COUNTRY",
+      "E2"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ],
+      [
+       "A4",
+       "ALIAS_OF",
+       "E1"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A5",
+      "COUNTRY",
+      "E2"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ],
+      [
+       "A5",
+       "ALIAS_OF",
+       "E1"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A6",
+      "COUNTRY",
+      "E2"
+     ],
+     "premises": [
+      [
+       "E1",
+       "COUNTRY",
+       "E2"
+      ],
+      [
+       "A6",
+       "ALIAS_OF",
+       "E1"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E1",
+      "AWARD_RECEIVED",
+      "E6"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E2",
+     "CAPITAL",
+     "E5"
+    ],
+    [
+     "E2",
+     "CONTINENT",
+     "E3"
+    ],
+    [
+     "E2",
+     "OFFICIAL_LANGUAGE",
+     "E4"
+    ],
+    [
+     "A1",
+     "ALIAS_OF",
+     "E1"
+    ],
+    [
+     "A2",
+     "ALIAS_OF",
+     "E1"
+    ],
+    [
+     "A3",
+     "ALIAS_OF",
+     "E1"
+    ],
+    [
+     "A4",
+     "ALIAS_OF",
+     "E1"
+    ],
+    [
+     "A5",
+     "ALIAS_OF",
+     "E1"
+    ],
+    [
+     "A6",
+     "ALIAS_OF",
+     "E1"
+    ]
+   ]
+  },
+  {
+   "case": 2,
+   "subset": "popular",
+   "edit": [
+    "E7",
+    "SPOUSE",
+    "E8"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E8",
+      "SIBLING",
+      "E7"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E7",
+      "SPOUSE>SEX_OR_GENDER",
+      "E9"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "E8",
+       "SEX_OR_GENDER",
+       "E9"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E7",
+      "SPOUSE>PLACE_OF_BIRTH",
+      "E10"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "E8",
+       "PLACE_OF_BIRTH",
+       "E10"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E7",
+      "SPOUSE>OCCUPATION",
+      "E11"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "E8",
+       "OCCUPATION",
+       "E11"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E7",
+      "SPOUSE>RELIGION",
+      "E12"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "E8",
+       "RELIGION",
+       "E12"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E7",
+      "SPOUSE>COUNTRY_OF_CITIZENSHIP",
+      "E13"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "E8",
+       "COUNTRY_OF_CITIZENSHIP",
+       "E13"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A7",
+      "SPOUSE",
+      "E8"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "A7",
+       "ALIAS_OF",
+       "E7"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A8",
+      "SPOUSE",
+      "E8"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "A8",
+       "ALIAS_OF",
+       "E7"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A9",
+      "SPOUSE",
+      "E8"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "A9",
+       "ALIAS_OF",
+       "E7"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A10",
+      "SPOUSE",
+      "E8"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "A10",
+       "ALIAS_OF",
+       "E7"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A11",
+      "SPOUSE",
+      "E8"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "A11",
+       "ALIAS_OF",
+       "E7"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A12",
+      "SPOUSE",
+      "E8"
+     ],
+     "premises": [
+      [
+       "E7",
+       "SPOUSE",
+       "E8"
+      ],
+      [
+       "A12",
+       "ALIAS_OF",
+       "E7"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "SEX_OR_GENDER",
+      "E14"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "PLACE_OF_BIRTH",
+      "E15"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "COUNTRY_OF_CITIZENSHIP",
+      "E16"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "POSITION_HELD",
+      "E17"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "POSITION_HELD",
+      "E18"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "MEMBER_OF_SPORTS_TEAM",
+      "E19"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "ALMA_MATER",
+      "E20"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "ALMA_MATER",
+      "E21"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "ALMA_MATER",
+      "E22"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "ALMA_MATER",
+      "E23"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "ALMA_MATER",
+      "E24"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "OCCUPATION",
+      "E25"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "OCCUPATION",
+      "E26"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "OCCUPATION",
+      "E27"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "OCCUPATION",
+      "E28"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "AWARD_RECEIVED",
+      "E29"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "AWARD_RECEIVED",
+      "E30"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "AWARD_RECEIVED",
+      "E31"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "AWARD_RECEIVED",
+      "E32"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "AWARD_RECEIVED",
+      "E33"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "AWARD_RECEIVED",
+      "E34"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E7",
+      "RELIGION",
+      "E35"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E7",
+      "SPOUSE",
+      "E36"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E8",
+     "SEX_OR_GENDER",
+     "E9"
+    ],
+    [
+     "E8",
+     "PLACE_OF_BIRTH",
+     "E10"
+    ],
+    [
+     "E8",
+     "OCCUPATION",
+     "E11"
+    ],
+    [
+     "E8",
+     "RELIGION",
+     "E12"
+    ],
+    [
+     "E8",
+     "COUNTRY_OF_CITIZENSHIP",
+     "E13"
+    ],
+    [
+     "A7",
+     "ALIAS_OF",
+     "E7"
+    ],
+    [
+     "A8",
+     "ALIAS_OF",
+     "E7"
+    ],
+    [
+     "A9",
+     "ALIAS_OF",
+     "E7"
+    ],
+    [
+     "A10",
+     "ALIAS_OF",
+     "E7"
+    ],
+    [
+     "A11",
+     "ALIAS_OF",
+     "E7"
+    ],
+    [
+     "A12",
+     "ALIAS_OF",
+     "E7"
+    ]
+   ]
+  },
+  {
+   "case": 3,
+   "subset": "popular",
+   "edit": [
+    "E37",
+    "PLACE_OF_BURIAL",
+    "E38"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E37",
+      "IS_ALIVE",
+      "E39"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E37",
+      "IS_ALIVE",
+      "E40"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E37",
+      "IS_ALIVE",
+      "E41"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E37",
+      "IS_ALIVE",
+      "E42"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E37",
+      "IS_ALIVE",
+      "E43"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E44",
+      "MOTHER>PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E44",
+       "MOTHER",
+       "E37"
+      ],
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E45",
+      "MOTHER>PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E45",
+       "MOTHER",
+       "E37"
+      ],
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E46",
+      "MOTHER>PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E46",
+       "MOTHER",
+       "E37"
+      ],
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E47",
+      "MOTHER>PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E47",
+       "MOTHER",
+       "E37"
+      ],
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E48",
+      "MOTHER>PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E48",
+       "MOTHER",
+       "E37"
+      ],
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E49",
+      "SPOUSE>PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E49",
+       "SPOUSE",
+       "E37"
+      ],
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A13",
+      "PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ],
+      [
+       "A13",
+       "ALIAS_OF",
+       "E37"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A14",
+      "PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ],
+      [
+       "A14",
+       "ALIAS_OF",
+       "E37"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A15",
+      "PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ],
+      [
+       "A15",
+       "ALIAS_OF",
+       "E37"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A16",
+      "PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ],
+      [
+       "A16",
+       "ALIAS_OF",
+       "E37"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A17",
+      "PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ],
+      [
+       "A17",
+       "ALIAS_OF",
+       "E37"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A18",
+      "PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ],
+      [
+       "A18",
+       "ALIAS_OF",
+       "E37"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A19",
+      "PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ],
+      [
+       "A19",
+       "ALIAS_OF",
+       "E37"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A20",
+      "PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ],
+      [
+       "A20",
+       "ALIAS_OF",
+       "E37"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A21",
+      "PLACE_OF_BURIAL",
+      "E38"
+     ],
+     "premises": [
+      [
+       "E37",
+       "PLACE_OF_BURIAL",
+       "E38"
+      ],
+      [
+       "A21",
+       "ALIAS_OF",
+       "E37"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "MOTHER",
+      "E50"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "FATHER",
+      "E51"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "SIBLING",
+      "E52"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "SIBLING",
+      "E53"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "SIBLING",
+      "E54"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "SPOUSE",
+      "E49"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "CHILD",
+      "E44"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "CHILD",
+      "E46"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "CHILD",
+      "E47"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "CHILD",
+      "E45"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "CHILD",
+      "E48"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "SEX_OR_GENDER",
+      "E9"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "PLACE_OF_BIRTH",
+      "E55"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "PLACE_OF_DEATH",
+      "E56"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "COUNTRY_OF_CITIZENSHIP",
+      "E57"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "COUNTRY_OF_CITIZENSHIP",
+      "E58"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "OCCUPATION",
+      "E59"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "OCCUPATION",
+      "E60"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "OCCUPATION",
+      "E61"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "OCCUPATION",
+      "E62"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "AWARD_RECEIVED",
+      "E63"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "AWARD_RECEIVED",
+      "E64"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "AWARD_RECEIVED",
+      "E65"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "AWARD_RECEIVED",
+      "E66"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "AWARD_RECEIVED",
+      "E67"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "AWARD_RECEIVED",
+      "E68"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "RELIGION",
+      "E69"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "RELIGION",
+      "E70"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E37",
+      "EYE_COLOR",
+      "E71"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E44",
+     "MOTHER",
+     "E37"
+    ],
+    [
+     "E45",
+     "MOTHER",
+     "E37"
+    ],
+    [
+     "E46",
+     "MOTHER",
+     "E37"
+    ],
+    [
+     "E47",
+     "MOTHER",
+     "E37"
+    ],
+    [
+     "E48",
+     "MOTHER",
+     "E37"
+    ],
+    [
+     "E49",
+     "SPOUSE",
+     "E37"
+    ],
+    [
+     "A13",
+     "ALIAS_OF",
+     "E37"
+    ],
+    [
+     "A14",
+     "ALIAS_OF",
+     "E37"
+    ],
+    [
+     "A15",
+     "ALIAS_OF",
+     "E37"
+    ],
+    [
+     "A16",
+     "ALIAS_OF",
+     "E37"
+    ],
+    [
+     "A17",
+     "ALIAS_OF",
+     "E37"
+    ],
+    [
+     "A18",
+     "ALIAS_OF",
+     "E37"
+    ],
+    [
+     "A19",
+     "ALIAS_OF",
+     "E37"
+    ],
+    [
+     "A20",
+     "ALIAS_OF",
+     "E37"
+    ],
+    [
+     "A21",
+     "ALIAS_OF",
+     "E37"
+    ]
+   ]
+  },
+  {
+   "case": 4,
+   "subset": "popular",
+   "edit": [
+    "E72",
+    "MOTHER",
+    "E73"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E72",
+      "SIBLING",
+      "E74"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E72",
+      "SIBLING",
+      "E72"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E73",
+      "CHILD",
+      "E72"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E73",
+      "NUMBER_OF_CHILDREN",
+      "E75"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E72",
+      "MOTHER>POSITION_HELD",
+      "E76"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "E73",
+       "POSITION_HELD",
+       "E76"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E72",
+      "MOTHER>SEX_OR_GENDER",
+      "E9"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "E73",
+       "SEX_OR_GENDER",
+       "E9"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E72",
+      "MOTHER>COUNTRY_OF_CITIZENSHIP",
+      "E77"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "E73",
+       "COUNTRY_OF_CITIZENSHIP",
+       "E77"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E72",
+      "MOTHER>OCCUPATION",
+      "E25"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "E73",
+       "OCCUPATION",
+       "E25"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E72",
+      "MOTHER>SPOUSE",
+      "E78"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "E73",
+       "SPOUSE",
+       "E78"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E72",
+      "MOTHER>CHILD",
+      "E74"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "E73",
+       "CHILD",
+       "E74"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E72",
+      "MOTHER>PLACE_OF_DEATH",
+      "E79"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "E73",
+       "PLACE_OF_DEATH",
+       "E79"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E72",
+      "MOTHER>PLACE_OF_BIRTH",
+      "E80"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "E73",
+       "PLACE_OF_BIRTH",
+       "E80"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E81",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E81",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E82",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E82",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E83",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E83",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E84",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E84",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E85",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E85",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E86",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E86",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E87",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E87",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E88",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E88",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E89",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E89",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E90",
+      "COMPOSER>MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E90",
+       "COMPOSER",
+       "E72"
+      ],
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A22",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A22",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A23",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A23",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A24",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A24",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A25",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A25",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A26",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A26",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A27",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A27",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A28",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A28",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A29",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A29",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A30",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A30",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A31",
+      "MOTHER",
+      "E73"
+     ],
+     "premises": [
+      [
+       "E72",
+       "MOTHER",
+       "E73"
+      ],
+      [
+       "A31",
+       "ALIAS_OF",
+       "E72"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "FATHER",
+      "E91"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "SPOUSE",
+      "E92"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "CHILD",
+      "E93"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "CHILD",
+      "E94"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "CHILD",
+      "E95"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "CHILD",
+      "E96"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "SEX_OR_GENDER",
+      "E14"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "PLACE_OF_BIRTH",
+      "E97"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "COUNTRY_OF_CITIZENSHIP",
+      "E16"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "ALMA_MATER",
+      "E98"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "ALMA_MATER",
+      "E99"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E100"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E101"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E102"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E103"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E104"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E105"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E106"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E107"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E108"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E109"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E110"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E111"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "OCCUPATION",
+      "E25"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "EMPLOYER",
+      "E112"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E113"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E114"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E115"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E116"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E117"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E118"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E119"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E120"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E121"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E122"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "AWARD_RECEIVED",
+      "E123"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "ETHNIC_GROUP",
+      "E124"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E72",
+      "RELIGION",
+      "E125"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E73",
+     "POSITION_HELD",
+     "E76"
+    ],
+    [
+     "E73",
+     "SEX_OR_GENDER",
+     "E9"
+    ],
+    [
+     "E73",
+     "COUNTRY_OF_CITIZENSHIP",
+     "E77"
+    ],
+    [
+     "E73",
+     "OCCUPATION",
+     "E25"
+    ],
+    [
+     "E73",
+     "SPOUSE",
+     "E78"
+    ],
+    [
+     "E73",
+     "CHILD",
+     "E74"
+    ],
+    [
+     "E73",
+     "PLACE_OF_DEATH",
+     "E79"
+    ],
+    [
+     "E73",
+     "PLACE_OF_BIRTH",
+     "E80"
+    ],
+    [
+     "E81",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "E82",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "E83",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "E84",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "E85",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "E86",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "E87",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "E88",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "E89",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "E90",
+     "COMPOSER",
+     "E72"
+    ],
+    [
+     "A22",
+     "ALIAS_OF",
+     "E72"
+    ],
+    [
+     "A23",
+     "ALIAS_OF",
+     "E72"
+    ],
+    [
+     "A24",
+     "ALIAS_OF",
+     "E72"
+    ],
+    [
+     "A25",
+     "ALIAS_OF",
+     "E72"
+    ],
+    [
+     "A26",
+     "ALIAS_OF",
+     "E72"
+    ],
+    [
+     "A27",
+     "ALIAS_OF",
+     "E72"
+    ],
+    [
+     "A28",
+     "ALIAS_OF",
+     "E72"
+    ],
+    [
+     "A29",
+     "ALIAS_OF",
+     "E72"
+    ],
+    [
+     "A30",
+     "ALIAS_OF",
+     "E72"
+    ],
+    [
+     "A31",
+     "ALIAS_OF",
+     "E72"
+    ]
+   ]
+  },
+  {
+   "case": 5,
+   "subset": "popular",
+   "edit": [
+    "E126",
+    "FOLLOWS",
+    "E127"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E127",
+      "FOLLOWED_BY",
+      "E126"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E128",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E128",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E129",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E129",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E130",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E130",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E131",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E131",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E132",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E132",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E133",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E133",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E134",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E134",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E135",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E135",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E136",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E136",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E137",
+      "FOUNDER>FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E137",
+       "FOUNDER",
+       "E126"
+      ],
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A32",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A32",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A33",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A33",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A34",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A34",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A35",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A35",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A36",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A36",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A37",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A37",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A38",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A38",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A39",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A39",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A40",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A40",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A41",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A41",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A42",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A42",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A43",
+      "FOLLOWS",
+      "E127"
+     ],
+     "premises": [
+      [
+       "E126",
+       "FOLLOWS",
+       "E127"
+      ],
+      [
+       "A43",
+       "ALIAS_OF",
+       "E126"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "COUNTRY",
+      "E126"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "FOLLOWED_BY",
+      "E138"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "FOLLOWED_BY",
+      "E139"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "RELIGION",
+      "E140"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "HEAD_OF_GOVERNMENT",
+      "E141"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "HEAD_OF_STATE",
+      "E142"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "CONTINENT",
+      "E143"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "CONTINENT",
+      "E144"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "CAPITAL",
+      "E145"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "CURRENCY",
+      "E146"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "OFFICIAL_LANGUAGE",
+      "E147"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "ANTHEM",
+      "E148"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "FOUNDER",
+      "E149"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "FOUNDER",
+      "E150"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "FOUNDER",
+      "E151"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E126",
+      "FOUNDER",
+      "E152"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E128",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "E129",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "E130",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "E131",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "E132",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "E133",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "E134",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "E135",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "E136",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "E137",
+     "FOUNDER",
+     "E126"
+    ],
+    [
+     "A32",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A33",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A34",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A35",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A36",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A37",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A38",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A39",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A40",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A41",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A42",
+     "ALIAS_OF",
+     "E126"
+    ],
+    [
+     "A43",
+     "ALIAS_OF",
+     "E126"
+    ]
+   ]
+  },
+  {
+   "case": 6,
+   "subset": "random",
+   "edit": [
+    "E153",
+    "COUNTRY",
+    "E154"
+   ],
+   "should_change": [
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E153",
+      "COUNTRY>CAPITAL",
+      "E155"
+     ],
+     "premises": [
+      [
+       "E153",
+       "COUNTRY",
+       "E154"
+      ],
+      [
+       "E154",
+       "CAPITAL",
+       "E155"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A44",
+      "COUNTRY",
+      "E154"
+     ],
+     "premises": [
+      [
+       "E153",
+       "COUNTRY",
+       "E154"
+      ],
+      [
+       "A44",
+       "ALIAS_OF",
+       "E153"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E153",
+      "FOUNDER",
+      "E156"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E154",
+     "CAPITAL",
+     "E155"
+    ],
+    [
+     "A44",
+     "ALIAS_OF",
+     "E153"
+    ]
+   ]
+  },
+  {
+   "case": 7,
+   "subset": "random",
+   "edit": [
+    "E157",
+    "COUNTRY",
+    "E158"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E157",
+      "CONTINENT",
+      "E143"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E157",
+      "OFFICIAL_LANGUAGE",
+      "E147"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E157",
+      "OFFICIAL_LANGUAGE",
+      "E159"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E157",
+      "LIKELY_ANTHEM",
+      "E160"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E157",
+      "COUNTRY>CAPITAL",
+      "E161"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ],
+      [
+       "E158",
+       "CAPITAL",
+       "E161"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E157",
+      "COUNTRY>OFFICIAL_LANGUAGE",
+      "E147"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ],
+      [
+       "E158",
+       "OFFICIAL_LANGUAGE",
+       "E147"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E157",
+      "COUNTRY>OFFICIAL_LANGUAGE",
+      "E159"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ],
+      [
+       "E158",
+       "OFFICIAL_LANGUAGE",
+       "E159"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E157",
+      "COUNTRY>ANTHEM",
+      "E160"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ],
+      [
+       "E158",
+       "ANTHEM",
+       "E160"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E157",
+      "COUNTRY>HEAD_OF_GOVERNMENT",
+      "E162"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ],
+      [
+       "E158",
+       "HEAD_OF_GOVERNMENT",
+       "E162"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E157",
+      "COUNTRY>CONTINENT",
+      "E143"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ],
+      [
+       "E158",
+       "CONTINENT",
+       "E143"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A45",
+      "COUNTRY",
+      "E158"
+     ],
+     "premises": [
+      [
+       "E157",
+       "COUNTRY",
+       "E158"
+      ],
+      [
+       "A45",
+       "ALIAS_OF",
+       "E157"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E157",
+      "CAPITAL",
+      "E163"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E158",
+     "CAPITAL",
+     "E161"
+    ],
+    [
+     "E158",
+     "OFFICIAL_LANGUAGE",
+     "E147"
+    ],
+    [
+     "E158",
+     "OFFICIAL_LANGUAGE",
+     "E159"
+    ],
+    [
+     "E158",
+     "ANTHEM",
+     "E160"
+    ],
+    [
+     "E158",
+     "HEAD_OF_GOVERNMENT",
+     "E162"
+    ],
+    [
+     "E158",
+     "CONTINENT",
+     "E143"
+    ],
+    [
+     "A45",
+     "ALIAS_OF",
+     "E157"
+    ]
+   ]
+  },
+  {
+   "case": 8,
+   "subset": "random",
+   "edit": [
+    "E164",
+    "MOTHER",
+    "E165"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E164",
+      "SIBLING",
+      "E166"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E164",
+      "SIBLING",
+      "E167"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E164",
+      "SIBLING",
+      "E168"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E164",
+      "SIBLING",
+      "E169"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E164",
+      "SIBLING",
+      "E170"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E164",
+      "SIBLING",
+      "E171"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E164",
+      "SIBLING",
+      "E172"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E164",
+      "SIBLING",
+      "E164"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E164",
+      "SIBLING",
+      "E173"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E165",
+      "CHILD",
+      "E164"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E165",
+      "NUMBER_OF_CHILDREN",
+      "E174"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E164",
+      "MOTHER>SEX_OR_GENDER",
+      "E9"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ],
+      [
+       "E165",
+       "SEX_OR_GENDER",
+       "E9"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E164",
+      "MOTHER>FATHER",
+      "E175"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ],
+      [
+       "E165",
+       "FATHER",
+       "E175"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E164",
+      "MOTHER>CHILD",
+      "E166"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ],
+      [
+       "E165",
+       "CHILD",
+       "E166"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E164",
+      "MOTHER>CHILD",
+      "E167"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ],
+      [
+       "E165",
+       "CHILD",
+       "E167"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E164",
+      "MOTHER>CHILD",
+      "E168"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ],
+      [
+       "E165",
+       "CHILD",
+       "E168"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E164",
+      "MOTHER>CHILD",
+      "E169"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ],
+      [
+       "E165",
+       "CHILD",
+       "E169"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E164",
+      "MOTHER>MOTHER",
+      "E176"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ],
+      [
+       "E165",
+       "MOTHER",
+       "E176"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E164",
+      "MOTHER>SPOUSE",
+      "E177"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ],
+      [
+       "E165",
+       "SPOUSE",
+       "E177"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E178",
+      "MOTHER>MOTHER",
+      "E165"
+     ],
+     "premises": [
+      [
+       "E178",
+       "MOTHER",
+       "E164"
+      ],
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A46",
+      "MOTHER",
+      "E165"
+     ],
+     "premises": [
+      [
+       "E164",
+       "MOTHER",
+       "E165"
+      ],
+      [
+       "A46",
+       "ALIAS_OF",
+       "E164"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E164",
+      "FATHER",
+      "E179"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E164",
+      "SPOUSE",
+      "E180"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E164",
+      "CHILD",
+      "E178"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E164",
+      "SEX_OR_GENDER",
+      "E9"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E165",
+     "SEX_OR_GENDER",
+     "E9"
+    ],
+    [
+     "E165",
+     "FATHER",
+     "E175"
+    ],
+    [
+     "E165",
+     "CHILD",
+     "E166"
+    ],
+    [
+     "E165",
+     "CHILD",
+     "E167"
+    ],
+    [
+     "E165",
+     "CHILD",
+     "E168"
+    ],
+    [
+     "E165",
+     "CHILD",
+     "E169"
+    ],
+    [
+     "E165",
+     "MOTHER",
+     "E176"
+    ],
+    [
+     "E165",
+     "SPOUSE",
+     "E177"
+    ],
+    [
+     "E178",
+     "MOTHER",
+     "E164"
+    ],
+    [
+     "A46",
+     "ALIAS_OF",
+     "E164"
+    ]
+   ]
+  },
+  {
+   "case": 9,
+   "subset": "random",
+   "edit": [
+    "E181",
+    "PLACE_OF_DEATH",
+    "E182"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E181",
+      "IS_ALIVE",
+      "E39"
+     ],
+     "premises": [
+      [
+       "E181",
+       "PLACE_OF_DEATH",
+       "E182"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E181",
+      "IS_ALIVE",
+      "E40"
+     ],
+     "premises": [
+      [
+       "E181",
+       "PLACE_OF_DEATH",
+       "E182"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E181",
+      "IS_ALIVE",
+      "E41"
+     ],
+     "premises": [
+      [
+       "E181",
+       "PLACE_OF_DEATH",
+       "E182"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E181",
+      "IS_ALIVE",
+      "E42"
+     ],
+     "premises": [
+      [
+       "E181",
+       "PLACE_OF_DEATH",
+       "E182"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E181",
+      "IS_ALIVE",
+      "E43"
+     ],
+     "premises": [
+      [
+       "E181",
+       "PLACE_OF_DEATH",
+       "E182"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E181",
+      "PLACE_OF_DEATH>HEAD_OF_GOVERNMENT",
+      "E183"
+     ],
+     "premises": [
+      [
+       "E181",
+       "PLACE_OF_DEATH",
+       "E182"
+      ],
+      [
+       "E182",
+       "HEAD_OF_GOVERNMENT",
+       "E183"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A47",
+      "PLACE_OF_DEATH",
+      "E182"
+     ],
+     "premises": [
+      [
+       "E181",
+       "PLACE_OF_DEATH",
+       "E182"
+      ],
+      [
+       "A47",
+       "ALIAS_OF",
+       "E181"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E181",
+      "SEX_OR_GENDER",
+      "E14"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E181",
+      "PLACE_OF_BIRTH",
+      "E184"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E181",
+      "COUNTRY_OF_CITIZENSHIP",
+      "E16"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E181",
+      "MEMBER_OF_SPORTS_TEAM",
+      "E185"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E181",
+      "MEMBER_OF_SPORTS_TEAM",
+      "E186"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E181",
+      "ALMA_MATER",
+      "E187"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E181",
+      "ALMA_MATER",
+      "E188"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E181",
+      "OCCUPATION",
+      "E189"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E182",
+     "HEAD_OF_GOVERNMENT",
+     "E183"
+    ],
+    [
+     "A47",
+     "ALIAS_OF",
+     "E181"
+    ]
+   ]
+  },
+  {
+   "case": 10,
+   "subset": "random",
+   "edit": [
+    "E190",
+    "COUNTRY",
+    "E191"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E190",
+      "CONTINENT",
+      "E143"
+     ],
+     "premises": [
+      [
+       "E190",
+       "COUNTRY",
+       "E191"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E190",
+      "CONTINENT",
+      "E144"
+     ],
+     "premises": [
+      [
+       "E190",
+       "COUNTRY",
+       "E191"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E190",
+      "COUNTRY>CONTINENT",
+      "E143"
+     ],
+     "premises": [
+      [
+       "E190",
+       "COUNTRY",
+       "E191"
+      ],
+      [
+       "E191",
+       "CONTINENT",
+       "E143"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E190",
+      "COUNTRY>CONTINENT",
+      "E144"
+     ],
+     "premises": [
+      [
+       "E190",
+       "COUNTRY",
+       "E191"
+      ],
+      [
+       "E191",
+       "CONTINENT",
+       "E144"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E190",
+      "COUNTRY>CAPITAL",
+      "E145"
+     ],
+     "premises": [
+      [
+       "E190",
+       "COUNTRY",
+       "E191"
+      ],
+      [
+       "E191",
+       "CAPITAL",
+       "E145"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E190",
+      "COUNTRY>CAPITAL",
+      "E192"
+     ],
+     "premises": [
+      [
+       "E190",
+       "COUNTRY",
+       "E191"
+      ],
+      [
+       "E191",
+       "CAPITAL",
+       "E192"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A48",
+      "COUNTRY",
+      "E191"
+     ],
+     "premises": [
+      [
+       "E190",
+       "COUNTRY",
+       "E191"
+      ],
+      [
+       "A48",
+       "ALIAS_OF",
+       "E190"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E190",
+      "FOLLOWS",
+      "E193"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E190",
+      "FOLLOWED_BY",
+      "E194"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E191",
+     "CONTINENT",
+     "E143"
+    ],
+    [
+     "E191",
+     "CONTINENT",
+     "E144"
+    ],
+    [
+     "E191",
+     "CAPITAL",
+     "E145"
+    ],
+    [
+     "E191",
+     "CAPITAL",
+     "E192"
+    ],
+    [
+     "A48",
+     "ALIAS_OF",
+     "E190"
+    ]
+   ]
+  },
+  {
+   "case": 11,
+   "subset": "recent",
+   "edit": [
+    "E195",
+    "PLACE_OF_DEATH",
+    "E196"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E195",
+      "IS_ALIVE",
+      "E39"
+     ],
+     "premises": [
+      [
+       "E195",
+       "PLACE_OF_DEATH",
+       "E196"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E195",
+      "IS_ALIVE",
+      "E40"
+     ],
+     "premises": [
+      [
+       "E195",
+       "PLACE_OF_DEATH",
+       "E196"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E195",
+      "IS_ALIVE",
+      "E41"
+     ],
+     "premises": [
+      [
+       "E195",
+       "PLACE_OF_DEATH",
+       "E196"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E195",
+      "IS_ALIVE",
+      "E42"
+     ],
+     "premises": [
+      [
+       "E195",
+       "PLACE_OF_DEATH",
+       "E196"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E195",
+      "IS_ALIVE",
+      "E43"
+     ],
+     "premises": [
+      [
+       "E195",
+       "PLACE_OF_DEATH",
+       "E196"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E195",
+      "PLACE_OF_DEATH>HEAD_OF_GOVERNMENT",
+      "E197"
+     ],
+     "premises": [
+      [
+       "E195",
+       "PLACE_OF_DEATH",
+       "E196"
+      ],
+      [
+       "E196",
+       "HEAD_OF_GOVERNMENT",
+       "E197"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E195",
+      "PLACE_OF_DEATH>OFFICIAL_LANGUAGE",
+      "E198"
+     ],
+     "premises": [
+      [
+       "E195",
+       "PLACE_OF_DEATH",
+       "E196"
+      ],
+      [
+       "E196",
+       "OFFICIAL_LANGUAGE",
+       "E198"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E195",
+      "PLACE_OF_DEATH>CONTINENT",
+      "E143"
+     ],
+     "premises": [
+      [
+       "E195",
+       "PLACE_OF_DEATH",
+       "E196"
+      ],
+      [
+       "E196",
+       "CONTINENT",
+       "E143"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A49",
+      "PLACE_OF_DEATH",
+      "E196"
+     ],
+     "premises": [
+      [
+       "E195",
+       "PLACE_OF_DEATH",
+       "E196"
+      ],
+      [
+       "A49",
+       "ALIAS_OF",
+       "E195"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "FATHER",
+      "E199"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "SIBLING",
+      "E200"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "SEX_OR_GENDER",
+      "E14"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "PLACE_OF_BIRTH",
+      "E196"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "COUNTRY_OF_CITIZENSHIP",
+      "E201"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "ALMA_MATER",
+      "E202"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "OCCUPATION",
+      "E25"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "OCCUPATION",
+      "E203"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "OCCUPATION",
+      "E204"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "OCCUPATION",
+      "E205"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "EMPLOYER",
+      "E206"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E195",
+      "FIELD_OF_WORK",
+      "E207"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E196",
+     "HEAD_OF_GOVERNMENT",
+     "E197"
+    ],
+    [
+     "E196",
+     "OFFICIAL_LANGUAGE",
+     "E198"
+    ],
+    [
+     "E196",
+     "CONTINENT",
+     "E143"
+    ],
+    [
+     "A49",
+     "ALIAS_OF",
+     "E195"
+    ]
+   ]
+  },
+  {
+   "case": 12,
+   "subset": "recent",
+   "edit": [
+    "E208",
+    "SPOUSE",
+    "E209"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E209",
+      "SIBLING",
+      "E208"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>PLACE_OF_DEATH",
+      "E210"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "PLACE_OF_DEATH",
+       "E210"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>COUNTRY_OF_CITIZENSHIP",
+      "E57"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "COUNTRY_OF_CITIZENSHIP",
+       "E57"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>COUNTRY_OF_CITIZENSHIP",
+      "E211"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "COUNTRY_OF_CITIZENSHIP",
+       "E211"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>COUNTRY_OF_CITIZENSHIP",
+      "E58"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "COUNTRY_OF_CITIZENSHIP",
+       "E58"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>COUNTRY_OF_CITIZENSHIP",
+      "E212"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "COUNTRY_OF_CITIZENSHIP",
+       "E212"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>PLACE_OF_BIRTH",
+      "E213"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "PLACE_OF_BIRTH",
+       "E213"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>OCCUPATION",
+      "E214"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "OCCUPATION",
+       "E214"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>OCCUPATION",
+      "E215"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "OCCUPATION",
+       "E215"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>AWARD_RECEIVED",
+      "E216"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "AWARD_RECEIVED",
+       "E216"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>ALMA_MATER",
+      "E217"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "ALMA_MATER",
+       "E217"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>ALMA_MATER",
+      "E218"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "ALMA_MATER",
+       "E218"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>PLACE_OF_BURIAL",
+      "E219"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "PLACE_OF_BURIAL",
+       "E219"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>SEX_OR_GENDER",
+      "E14"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "SEX_OR_GENDER",
+       "E14"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>FATHER",
+      "E220"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "FATHER",
+       "E220"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>MOTHER",
+      "E221"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "MOTHER",
+       "E221"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>SIBLING",
+      "E222"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "SIBLING",
+       "E222"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E208",
+      "SPOUSE>FIELD_OF_WORK",
+      "E223"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "E209",
+       "FIELD_OF_WORK",
+       "E223"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A50",
+      "SPOUSE",
+      "E209"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "A50",
+       "ALIAS_OF",
+       "E208"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A51",
+      "SPOUSE",
+      "E209"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "A51",
+       "ALIAS_OF",
+       "E208"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A52",
+      "SPOUSE",
+      "E209"
+     ],
+     "premises": [
+      [
+       "E208",
+       "SPOUSE",
+       "E209"
+      ],
+      [
+       "A52",
+       "ALIAS_OF",
+       "E208"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E208",
+      "SIBLING",
+      "E224"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E208",
+      "SEX_OR_GENDER",
+      "E9"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E208",
+      "COUNTRY_OF_CITIZENSHIP",
+      "E57"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E208",
+      "SPOUSE",
+      "E209"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E209",
+     "PLACE_OF_DEATH",
+     "E210"
+    ],
+    [
+     "E209",
+     "COUNTRY_OF_CITIZENSHIP",
+     "E57"
+    ],
+    [
+     "E209",
+     "COUNTRY_OF_CITIZENSHIP",
+     "E211"
+    ],
+    [
+     "E209",
+     "COUNTRY_OF_CITIZENSHIP",
+     "E58"
+    ],
+    [
+     "E209",
+     "COUNTRY_OF_CITIZENSHIP",
+     "E212"
+    ],
+    [
+     "E209",
+     "PLACE_OF_BIRTH",
+     "E213"
+    ],
+    [
+     "E209",
+     "OCCUPATION",
+     "E214"
+    ],
+    [
+     "E209",
+     "OCCUPATION",
+     "E215"
+    ],
+    [
+     "E209",
+     "AWARD_RECEIVED",
+     "E216"
+    ],
+    [
+     "E209",
+     "ALMA_MATER",
+     "E217"
+    ],
+    [
+     "E209",
+     "ALMA_MATER",
+     "E218"
+    ],
+    [
+     "E209",
+     "PLACE_OF_BURIAL",
+     "E219"
+    ],
+    [
+     "E209",
+     "SEX_OR_GENDER",
+     "E14"
+    ],
+    [
+     "E209",
+     "FATHER",
+     "E220"
+    ],
+    [
+     "E209",
+     "MOTHER",
+     "E221"
+    ],
+    [
+     "E209",
+     "SIBLING",
+     "E222"
+    ],
+    [
+     "E209",
+     "FIELD_OF_WORK",
+     "E223"
+    ],
+    [
+     "A50",
+     "ALIAS_OF",
+     "E208"
+    ],
+    [
+     "A51",
+     "ALIAS_OF",
+     "E208"
+    ],
+    [
+     "A52",
+     "ALIAS_OF",
+     "E208"
+    ]
+   ]
+  },
+  {
+   "case": 13,
+   "subset": "recent",
+   "edit": [
+    "E225",
+    "FATHER",
+    "E226"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E225"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E227"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E228"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E229"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E230"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E231"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E232"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E233"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E234"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E235"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E236"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E237"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E238"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E239"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E240"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E241"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E242"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E243"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E244"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E245"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E246"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E247"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E248"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E249"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E250"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E251"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E252"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E253"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E254"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E255"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E256"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E257"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E258"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E259"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E260"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E261"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E262"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E263"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E264"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E265"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E266"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E267"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E268"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E269"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E270"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E271"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E272"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E273"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E274"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E275"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E276"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E277"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E278"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E279"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E280"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E281"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E282"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E283"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E284"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E285"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E286"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E287"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E288"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E289"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E290"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E291"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E292"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E293"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E294"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E295"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E296"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E297"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "SIBLING",
+      "E298"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E225",
+      "UNCLE",
+      "E299"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E226",
+      "CHILD",
+      "E225"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E226",
+      "NUMBER_OF_CHILDREN",
+      "E300"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SEX_OR_GENDER",
+      "E14"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SEX_OR_GENDER",
+       "E14"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E228"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E228"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E229"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E229"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E230"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E230"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E231"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E231"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E232"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E232"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E233"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E233"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E234"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E234"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E235"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E235"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E227"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E227"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E236"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E236"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E237"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E237"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E238"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E238"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E239"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E239"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E240"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E240"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E241"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E241"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E242"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E242"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E243"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E243"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E244"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E244"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E245"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E245"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E246"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E246"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E247"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E247"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E248"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E248"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E249"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E249"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E250"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E250"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E251"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E251"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E252"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E252"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E253"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E253"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E254"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E254"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E255"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E255"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E256"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E256"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E257"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E257"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E258"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E258"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E259"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E259"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E260"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E260"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E261"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E261"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E262"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E262"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E263"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E263"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E264"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E264"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E265"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E265"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E266"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E266"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E267"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E267"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E268"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E268"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E269"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E269"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E270"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E270"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E271"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E271"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E272"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E272"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E273"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E273"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E274"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E274"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E275"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E275"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E276"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E276"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E225"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E225"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E277"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E277"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E278"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E278"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E279"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E279"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E280"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E280"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E281"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E281"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E282"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E282"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E283"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E283"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E284"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E284"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E285"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E285"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E286"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E286"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E287"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E287"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E288"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E288"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E289"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E289"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E290"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E290"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E291"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E291"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E292"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E292"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E293"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E293"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E294"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E294"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E295"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E295"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E296"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E296"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E297"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E297"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>CHILD",
+      "E298"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "CHILD",
+       "E298"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>FATHER",
+      "E301"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "FATHER",
+       "E301"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>MOTHER",
+      "E302"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "MOTHER",
+       "E302"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E303"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E303"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E304"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E304"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E305"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E305"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E306"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E306"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E307"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E307"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E308"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E308"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E309"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E309"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E310"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E310"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E311"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E311"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SPOUSE",
+      "E312"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SPOUSE",
+       "E312"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>POSITION_HELD",
+      "E313"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "POSITION_HELD",
+       "E313"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>POSITION_HELD",
+      "E314"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "POSITION_HELD",
+       "E314"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E225",
+      "FATHER>SIBLING",
+      "E299"
+     ],
+     "premises": [
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ],
+      [
+       "E226",
+       "SIBLING",
+       "E299"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E315",
+      "MOTHER>FATHER",
+      "E226"
+     ],
+     "premises": [
+      [
+       "E315",
+       "MOTHER",
+       "E225"
+      ],
+      [
+       "E225",
+       "FATHER",
+       "E226"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E225",
+      "MOTHER",
+      "E306"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E225",
+      "SPOUSE",
+      "E316"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E225",
+      "CHILD",
+      "E315"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E225",
+      "SEX_OR_GENDER",
+      "E9"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E226",
+     "SEX_OR_GENDER",
+     "E14"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E228"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E229"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E230"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E231"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E232"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E233"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E234"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E235"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E227"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E236"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E237"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E238"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E239"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E240"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E241"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E242"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E243"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E244"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E245"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E246"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E247"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E248"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E249"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E250"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E251"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E252"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E253"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E254"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E255"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E256"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E257"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E258"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E259"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E260"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E261"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E262"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E263"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E264"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E265"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E266"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E267"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E268"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E269"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E270"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E271"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E272"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E273"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E274"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E275"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E276"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E225"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E277"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E278"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E279"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E280"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E281"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E282"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E283"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E284"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E285"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E286"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E287"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E288"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E289"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E290"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E291"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E292"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E293"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E294"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E295"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E296"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E297"
+    ],
+    [
+     "E226",
+     "CHILD",
+     "E298"
+    ],
+    [
+     "E226",
+     "FATHER",
+     "E301"
+    ],
+    [
+     "E226",
+     "MOTHER",
+     "E302"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E303"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E304"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E305"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E306"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E307"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E308"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E309"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E310"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E311"
+    ],
+    [
+     "E226",
+     "SPOUSE",
+     "E312"
+    ],
+    [
+     "E226",
+     "POSITION_HELD",
+     "E313"
+    ],
+    [
+     "E226",
+     "POSITION_HELD",
+     "E314"
+    ],
+    [
+     "E226",
+     "SIBLING",
+     "E299"
+    ],
+    [
+     "E315",
+     "MOTHER",
+     "E225"
+    ]
+   ]
+  },
+  {
+   "case": 14,
+   "subset": "recent",
+   "edit": [
+    "E317",
+    "SIBLING",
+    "E318"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E319",
+      "CHILD",
+      "E318"
+     ],
+     "premises": [
+      [
+       "E317",
+       "SIBLING",
+       "E318"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E320",
+      "CHILD",
+      "E318"
+     ],
+     "premises": [
+      [
+       "E317",
+       "SIBLING",
+       "E318"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E318",
+      "MOTHER",
+      "E319"
+     ],
+     "premises": [
+      [
+       "E317",
+       "SIBLING",
+       "E318"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E318",
+      "FATHER",
+      "E320"
+     ],
+     "premises": [
+      [
+       "E317",
+       "SIBLING",
+       "E318"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E318",
+      "SIBLING",
+      "E317"
+     ],
+     "premises": [
+      [
+       "E317",
+       "SIBLING",
+       "E318"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_II",
+     "fact": [
+      "E321",
+      "MOTHER>SIBLING",
+      "E318"
+     ],
+     "premises": [
+      [
+       "E321",
+       "MOTHER",
+       "E317"
+      ],
+      [
+       "E317",
+       "SIBLING",
+       "E318"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A53",
+      "SIBLING",
+      "E318"
+     ],
+     "premises": [
+      [
+       "E317",
+       "SIBLING",
+       "E318"
+      ],
+      [
+       "A53",
+       "ALIAS_OF",
+       "E317"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E317",
+      "MOTHER",
+      "E319"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E317",
+      "FATHER",
+      "E322"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E317",
+      "SPOUSE",
+      "E323"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E317",
+      "CHILD",
+      "E321"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E317",
+      "SEX_OR_GENDER",
+      "E9"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E317",
+      "COUNTRY_OF_CITIZENSHIP",
+      "E324"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E317",
+      "SIBLING",
+      "E325"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E317",
+      "SIBLING",
+      "E326"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E317",
+      "SIBLING",
+      "E318"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E317",
+      "SIBLING",
+      "E327"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E317",
+      "SIBLING",
+      "E328"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E317",
+      "SIBLING",
+      "E329"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E317",
+      "SIBLING",
+      "E330"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E317",
+      "SIBLING",
+      "E331"
+     ]
+    },
+    {
+     "category": "Forgetfulness",
+     "fact": [
+      "E317",
+      "SIBLING",
+      "E332"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E321",
+     "MOTHER",
+     "E317"
+    ],
+    [
+     "A53",
+     "ALIAS_OF",
+     "E317"
+    ]
+   ]
+  },
+  {
+   "case": 15,
+   "subset": "recent",
+   "edit": [
+    "E333",
+    "FATHER",
+    "E334"
+   ],
+   "should_change": [
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E333",
+      "SIBLING",
+      "E335"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E333",
+      "SIBLING",
+      "E333"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E334",
+      "CHILD",
+      "E333"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ]
+     ]
+    },
+    {
+     "category": "Logical_Generalization",
+     "fact": [
+      "E334",
+      "NUMBER_OF_CHILDREN",
+      "E336"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>SEX_OR_GENDER",
+      "E14"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "SEX_OR_GENDER",
+       "E14"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>COUNTRY_OF_CITIZENSHIP",
+      "E16"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "COUNTRY_OF_CITIZENSHIP",
+       "E16"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>OCCUPATION",
+      "E337"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "OCCUPATION",
+       "E337"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>OCCUPATION",
+      "E108"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "OCCUPATION",
+       "E108"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>OCCUPATION",
+      "E338"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "OCCUPATION",
+       "E338"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>OCCUPATION",
+      "E100"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "OCCUPATION",
+       "E100"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>OCCUPATION",
+      "E339"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "OCCUPATION",
+       "E339"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>OCCUPATION",
+      "E340"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "OCCUPATION",
+       "E340"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>OCCUPATION",
+      "E341"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "OCCUPATION",
+       "E341"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>OCCUPATION",
+      "E342"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "OCCUPATION",
+       "E342"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>AWARD_RECEIVED",
+      "E343"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "AWARD_RECEIVED",
+       "E343"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>AWARD_RECEIVED",
+      "E344"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "AWARD_RECEIVED",
+       "E344"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>AWARD_RECEIVED",
+      "E345"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "AWARD_RECEIVED",
+       "E345"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>AWARD_RECEIVED",
+      "E346"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "AWARD_RECEIVED",
+       "E346"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>AWARD_RECEIVED",
+      "E347"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "AWARD_RECEIVED",
+       "E347"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>SPOUSE",
+      "E348"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "SPOUSE",
+       "E348"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>CHILD",
+      "E333"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "CHILD",
+       "E333"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>CHILD",
+      "E335"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "CHILD",
+       "E335"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>ALMA_MATER",
+      "E349"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "ALMA_MATER",
+       "E349"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>ALMA_MATER",
+      "E350"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "ALMA_MATER",
+       "E350"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>PLACE_OF_BIRTH",
+      "E351"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "PLACE_OF_BIRTH",
+       "E351"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>PLACE_OF_DEATH",
+      "E352"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "PLACE_OF_DEATH",
+       "E352"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>RELIGION",
+      "E353"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "RELIGION",
+       "E353"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>RELIGION",
+      "E354"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "RELIGION",
+       "E354"
+      ]
+     ]
+    },
+    {
+     "category": "Compositionality_I",
+     "fact": [
+      "E333",
+      "FATHER>PLACE_OF_BURIAL",
+      "E355"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "E334",
+       "PLACE_OF_BURIAL",
+       "E355"
+      ]
+     ]
+    },
+    {
+     "category": "Subject_Aliasing",
+     "fact": [
+      "A54",
+      "FATHER",
+      "E334"
+     ],
+     "premises": [
+      [
+       "E333",
+       "FATHER",
+       "E334"
+      ],
+      [
+       "A54",
+       "ALIAS_OF",
+       "E333"
+      ]
+     ]
+    }
+   ],
+   "must_not_change": [
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "MOTHER",
+      "E356"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "SEX_OR_GENDER",
+      "E14"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "PLACE_OF_BIRTH",
+      "E357"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "PLACE_OF_DEATH",
+      "E357"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "PLACE_OF_BURIAL",
+      "E355"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "COUNTRY_OF_CITIZENSHIP",
+      "E16"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "OCCUPATION",
+      "E358"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "OCCUPATION",
+      "E359"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "OCCUPATION",
+      "E360"
+     ]
+    },
+    {
+     "category": "Relation_Specificity",
+     "fact": [
+      "E333",
+      "AWARD_RECEIVED",
+      "E361"
+     ]
+    }
+   ],
+   "background": [
+    [
+     "E334",
+     "SEX_OR_GENDER",
+     "E14"
+    ],
+    [
+     "E334",
+     "COUNTRY_OF_CITIZENSHIP",
+     "E16"
+    ],
+    [
+     "E334",
+     "OCCUPATION",
+     "E337"
+    ],
+    [
+     "E334",
+     "OCCUPATION",
+     "E108"
+    ],
+    [
+     "E334",
+     "OCCUPATION",
+     "E338"
+    ],
+    [
+     "E334",
+     "OCCUPATION",
+     "E100"
+    ],
+    [
+     "E334",
+     "OCCUPATION",
+     "E339"
+    ],
+    [
+     "E334",
+     "OCCUPATION",
+     "E340"
+    ],
+    [
+     "E334",
+     "OCCUPATION",
+     "E341"
+    ],
+    [
+     "E334",
+     "OCCUPATION",
+     "E342"
+    ],
+    [
+     "E334",
+     "AWARD_RECEIVED",
+     "E343"
+    ],
+    [
+     "E334",
+     "AWARD_RECEIVED",
+     "E344"
+    ],
+    [
+     "E334",
+     "AWARD_RECEIVED",
+     "E345"
+    ],
+    [
+     "E334",
+     "AWARD_RECEIVED",
+     "E346"
+    ],
+    [
+     "E334",
+     "AWARD_RECEIVED",
+     "E347"
+    ],
+    [
+     "E334",
+     "SPOUSE",
+     "E348"
+    ],
+    [
+     "E334",
+     "CHILD",
+     "E333"
+    ],
+    [
+     "E334",
+     "CHILD",
+     "E335"
+    ],
+    [
+     "E334",
+     "ALMA_MATER",
+     "E349"
+    ],
+    [
+     "E334",
+     "ALMA_MATER",
+     "E350"
+    ],
+    [
+     "E334",
+     "PLACE_OF_BIRTH",
+     "E351"
+    ],
+    [
+     "E334",
+     "PLACE_OF_DEATH",
+     "E352"
+    ],
+    [
+     "E334",
+     "RELIGION",
+     "E353"
+    ],
+    [
+     "E334",
+     "RELIGION",
+     "E354"
+    ],
+    [
+     "E334",
+     "PLACE_OF_BURIAL",
+     "E355"
+    ],
+    [
+     "A54",
+     "ALIAS_OF",
+     "E333"
+    ]
+   ]
+  }
+ ]
+}
