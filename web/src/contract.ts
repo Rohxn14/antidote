@@ -168,6 +168,10 @@ export interface ApiError {
   detail: string | null;
 }
 
+export interface Ack {
+  ok: boolean;
+}
+
 export interface SessionResponse {
   token: string;
 }

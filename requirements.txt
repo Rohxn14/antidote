@@ -2,5 +2,8 @@ falkordb==1.8.0
 python-dotenv==1.2.4
 openai==3.33.0
 mcp==2.3.0
+fastapi==0.143.3
+uvicorn==0.54.0
+httpx==0.28.1
 streamlit==1.66.0
 pytest==9.1.1

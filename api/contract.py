@@ -219,6 +219,10 @@ class ApiError(BaseModel):
     detail: str | None = None
 
 
+class Ack(BaseModel):
+    ok: bool
+
+
 class SessionResponse(BaseModel):
     token: str                        # unguessable; mapped to a private graph on the server
 
