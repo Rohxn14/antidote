@@ -30,7 +30,7 @@ from datetime import date
 
 from app import demo, gate, memory, repair, support
 from app.agents import researcher
-from app.db import ROOT, drop_graph, get_db
+from app.db import ROOT, copy_graph, drop_graph, get_db
 from app.schema import (AUTHORIZED, BELIEF, BUYER, DECIDED, DECISION, EXTRACTION,
                         INFERENCE, JUSTIFICATION, PENDING_APPROVAL, PREMISE,
                         PURCHASE_ORDER, QUARANTINED, RESEARCHER, SHORTLIST, SOURCE,
@@ -214,7 +214,7 @@ def run_rollback(work, snapshot_name):
     started = time.perf_counter()
     name = work.name
     work.delete()
-    restored = db.select_graph(snapshot_name).copy(name)
+    restored = copy_graph(db.select_graph(snapshot_name), name)
     elapsed = time.perf_counter() - started
     flags = active_flags(restored)
     passed = [o for o in open_orders(restored) if flags.get(o)]
@@ -229,7 +229,7 @@ def run_scenario(label: str, build, **kwargs) -> list[dict]:
     def snapshot():
         support.recompute(base)
         drop_graph(snapshot_name)
-        base.copy(snapshot_name)
+        copy_graph(base, snapshot_name)
 
     poisoned = build(base, snapshot, **kwargs)
     truth = ground_truth(base, poisoned)
@@ -240,7 +240,7 @@ def run_scenario(label: str, build, **kwargs) -> list[dict]:
     for method in METHODS:
         work_name = f"bench_{label}_{method}"
         drop_graph(work_name)
-        work = base.copy(work_name)
+        work = copy_graph(base, work_name)
         if method == "antidote":
             flags, passed, elapsed = run_antidote(work, poisoned)
         elif method == "delete_only":

@@ -75,7 +75,7 @@ RETURN v.id
 MATCH (m:Meta {id: $meta})
 MERGE (s:Source {id: $id})
 ON CREATE SET s.uri = $uri, s.title = $title, s.trust = $trust,
-              s.origin = $origin
+              s.origin = $origin, s.text = $text
 SET m.revision = m.revision + 1
 RETURN s.trust
 ```
@@ -192,12 +192,14 @@ RETURN j.id
 
 ```cypher
 MATCH (m:Meta {id: $meta})
-MATCH (s:Source {id: $source})
 CREATE (r:Repair {id: $id, created_at: timestamp(),
                      approved_by: $approved_by, revision: $revision})
-CREATE (r)-[:TARGETED]->(s)
 SET m.revision = m.revision + 1
 WITH r
+UNWIND $sources AS sid
+MATCH (s:Source {id: sid})
+CREATE (r)-[:TARGETED]->(s)
+WITH r, count(s) AS targeted
 UNWIND $changes AS c
 MATCH (n {id: c.id}) WHERE n:Belief OR n:Decision
 CREATE (r)-[:CHANGED {before: c.before, after: c.after}]->(n)
@@ -356,8 +358,9 @@ ORDER BY d.kind DESC, d.id
 
 ```cypher
 MATCH (r:Repair)-[:TARGETED]->(s:Source)
-OPTIONAL MATCH (r)-[c:CHANGED]->(n)
-RETURN r.id, r.approved_by, r.revision, s.id, s.title, collect(n.id)
+WITH r, collect(s.title) AS titles
+OPTIONAL MATCH (r)-[:CHANGED]->(n)
+RETURN r.id, r.approved_by, r.revision, titles, collect(n.id)
 ORDER BY r.revision
 ```
 

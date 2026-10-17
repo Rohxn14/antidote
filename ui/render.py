@@ -37,7 +37,7 @@ def visible_ids(nodes: list[dict], edges, vendors: set | None) -> set:
     return keep
 
 
-def _node_attrs(n: dict, flips: set, selected: str | None) -> str:
+def _node_attrs(n: dict, flips: set, selected: str | None, strength: dict) -> str:
     ok, label = n["ok"], n["label"]
     fill = GREEN_FILL if ok else RED_FILL
     if n["id"] in flips:
@@ -65,6 +65,11 @@ def _node_attrs(n: dict, flips: set, selected: str | None) -> str:
     else:
         attrs["shape"] = "box"
         attrs["label"] = f'"{_wrap(n["text"])}"'
+    level = (strength.get(n["id"]) or {}).get("level")
+    if level == "unverified only":  # rests only on sources nobody vouches for
+        attrs.update(style=attrs["style"][:-1] + ',dashed"', color=f'"{AMBER}"', penwidth="2")
+    elif level == "robust":  # survives losing any one trusted origin
+        attrs.update(peripheries="2", color=f'"{GREEN}"')
     if n["id"] == selected:
         attrs.update(color='"#2563eb"', penwidth="3")
     attrs["id"] = f'"{n["id"]}"'
@@ -72,9 +77,10 @@ def _node_attrs(n: dict, flips: set, selected: str | None) -> str:
 
 
 def graph_dot(nodes: list[dict], edges, keep: set, flips: set = frozenset(),
-              selected: str | None = None) -> str:
+              selected: str | None = None, strength: dict | None = None) -> str:
     """Sources -> reasons -> beliefs -> reasons -> decisions, left to right.
-    Green = supported, red = unsupported, amber = would lose support."""
+    Green = supported, red = unsupported, amber = would lose support; a dashed
+    outline rests only on unverified sources, a double outline is robust."""
     by_id = {n["id"]: n for n in nodes}
     lines = ["digraph G {",
              'rankdir=LR; bgcolor="transparent"; nodesep=0.12; ranksep=0.4;',
@@ -82,7 +88,7 @@ def graph_dot(nodes: list[dict], edges, keep: set, flips: set = frozenset(),
              "edge [arrowsize=0.6];"]
     for n in nodes:
         if n["id"] in keep:
-            lines.append(f'"{n["id"]}" [{_node_attrs(n, flips, selected)}];')
+            lines.append(f'"{n["id"]}" [{_node_attrs(n, flips, selected, strength or {})}];')
     for j, rel, x in edges:
         if j not in keep or x not in keep:
             continue
@@ -94,15 +100,17 @@ def graph_dot(nodes: list[dict], edges, keep: set, flips: set = frozenset(),
     return "\n".join(lines)
 
 
-def why_markdown(tree: dict, level: int = 0) -> str:
-    """The support tree as a nested markdown list."""
+def why_markdown(tree: dict, level: int = 0, strength: dict | None = None) -> str:
+    """The support tree as a nested markdown list, with evidence strength."""
     pad = "  " * level
     icon = "✅" if tree.get("ok") else "❌"
     if tree.get("label") == "Source":
         trust = tree.get("trust")
         icon = "⛔" if trust == "quarantined" else ("🟢" if trust == "trusted" else "🟡")
         return f"{pad}- {icon} **Source** · {_md(tree.get('text'))} · *{trust}*\n"
-    out = f"{pad}- {icon} **{tree.get('label', '?')}** `{tree['id']}` · {_md(tree.get('text'))}\n"
+    evidence = (strength or {}).get(tree["id"], {}).get("level")
+    badge = f" · *evidence: {evidence}*" if evidence else ""
+    out = f"{pad}- {icon} **{tree.get('label', '?')}** `{tree['id']}` · {_md(tree.get('text'))}{badge}\n"
     if tree.get("cut"):
         return out + f"{pad}  - ↩︎ *shown above (support loop)*\n"
     if not tree.get("justifications"):
@@ -114,7 +122,7 @@ def why_markdown(tree: dict, level: int = 0) -> str:
         if j.get("quote"):
             out += f"{pad}    - 💬 “{_md(j['quote'])}”\n"
         for p in j["premises"]:
-            out += why_markdown(p, level + 2)
+            out += why_markdown(p, level + 2, strength)
     return out
 
 

@@ -1,5 +1,5 @@
 # tests/test_ui.py
-"""Click through the whole story in the real Streamlit app, headless."""
+"""Click through the real Streamlit app, headless."""
 import pytest
 from streamlit.testing.v1 import AppTest
 
@@ -17,9 +17,9 @@ def app(g, monkeypatch):
     return at
 
 
-def click(at, label):
-    buttons = [b for b in at.button if b.label == label]
-    assert buttons, f"no button {label!r}; have {[b.label for b in at.button]}"
+def click(at, label=None, key=None):
+    buttons = [b for b in at.button if (label and b.label == label) or (key and b.key == key)]
+    assert buttons, f"no button {label or key!r}; have {[b.label for b in at.button]}"
     buttons[0].click().run()
     assert not at.exception, at.exception
 
@@ -41,6 +41,26 @@ def test_reset_gives_a_fresh_copy(app):
     at = app
     first = at.session_state["graph_name"]
     click(at, "Scan sources")
-    click(at, "↺ Reset my demo")
+    click(at, "↺ Reset everything")
     assert at.session_state["graph_name"] != first
     assert [b.label for b in at.button if b.label == "Scan sources"]
+
+
+def test_playground(app):
+    at = app
+    at.radio(key="mode").set_value("Playground").run()
+    assert not at.exception, at.exception
+    assert any("AND inside a reason" in i.value for i in at.info)
+
+    click(at, key="pq_s_blog")  # AND/OR world: quarantine the blog
+    assert any("Loses all support (3)" in m.value for m in at.markdown)
+    click(at, "Approve repair")
+    assert any("Repair applied" in s.value for s in at.success)
+    click(at, key="lift_s_blog")
+    assert any("Quarantine lifted" in s.value for s in at.success)
+
+    at.selectbox(key="play_pick").set_value("3_gate").run()
+    click(at, "Load into my playground")
+    assert any("What the action gate lets through" in s.value for s in at.success)
+    click(at, key="sub_d_po_auto")
+    assert any("PO-AUTO is now authorized" in s.value for s in at.success)

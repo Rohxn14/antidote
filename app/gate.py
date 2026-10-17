@@ -20,6 +20,7 @@ from itertools import combinations
 from uuid import uuid4
 
 from app import memory, support
+from app.db import copy_graph
 from app.config import AUTO_MAX_AMOUNT, MIN_INDEPENDENT_TRUSTED_ROOTS
 from app.schema import (AUTHORIZED, BLOCKED, DECISION, DRAFT, EXECUTED,
                         PENDING_APPROVAL, PURCHASE_ORDER, QUARANTINED, SOURCE,
@@ -84,7 +85,7 @@ def trusted_root_gap(g, decision_id: str) -> str | None:
     # behind this decision simply never change its validity.
     scenarios = [()] + [c for c in combinations(origins, k - 1) if c]
 
-    copy = g.copy(f"{g.name}_whatif_{uuid4().hex[:8]}")
+    copy = copy_graph(g, f"{g.name}_whatif_{uuid4().hex[:8]}")
     try:
         copy.query(REMEMBER_TRUST)
         for removed in scenarios:

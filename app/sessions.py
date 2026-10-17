@@ -11,7 +11,7 @@ import secrets
 import time
 
 from app import demo
-from app.db import DEFAULT_GRAPH, drop_graph, get_db
+from app.db import DEFAULT_GRAPH, copy_graph, drop_graph, get_db
 
 BASE = os.getenv("FALKORDB_GRAPH", DEFAULT_GRAPH)
 TEMPLATE = f"{BASE}_template"
@@ -50,4 +50,4 @@ def new_session_graph():
     if TEMPLATE not in get_db().list_graphs():
         seed_template()
     name = f"{SESSION_PREFIX}{int(time.time())}_{secrets.token_hex(4)}"
-    return get_db().select_graph(TEMPLATE).copy(name)
+    return copy_graph(get_db().select_graph(TEMPLATE), name)

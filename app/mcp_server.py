@@ -15,7 +15,7 @@ as readable results, so an agent learns why it was refused.
 from mcp.server import MCPServer
 from mcp.types import ToolAnnotations
 
-from app import detector, gate, memory, repair, views
+from app import detector, evidence, gate, memory, repair, views
 from app.agents import buyer, researcher
 from app.db import get_graph
 
@@ -35,15 +35,25 @@ def create_server(graph=get_graph) -> MCPServer:
     @server.tool(annotations=READ_ONLY)
     def supported_beliefs(vendor_id: str | None = None) -> dict:
         """Beliefs the shared memory currently supports. Unsupported beliefs are
-        never returned. Optionally only those about one vendor (e.g. v_boltline)."""
-        return {"beliefs": memory.valid_beliefs(graph(), vendor_id)}
+        never returned. Optionally only those about one vendor (e.g. v_boltline).
+        Each carries its evidence strength: 'unverified only', 'single trusted
+        origin' or 'robust'."""
+        g = graph()
+        strength = evidence.strength(g)
+        beliefs = memory.valid_beliefs(g, vendor_id)
+        for b in beliefs:
+            b["evidence"] = strength.get(b["id"], {}).get("level")
+        return {"beliefs": beliefs}
 
     @server.tool(annotations=READ_ONLY)
     def explain(node_id: str) -> dict:
         """Why a belief or decision is supported, or not: every justification,
         whether it holds, its premises, and recursively their support down to
-        the sources."""
-        return views.why(graph(), node_id)
+        the sources; plus how strong its evidence is."""
+        g = graph()
+        tree = views.why(g, node_id)
+        tree["evidence"] = evidence.strength(g).get(node_id)
+        return tree
 
     @server.tool(annotations=READ_ONLY)
     def list_orders() -> dict:

@@ -14,7 +14,7 @@ Operations are sequential; we do not claim consistency under concurrent writers.
 from dataclasses import dataclass, field
 
 from app import memory, support
-from app.db import drop_graph
+from app.db import copy_graph, drop_graph
 from app.schema import (AUTHORIZED, BELIEF, DECISION, DRAFT, EXECUTED, HOLDS,
                         JUSTIFICATION, PENDING_APPROVAL, PREMISE, PURCHASE_ORDER,
                         QUARANTINED, SOURCE, SUPPORTS, VALID)
@@ -101,7 +101,7 @@ def preview(g, source_id: str, include_origin: bool = True) -> Preview:
     base = memory.revision(g)
     name = f"{g.name}_preview_{base}"
     drop_graph(name)
-    copy = g.copy(name)
+    copy = copy_graph(g, name)
 
     copy.query(SNAPSHOT_CONCLUSIONS)
     copy.query(SNAPSHOT_JUSTIFICATIONS)

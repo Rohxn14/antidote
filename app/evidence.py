@@ -17,6 +17,7 @@ world, and the trusted-only world minus each trusted origin in turn.
 from uuid import uuid4
 
 from app import gate, support
+from app.db import copy_graph
 from app.schema import BELIEF, DECISION, QUARANTINED, TRUSTED, VALID
 
 UNSUPPORTED = "unsupported"
@@ -42,7 +43,7 @@ def strength(g) -> dict[str, dict]:
     real = dict(g.ro_query(CONCLUSIONS).result_set)
     origins = [r[0] for r in g.ro_query(gate.TRUSTED_ORIGINS, {"trusted": TRUSTED}).result_set]
 
-    copy = g.copy(f"{g.name}_evidence_{uuid4().hex[:8]}")
+    copy = copy_graph(g, f"{g.name}_evidence_{uuid4().hex[:8]}")
     try:
         copy.query(gate.REMEMBER_TRUST)
 

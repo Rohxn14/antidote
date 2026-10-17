@@ -39,6 +39,9 @@ def test_tools_drive_the_story(g):
 
     beliefs = call(server, "supported_beliefs", {"vendor_id": "v_vantor"})["beliefs"]
     assert "b_vantor_iso13485" in {b["id"] for b in beliefs}
+    evidence = {b["id"]: b["evidence"] for b in beliefs}
+    assert evidence["b_vantor_iso13485"] == "unverified only"      # only Vantor says so
+    assert evidence["b_vantor_makes_servos"] == "single trusted origin"  # the registry
 
     proposed = call(server, "propose_purchase_order", {
         "vendor_id": "v_vantor", "quantity": 100, "unit_price": 480,
