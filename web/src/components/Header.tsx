@@ -1,7 +1,7 @@
 // web/src/components/Header.tsx
 import { RotateCcw } from "lucide-react";
 import type { HealthResponse } from "../contract";
-import { Button, cx } from "./ui";
+import { Button, cx, PulseDot } from "./ui";
 
 export function Logo({ className = "size-8" }: { className?: string }) {
   return (
@@ -21,7 +21,7 @@ export function Logo({ className = "size-8" }: { className?: string }) {
   );
 }
 
-function MemoryPill({ health }: { health: HealthResponse | null }) {
+function MemoryPill({ health, syncing }: { health: HealthResponse | null; syncing: boolean }) {
   const up = health?.falkordb === "up";
   const used = health?.memory?.used;
   return (
@@ -29,15 +29,21 @@ function MemoryPill({ health }: { health: HealthResponse | null }) {
       className="flex items-center gap-2 rounded-full bg-white/[0.06] px-3 py-1.5 text-[12px] text-slate-300 ring-1 ring-white/10"
       title={up ? `Every fact, reason and check lives in FalkorDB.${health?.sessions ? ` ${health.sessions} private session(s) open.` : ""}` : "FalkorDB is unreachable"}
     >
-      <span className={cx("size-2 rounded-full", up ? "bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.18)]" : "bg-rose-400")} />
+      {up && syncing ? (
+        <PulseDot className="bg-indigo-400" />
+      ) : (
+        <span className={cx("size-2 rounded-full", up ? "bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.18)]" : "bg-rose-400")} />
+      )}
       <span className="font-medium text-white">FalkorDB</span>
-      <span className="hidden sm:inline">{up ? `connected${used ? ` · ${used} in use` : ""}` : "unreachable"}</span>
+      <span className="hidden sm:inline">
+        {!up ? "unreachable" : syncing ? "updating…" : `connected${used ? ` · ${used} in use` : ""}`}
+      </span>
     </div>
   );
 }
 
-export function Header({ health, onStartOver, restarting }: {
-  health: HealthResponse | null; onStartOver: () => void; restarting: boolean;
+export function Header({ health, syncing, onStartOver, restarting }: {
+  health: HealthResponse | null; syncing: boolean; onStartOver: () => void; restarting: boolean;
 }) {
   return (
     <header className="bg-ink text-white">
@@ -48,7 +54,7 @@ export function Header({ health, onStartOver, restarting }: {
           <span className="hidden text-[13px] text-slate-400 md:inline">Procurement agents with a memory you can audit</span>
         </div>
         <div className="ml-auto flex items-center gap-2.5">
-          <MemoryPill health={health} />
+          <MemoryPill health={health} syncing={syncing} />
           <Button
             variant="ghost"
             size="sm"

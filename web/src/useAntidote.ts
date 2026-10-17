@@ -217,7 +217,8 @@ export function useAntidote() {
 
   /** One action: call the API, react to the answer, then reload the state before the
    *  button stops spinning, so the screen never shows a half-updated memory. */
-  const act = useCallback(async <T,>(kind: Pending, call: () => Promise<T>, then: (value: T) => void) => {
+  const act = useCallback(async <T,>(kind: Pending, call: () => Promise<T>, then: (value: T) => void,
+                                       after?: () => void) => {
     setPending(kind);
     setNotice(null);
     try {
@@ -226,6 +227,7 @@ export function useAntidote() {
       await fail(e);
     } finally {
       await settle();
+      after?.();
       setPending(null);
     }
   }, [fail, settle]);
@@ -246,7 +248,7 @@ export function useAntidote() {
   const cancelImpact = useCallback(() => act("cancel", api.cancelImpact, () => setImpact(null)), [act]);
 
   const quarantine = useCallback(() => act("quarantine", api.quarantine, (r) => {
-    setImpact(null);
+    dispatch({ type: "distrusted", documents: r.quarantined, withdrawn: r.withdrawn });
     const facts = r.withdrawn.filter((id) => memoryRef.current.facts[id]).length;
     const decisions = r.withdrawn.length - facts;
     const titles = r.quarantined.map(title).join(", ");
@@ -255,11 +257,12 @@ export function useAntidote() {
       body: `${plural(facts, "fact")} and ${plural(decisions, "decision")} lost their support. FalkorDB recomputed what still holds and recorded the repair.`,
     });
     setAgent("guard", "done", `Withdrew ${plural(r.withdrawn.length, "fact or decision", "facts and decisions")} that rested on ${titles}.`);
-  }), [act, push]);
+  }, () => setImpact(null)), [act, push]);
 
   const decide = useCallback((orderId: string, action: "approve" | "execute") =>
     act(action, () => api.order(orderId, action), (r) => {
       setLastAction(r);
+      dispatch({ type: "orderState", id: orderId, state: r.state });
       const d = memoryRef.current.decisions[orderId];
       const label = d ? orderLabel(d.summary, orderId) : orderId;
       if (r.state === "blocked") {

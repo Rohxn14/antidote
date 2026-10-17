@@ -4,7 +4,7 @@
 // come from the same events. FalkorDB stays the source of truth: after every run
 // or action the app reloads the full state.
 import type {
-  Alert, AntidoteEvent, Decision, Document, Edge, Fact, Reason, RepairRecord, StateResponse,
+  Alert, AntidoteEvent, Decision, Document, Edge, Fact, OrderState, Reason, RepairRecord, StateResponse,
 } from "../contract";
 
 export interface Memory {
@@ -30,7 +30,10 @@ export type MemoryAction =
   | { type: "load"; state: StateResponse }       // everything, from GET /api/state
   | { type: "documents"; state: StateResponse }  // only the documents (a run just re-prepared them)
   | { type: "reset" }                            // a new run: keep the documents, drop the rest
-  | { type: "event"; event: AntidoteEvent };
+  | { type: "event"; event: AntidoteEvent }
+  // What an action's answer already says, shown at once; the reload that follows confirms it.
+  | { type: "distrusted"; documents: string[]; withdrawn: string[] }
+  | { type: "orderState"; id: string; state: OrderState };
 
 const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
   Object.fromEntries(items.map((item) => [item.id, item]));
@@ -56,6 +59,27 @@ export function memoryReducer(m: Memory, action: MemoryAction): Memory {
       return { ...emptyMemory, documents: m.documents, vendors: m.vendors };
     case "event":
       return applyEvent(m, action.event);
+    case "distrusted": {
+      const gone = new Set([...action.documents, ...action.withdrawn]);
+      const broken = new Set(m.edges.filter((e) => e.kind === "premise" && gone.has(e.from_id)).map((e) => e.to_id));
+      const lose = <T extends { id: string; supported: boolean }>(items: Record<string, T>) =>
+        Object.fromEntries(Object.entries(items).map(([id, x]) => [id, gone.has(id) ? { ...x, supported: false } : x]));
+      return {
+        ...m,
+        documents: Object.fromEntries(Object.entries(m.documents).map(([id, d]) => [
+          id, action.documents.includes(id) ? { ...d, trust: "quarantined" as const, supported: false } : d,
+        ])),
+        facts: lose(m.facts),
+        decisions: lose(m.decisions),
+        reasons: Object.fromEntries(Object.entries(m.reasons).map(([id, r]) => [id, broken.has(id) ? { ...r, holds: false } : r])),
+      };
+    }
+    case "orderState": {
+      const d = m.decisions[action.id];
+      if (!d) return m;
+      const supported = action.state === "blocked" ? false : d.supported;
+      return { ...m, decisions: { ...m.decisions, [d.id]: { ...d, state: action.state, supported } } };
+    }
   }
 }
 

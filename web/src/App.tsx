@@ -94,7 +94,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh">
-      <Header health={a.health} onStartOver={a.startOver} restarting={a.pending === "restart"} />
+      <Header health={a.health} syncing={a.pending !== null} onStartOver={a.startOver} restarting={a.pending === "restart"} />
       <StoryGuide story={story} />
       {a.notice && <NoticeBar notice={a.notice} onClose={a.dismissNotice} />}
 
