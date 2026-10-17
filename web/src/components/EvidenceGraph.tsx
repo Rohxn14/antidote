@@ -11,7 +11,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { FileText, Maximize2, Network, ShieldCheck, ShieldX, TriangleAlert } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { DecisionKind, OrderState, ReasonKind, Trust } from "../contract";
 import { ancestors, ordersOf, type Memory } from "../lib/memory";
 import { money, ORDER_STATE, orderLabel, orderParts, reasonTitle, TRUST } from "../lib/words";
@@ -32,12 +32,17 @@ type DecisionNode = Node<DecisionData, "decision">;
 type AnyNode = DocNode | FactNode | ReasonNode | DecisionNode;
 export type NodeKind = AnyNode["type"];
 
-function Anchors({ into = true, out = true }: { into?: boolean; out?: boolean }) {
+/** A node's box. The edge anchors sit on a still frame; only the content inside pops in,
+ *  so React Flow measures the anchors where they really are. */
+function Shell({ into = true, out = true, title, className, children }: {
+  into?: boolean; out?: boolean; title?: string; className: string; children?: ReactNode;
+}) {
   return (
-    <>
+    <div className="relative h-full w-full" title={title}>
       {into && <Handle type="target" position={Position.Left} isConnectable={false} />}
       {out && <Handle type="source" position={Position.Right} isConnectable={false} />}
-    </>
+      <div className={cx("animate-node-in h-full w-full", className)}>{children}</div>
+    </div>
   );
 }
 
@@ -45,14 +50,14 @@ function DocView({ data }: NodeProps<DocNode>) {
   const t = data.trust;
   const Icon = t === "quarantined" ? ShieldX : t === "trusted" ? ShieldCheck : FileText;
   return (
-    <div
+    <Shell
+      into={false}
       className={cx(
-        "animate-node-in flex h-full w-full cursor-pointer flex-col justify-center rounded-lg border bg-white px-2.5 shadow-sm",
+        "flex cursor-pointer flex-col justify-center rounded-lg border bg-white px-2.5 shadow-sm",
         t === "quarantined" ? "border-rose-300 bg-rose-50" : t === "trusted" ? "border-emerald-300" : "border-amber-300",
         data.reading && "ring-4 ring-indigo-200",
       )}
     >
-      <Anchors into={false} />
       <div
         className={cx(
           "flex items-center gap-1 text-[9.5px] font-semibold uppercase tracking-wider",
@@ -66,19 +71,18 @@ function DocView({ data }: NodeProps<DocNode>) {
       <div className={cx("mt-0.5 line-clamp-2 text-[11.5px] font-medium leading-tight text-slate-800", t === "quarantined" && "text-rose-900/60 line-through")}>
         {data.title}
       </div>
-    </div>
+    </Shell>
   );
 }
 
 function FactView({ data }: NodeProps<FactNode>) {
   return (
-    <div
+    <Shell
       className={cx(
-        "animate-node-in relative h-full w-full cursor-pointer overflow-hidden rounded-lg border py-[7px] pl-3 pr-2.5 text-[11.5px] leading-[14px]",
+        "relative cursor-pointer overflow-hidden rounded-lg border py-[7px] pl-3 pr-2.5 text-[11.5px] leading-[14px]",
         data.supported ? "border-slate-200 bg-white text-slate-800 shadow-sm" : "border-dashed border-slate-300 bg-slate-50 text-slate-400",
       )}
     >
-      <Anchors />
       <span
         className={cx(
           "absolute inset-y-0 left-0 w-[3px]",
@@ -86,21 +90,19 @@ function FactView({ data }: NodeProps<FactNode>) {
         )}
       />
       <span className={cx("line-clamp-3", !data.supported && "line-through decoration-slate-300")}>{data.text}</span>
-    </div>
+    </Shell>
   );
 }
 
 function ReasonView({ data }: NodeProps<ReasonNode>) {
   return (
-    <div
+    <Shell
       title={data.tip}
       className={cx(
-        "animate-node-in size-3 rounded-full border-2",
+        "rounded-full border-2",
         !data.holds ? "border-slate-300 bg-white" : data.kind === "decision" ? "border-indigo-500 bg-indigo-500" : "border-emerald-500 bg-emerald-500",
       )}
-    >
-      <Anchors />
-    </div>
+    />
   );
 }
 
@@ -108,14 +110,14 @@ function DecisionView({ data }: NodeProps<DecisionNode>) {
   const state = data.state ? ORDER_STATE[data.state] : null;
   const lost = !data.supported || data.state === "blocked";
   return (
-    <div
+    <Shell
+      out={false}
       className={cx(
-        "animate-node-in flex h-full w-full cursor-pointer flex-col justify-center rounded-xl border-2 bg-white px-3 shadow-md",
+        "flex cursor-pointer flex-col justify-center rounded-xl border-2 bg-white px-3 shadow-md",
         lost ? "border-rose-300 bg-rose-50" : data.kind === "purchase_order" ? "border-indigo-400" : "border-violet-200",
         data.focus && !lost && "ring-4 ring-indigo-100",
       )}
     >
-      <Anchors out={false} />
       <div className="flex items-center justify-between gap-2 text-[9.5px] font-semibold uppercase tracking-wider text-slate-500">
         <span>{data.kind === "purchase_order" ? data.label : "Shortlist"}</span>
         {state && <span className={TONE_TEXT[state.tone]}>{lost && data.state !== "blocked" ? "Unsupported" : state.short}</span>}
@@ -124,7 +126,7 @@ function DecisionView({ data }: NodeProps<DecisionNode>) {
         {data.vendor}
       </div>
       {data.amount !== null && <div className="text-[11px] tabular-nums text-slate-500">{money(data.amount)}</div>}
-    </div>
+    </Shell>
   );
 }
 
@@ -142,7 +144,13 @@ function laidOut(nodes: AnyNode[], edges: FlowEdge[]): AnyNode[] {
   layout(g);
   return nodes.map((n) => {
     const p = g.node(n.id) as unknown as { x: number; y: number };
-    return { ...n, position: { x: p.x - (n.width ?? 0) / 2, y: p.y - (n.height ?? 0) / 2 } };
+    return {
+      ...n,
+      // React Flow forgets a node's handle measurements when a new node object arrives
+      // without `measured`, and then cannot draw its edges. The size is known: say so.
+      measured: { width: n.width, height: n.height },
+      position: { x: p.x - (n.width ?? 0) / 2, y: p.y - (n.height ?? 0) / 2 },
+    };
   });
 }
 
