@@ -1,23 +1,19 @@
-# Render Blueprint: one free web service running the Streamlit demo.
+# Render Blueprint: one free web service, built from the Dockerfile.
 # Secrets are `sync: false`: Render asks for their values in the dashboard,
 # so they never live in this repository.
 services:
   - type: web
     name: antidote
-    runtime: python
+    runtime: docker
     region: singapore          # closest Render region to FalkorDB Cloud ap-south-1
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: >-
-      streamlit run ui/streamlit_app.py
-      --server.port $PORT --server.address 0.0.0.0
-      --server.headless true --browser.gatherUsageStats false
-    healthCheckPath: /_stcore/health
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /         # the static page; /api/health is 503 when FalkorDB is down
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.12.10
       - key: FALKORDB_GRAPH
         value: antidote
+      - key: ANTIDOTE_LIVE_AI  # replay works with no key; live AI stays off in production
+        value: "off"
       - key: FALKORDB_HOST
         sync: false
       - key: FALKORDB_PORT
@@ -25,8 +21,4 @@ services:
       - key: FALKORDB_USERNAME
         sync: false
       - key: FALKORDB_PASSWORD
-        sync: false
-      - key: LLM_API_KEY        # optional: enables the live-LLM toggle and agent button
-        sync: false
-      - key: LLM_MODEL
         sync: false
