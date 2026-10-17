@@ -1,0 +1,9 @@
+{
+  "model": "hand-authored",
+  "shortlist": [],
+  "purchase_order": {
+    "id": "d_po_1002", "vendor": "v_boltline", "quantity": 100, "unit_price": 520,
+    "premises": ["b_boltline_qualifies", "b_boltline_offer", "b_req_quantity", "b_req_lowest_price"],
+    "reasoning": "Vantor no longer qualifies on supported memory; Boltline is the lowest-priced qualifying supplier ($520)."
+  }
+}

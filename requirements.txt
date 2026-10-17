@@ -1,0 +1,4 @@
+falkordb==1.8.0
+python-dotenv==1.2.4
+openai==3.33.0
+pytest==9.1.1

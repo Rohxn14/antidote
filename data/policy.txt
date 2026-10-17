@@ -1,0 +1,6 @@
+Procurement policy memo: RehabArm v2 (SYNTHETIC; Kestrel Dynamics is fictional)
+From: Head of Procurement
+
+1. Servo actuators for RehabArm v2 must come from an ISO 13485-certified supplier.
+2. We need 100 servo actuators delivered within 4 weeks.
+3. Among qualifying suppliers, choose the lowest unit price.

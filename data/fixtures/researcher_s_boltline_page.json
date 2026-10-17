@@ -1,0 +1,18 @@
+{
+  "source_id": "s_boltline_page",
+  "model": "hand-authored",
+  "claims": [
+    {"belief": "b_boltline_makes_servos", "vendor": "v_boltline",
+     "claim": "Boltline Automation manufactures servo actuators.",
+     "quote": "Boltline Automation manufactures servo actuators for robotic joints.",
+     "reasoning": "The product section says so."},
+    {"belief": "b_boltline_offer", "vendor": "v_boltline",
+     "claim": "Boltline Automation sells servo actuators at $520 per unit and can ship 100 units within 3 weeks.",
+     "quote": "Price: $520 per unit with volume pricing from 100 units; 100 units ship within 3 weeks.",
+     "reasoning": "Price and lead time from the product section."},
+    {"belief": "b_boltline_iso13485", "vendor": "v_boltline",
+     "claim": "Boltline Automation holds ISO 13485 certification.",
+     "quote": "Boltline Automation holds ISO 13485:2016 certification (certificate MD-2231).",
+     "reasoning": "The certifications section states it."}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "source_id": "s_vantor_page",
+  "model": "hand-authored",
+  "claims": [
+    {"belief": "b_vantor_makes_servos", "vendor": "v_vantor",
+     "claim": "Vantor Motion manufactures servo actuators.",
+     "quote": "Vantor Motion designs and manufactures brushless servo actuators.",
+     "reasoning": "The product section says so."},
+    {"belief": "b_vantor_offer", "vendor": "v_vantor",
+     "claim": "Vantor Motion sells servo actuators at $480 per unit and can ship 100 units within 2 weeks.",
+     "quote": "Price: $480 per unit for orders of 50 units or more; 100 units ship within 2 weeks.",
+     "reasoning": "Price and lead time from the product section."},
+    {"belief": "b_vantor_iso13485", "vendor": "v_vantor",
+     "claim": "Vantor Motion holds ISO 13485 certification.",
+     "quote": "Vantor Motion is ISO 13485:2016 certified for medical-grade motion components.",
+     "reasoning": "The quality section states the certification."},
+    {"belief": "b_vantor_only_certified", "vendor": "v_vantor",
+     "claim": "Vantor Motion is the only ISO 13485-certified servo supplier.",
+     "quote": "Vantor Motion is the only ISO 13485 certified servo supplier.",
+     "reasoning": "The page states that Vantor is the only certified supplier."}
+  ]
+}

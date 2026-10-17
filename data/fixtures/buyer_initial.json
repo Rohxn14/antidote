@@ -1,0 +1,19 @@
+{
+  "model": "hand-authored",
+  "shortlist": [
+    {"vendor": "v_vantor",
+     "premises": ["b_vantor_qualifies", "b_vantor_makes_servos", "b_vantor_offer", "b_req_quantity"],
+     "reasoning": "Qualifies under the ISO 13485 rule, makes servo actuators, ships 100 units in 2 weeks."},
+    {"vendor": "v_boltline",
+     "premises": ["b_boltline_qualifies", "b_boltline_makes_servos", "b_boltline_offer", "b_req_quantity"],
+     "reasoning": "Qualifies under the ISO 13485 rule, makes servo actuators, ships 100 units in 3 weeks."},
+    {"vendor": "v_ferrocraft",
+     "premises": ["b_ferrocraft_qualifies", "b_ferrocraft_makes_servos", "b_ferrocraft_offer", "b_req_quantity"],
+     "reasoning": "Qualifies under the ISO 13485 rule, makes servo actuators, ships 100 units in 4 weeks."}
+  ],
+  "purchase_order": {
+    "id": "d_po_1001", "vendor": "v_vantor", "quantity": 100, "unit_price": 480,
+    "premises": ["b_vantor_qualifies", "b_vantor_offer", "b_req_quantity", "b_req_lowest_price", "b_vantor_only_certified"],
+    "reasoning": "Lowest unit price among qualifying suppliers ($480), and described as the only certified option."
+  }
+}

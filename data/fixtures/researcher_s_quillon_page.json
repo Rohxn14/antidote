@@ -1,0 +1,18 @@
+{
+  "source_id": "s_quillon_page",
+  "model": "hand-authored",
+  "claims": [
+    {"belief": "b_quillon_makes_servos", "vendor": "v_quillon",
+     "claim": "Quillon Drives manufactures servo actuators.",
+     "quote": "Quillon Drives manufactures compact servo actuators.",
+     "reasoning": "The product section says so."},
+    {"belief": "b_quillon_offer", "vendor": "v_quillon",
+     "claim": "Quillon Drives sells servo actuators at $390 per unit and can ship 100 units within 2 weeks.",
+     "quote": "Price: $390 per unit; 100 units ship within 2 weeks.",
+     "reasoning": "Price and lead time from the product section."},
+    {"belief": "b_quillon_iso9001", "vendor": "v_quillon",
+     "claim": "Quillon Drives holds ISO 9001 certification.",
+     "quote": "Quillon Drives is ISO 9001:2015 certified.",
+     "reasoning": "The quality section states ISO 9001, not ISO 13485."}
+  ]
+}

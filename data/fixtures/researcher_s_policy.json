@@ -1,0 +1,18 @@
+{
+  "source_id": "s_policy",
+  "model": "hand-authored",
+  "claims": [
+    {"belief": "b_req_iso13485", "vendor": null,
+     "claim": "Servo actuators for RehabArm v2 must come from an ISO 13485-certified supplier.",
+     "quote": "Servo actuators for RehabArm v2 must come from an ISO 13485-certified supplier.",
+     "reasoning": "Stated as rule 1 of the procurement policy memo."},
+    {"belief": "b_req_quantity", "vendor": null,
+     "claim": "Kestrel needs 100 servo actuators delivered within 4 weeks.",
+     "quote": "We need 100 servo actuators delivered within 4 weeks.",
+     "reasoning": "Stated as rule 2 of the procurement policy memo."},
+    {"belief": "b_req_lowest_price", "vendor": null,
+     "claim": "Among qualifying suppliers, Kestrel chooses the lowest unit price.",
+     "quote": "Among qualifying suppliers, choose the lowest unit price.",
+     "reasoning": "Stated as rule 3 of the procurement policy memo."}
+  ]
+}

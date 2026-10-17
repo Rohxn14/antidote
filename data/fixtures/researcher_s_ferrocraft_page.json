@@ -1,0 +1,18 @@
+{
+  "source_id": "s_ferrocraft_page",
+  "model": "hand-authored",
+  "claims": [
+    {"belief": "b_ferrocraft_makes_servos", "vendor": "v_ferrocraft",
+     "claim": "Ferrocraft Servo manufactures servo actuators.",
+     "quote": "Ferrocraft Servo manufactures servo actuators and planetary gearboxes.",
+     "reasoning": "The product section says so."},
+    {"belief": "b_ferrocraft_offer", "vendor": "v_ferrocraft",
+     "claim": "Ferrocraft Servo sells servo actuators at $560 per unit and can ship 100 units within 4 weeks.",
+     "quote": "Price: $560 per unit; 100 units ship within 4 weeks.",
+     "reasoning": "Price and lead time from the product section."},
+    {"belief": "b_ferrocraft_iso13485", "vendor": "v_ferrocraft",
+     "claim": "Ferrocraft Servo holds ISO 13485 certification.",
+     "quote": "Ferrocraft Servo is certified to ISO 13485:2016 (certificate MD-1187).",
+     "reasoning": "The quality section states it."}
+  ]
+}
