@@ -1,0 +1,14 @@
+{
+  "title": "2. Loops cannot hold themselves up",
+  "description": "b_a and b_b justify each other, and b_a also rests on a rumour. b_c and b_d justify each other with no source at all, so they were never supported. Try this: preview quarantining s_rumour and approve it. b_a and b_b both fall, even though each still has a reason citing the other. Then lift the quarantine and watch them come back.",
+  "sources": [
+    {"id": "s_rumour", "title": "A rumour", "trust": "unverified", "origin": "rumour"}
+  ],
+  "beliefs": [
+    {"id": "b_a", "claim": "A is true", "because": [["s_rumour"], ["b_b"]]},
+    {"id": "b_b", "claim": "B is true", "because": [["b_a"]]},
+    {"id": "b_c", "claim": "C is true", "because": [["b_d"]]},
+    {"id": "b_d", "claim": "D is true", "because": [["b_c"]]}
+  ],
+  "decisions": []
+}

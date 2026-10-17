@@ -1,0 +1,19 @@
+{
+  "title": "4. Checks on what agents write",
+  "description": "These sources carry their text, so claims with a quote go through the Researcher's checks. Zenith's claim is faithful to its quote and is accepted. Acme's certification claim quotes a real registry line but states a different standard: that is laundering a lie through a trusted source, and it is refused. Acme's price claim quotes text that is not in the page: refused. Refused claims never get support, so they stay red. Try this: edit a quote or a claim, reload, and see what the checks say.",
+  "sources": [
+    {"id": "s_registry", "title": "Certification registry", "trust": "trusted", "origin": "registry",
+     "text": "Acme Robotics: ISO 9001:2015 on file. Zenith Parts: ISO 13485:2016 on file."},
+    {"id": "s_acme_page", "title": "Acme's own page", "trust": "unverified", "origin": "acme.example",
+     "text": "Acme Robotics servo actuators cost $480 per unit."}
+  ],
+  "beliefs": [
+    {"id": "b_zenith_iso13485", "claim": "Zenith Parts holds ISO 13485:2016.",
+     "because": [{"premises": ["s_registry"], "quote": "Zenith Parts: ISO 13485:2016 on file."}]},
+    {"id": "b_acme_iso13485", "claim": "Acme Robotics holds ISO 13485.",
+     "because": [{"premises": ["s_registry"], "quote": "Acme Robotics: ISO 9001:2015 on file."}]},
+    {"id": "b_acme_price", "claim": "Acme sells servo actuators at $400 per unit.",
+     "because": [{"premises": ["s_acme_page"], "quote": "Acme Robotics servo actuators cost $400 per unit."}]}
+  ],
+  "decisions": []
+}

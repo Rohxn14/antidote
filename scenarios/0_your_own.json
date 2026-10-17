@@ -1,0 +1,16 @@
+{
+  "title": "0. Your own world (template)",
+  "description": "Edit the JSON, then load it. Sources need a trust level (trusted, unverified or quarantined) and an origin (copies of the same claim share one). Beliefs and decisions list their reasons in \"because\": each reason is a list of ids that are ALL needed, and ANY one reason is enough. Ids start with s_, b_ or d_. Give a source a \"text\" and a reason a \"quote\" to put the Researcher's checks to work.",
+  "sources": [
+    {"id": "s_one", "title": "My first source", "trust": "unverified", "origin": "one"},
+    {"id": "s_two", "title": "My trusted source", "trust": "trusted", "origin": "two"}
+  ],
+  "beliefs": [
+    {"id": "b_one", "claim": "Something both sources say", "because": [["s_one"], ["s_two"]]},
+    {"id": "b_two", "claim": "Something only the first source says", "because": [["s_one"]]}
+  ],
+  "decisions": [
+    {"id": "d_po_one", "kind": "purchase_order", "summary": "An order that needs both beliefs",
+     "amount": 500, "reversible": true, "because": [["b_one", "b_two"]]}
+  ]
+}

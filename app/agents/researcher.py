@@ -40,10 +40,13 @@ def _text(fragment: str) -> str:
 
 
 def _raw_source(g, source_id: str) -> str:
-    rows = g.ro_query(f"MATCH (s:{SOURCE} {{id: $id}}) RETURN s.uri", {"id": source_id}).result_set
+    """The document: text stored on the Source node, or else the file at its uri."""
+    rows = g.ro_query(f"MATCH (s:{SOURCE} {{id: $id}}) RETURN s.uri, s.text",
+                      {"id": source_id}).result_set
     if not rows:
         raise ValueError(f"source {source_id!r} not found")
-    return (ROOT / rows[0][0]).read_text(encoding="utf-8")
+    uri, text = rows[0]
+    return text if text is not None else (ROOT / uri).read_text(encoding="utf-8")
 
 
 def source_text(g, source_id: str) -> str:

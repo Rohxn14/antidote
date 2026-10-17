@@ -1,0 +1,18 @@
+{
+  "title": "1. AND inside a reason, OR across reasons",
+  "description": "A belief survives while ANY of its reasons holds; a reason holds only while ALL of its premises do. Try this: preview quarantining s_blog. b_certified survives through the registry (OR), but b_cheap falls because it needed the blog AND the forum (AND), and the deal and the order built on it fall too.",
+  "sources": [
+    {"id": "s_registry", "title": "Official registry", "trust": "trusted", "origin": "registry"},
+    {"id": "s_blog", "title": "Industry blog", "trust": "unverified", "origin": "blog.example"},
+    {"id": "s_forum", "title": "Buyers' forum", "trust": "unverified", "origin": "forum.example"}
+  ],
+  "beliefs": [
+    {"id": "b_certified", "claim": "Acme is certified", "because": [["s_registry"], ["s_blog"]]},
+    {"id": "b_cheap", "claim": "Acme is the cheapest supplier", "because": [["s_blog", "s_forum"]]},
+    {"id": "b_good_deal", "claim": "Acme is a good deal", "because": [["b_certified", "b_cheap"]]}
+  ],
+  "decisions": [
+    {"id": "d_po_acme", "kind": "purchase_order", "summary": "Buy 10 widgets from Acme",
+     "amount": 900, "reversible": true, "because": [["b_good_deal"]]}
+  ]
+}

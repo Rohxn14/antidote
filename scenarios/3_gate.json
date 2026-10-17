@@ -1,0 +1,28 @@
+{
+  "title": "3. What the action gate lets through",
+  "description": "Five orders with different support. Try this: submit each one in the Orders tab and read the gate's reason. d_po_auto has two independent trusted origins and proceeds on its own; d_po_copies rests on two copies of one claim (same origin), which count once; d_po_vendor rests only on the vendor's own word; d_po_big is over the $5,000 limit; d_po_final cannot be undone. Then preview quarantining s_registry: its mirror goes too (same origin), and b_cert survives through the audit.",
+  "sources": [
+    {"id": "s_registry", "title": "Certification registry", "trust": "trusted", "origin": "registry"},
+    {"id": "s_registry_mirror", "title": "Registry mirror", "trust": "trusted", "origin": "registry"},
+    {"id": "s_audit", "title": "Independent audit report", "trust": "trusted", "origin": "audit"},
+    {"id": "s_vendor", "title": "Vendor's own page", "trust": "unverified", "origin": "vendor.example"}
+  ],
+  "beliefs": [
+    {"id": "b_cert", "claim": "The supplier is certified", "because": [["s_registry"], ["s_audit"]]},
+    {"id": "b_cert_copies", "claim": "The supplier is certified (registry and its mirror)",
+     "because": [["s_registry"], ["s_registry_mirror"]]},
+    {"id": "b_vendor_says", "claim": "The vendor says it is certified", "because": [["s_vendor"]]}
+  ],
+  "decisions": [
+    {"id": "d_po_auto", "kind": "purchase_order", "summary": "Small order, two independent origins",
+     "amount": 900, "reversible": true, "because": [["b_cert"]]},
+    {"id": "d_po_copies", "kind": "purchase_order", "summary": "Small order, two copies of one claim",
+     "amount": 900, "reversible": true, "because": [["b_cert_copies"]]},
+    {"id": "d_po_vendor", "kind": "purchase_order", "summary": "Small order, the vendor's word only",
+     "amount": 900, "reversible": true, "because": [["b_vendor_says"]]},
+    {"id": "d_po_big", "kind": "purchase_order", "summary": "Large order, well supported",
+     "amount": 20000, "reversible": true, "because": [["b_cert"]]},
+    {"id": "d_po_final", "kind": "purchase_order", "summary": "Small order that cannot be undone",
+     "amount": 900, "reversible": false, "because": [["b_cert"]]}
+  ]
+}

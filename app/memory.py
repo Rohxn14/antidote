@@ -48,7 +48,7 @@ ADD_SOURCE = f"""
 MATCH (m:{META} {{id: $meta}})
 MERGE (s:{SOURCE} {{id: $id}})
 ON CREATE SET s.uri = $uri, s.title = $title, s.trust = $trust,
-              s.origin = $origin
+              s.origin = $origin, s.text = $text
 SET m.revision = m.revision + 1
 RETURN s.trust"""
 
@@ -214,12 +214,14 @@ def add_vendor(g, vendor_id: str, *, name: str) -> None:
 # --- Sources ----------------------------------------------------------------------
 
 def add_source(g, source_id: str, *, uri: str, title: str, trust: str,
-               origin: str | None = None, recompute: bool = True) -> None:
+               origin: str | None = None, text: str | None = None,
+               recompute: bool = True) -> None:
     """Register a document. `origin` is its lineage: two sources repeating the
-    same original claim share an origin and count as ONE trusted root."""
+    same original claim share an origin and count as ONE trusted root. `text`
+    is optional: a document stored in the graph instead of a file at `uri`."""
     _require(trust in TRUST_LEVELS, f"unknown trust level {trust!r}")
     rows = _write(g, ADD_SOURCE, id=source_id, uri=uri, title=title, trust=trust,
-                  origin=origin or source_id)
+                  origin=origin or source_id, text=text)
     _require(bool(rows), "graph has no Meta node; run ensure_schema() first")
     # An existing source keeps its trust: trust only changes through set_trust().
     _require(rows[0][0] == trust,
