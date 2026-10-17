@@ -91,6 +91,37 @@ def test_executed_order_that_loses_support_is_flagged_for_a_human(story):
     repair.discard(p)
 
 
+def test_quarantine_takes_mirrors_with_the_same_origin(g):
+    source(g, "page", origin="vantor.example")
+    source(g, "mirror", origin="vantor.example")  # a copy of the same page
+    source(g, "other", origin="other.example")
+    for b in ("from_page", "from_mirror", "from_other"):
+        belief(g, b)
+    justify(g, "j1", "from_page", ["page"])
+    justify(g, "j2", "from_mirror", ["mirror"])
+    justify(g, "j3", "from_other", ["other"])
+
+    p = repair.preview(g, "page")
+    assert p.sources == ["page", "mirror"]
+    assert {n["id"] for n in p.lost} == {"from_page", "from_mirror"}
+
+    repair_id = repair.apply(g, p, approved_by="manager")
+    rows = g.ro_query("MATCH (:Repair {id: $id})-[:TARGETED]->(s) RETURN s.id ORDER BY s.id",
+                      {"id": repair_id}).result_set
+    assert rows == [["mirror"], ["page"]]
+    assert support.status(g)["from_other"] is True
+
+
+def test_origin_can_be_left_out(g):
+    source(g, "page", origin="vantor.example")
+    source(g, "mirror", origin="vantor.example")
+    belief(g, "from_mirror")
+    justify(g, "j", "from_mirror", ["mirror"])
+    p = repair.preview(g, "page", include_origin=False)
+    assert p.sources == ["page"] and p.lost == []
+    repair.discard(p)
+
+
 def test_preview_refuses_unknown_or_already_quarantined_sources(story):
     g = story
     with pytest.raises(ValueError):

@@ -10,7 +10,7 @@ order goes straight to the action gate. A bad plan is reported, never raised.
 import json
 
 from app import gate, llm, memory, support
-from app.agents.researcher import beliefs_for_prompt
+from app.agents.researcher import beliefs_for_prompt, numbers
 from app.schema import DECIDED, DECISION, PURCHASE_ORDER, SHORTLIST, VENDOR
 
 AGENT_ID = "a_buyer"
@@ -79,6 +79,12 @@ def record_plan(g, plan: dict) -> dict:
         bad = [p for p in item["premises"] if not (p.startswith("b_") and status.get(p) is True)]
         notes = ([f"unknown vendor {item['vendor']!r}"] if vendor_id is None else []) + \
                 ([f"not valid beliefs {bad}"] if bad else [])
+        if "quantity" in item:  # an order: its figures must come from what it cites
+            stated = set().union(*(numbers(memory.belief_claim(g, p)) for p in item["premises"]))
+            needed = numbers(str(item["quantity"])) | numbers(money(item["unit_price"]))
+            if needed - stated:
+                notes.append(f"quantity and price {sorted(needed - stated)} are not stated "
+                             "in its premises")
         return vendor_id, notes
 
     for item in plan.get("shortlist", []):

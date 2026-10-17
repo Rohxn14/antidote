@@ -133,12 +133,14 @@ ADD_JUSTIFICATION = {BELIEF: _add_justification(BELIEF),
 
 RECORD_REPAIR = f"""
 MATCH (m:{META} {{id: $meta}})
-MATCH (s:{SOURCE} {{id: $source}})
 CREATE (r:{REPAIR} {{id: $id, created_at: timestamp(),
                      approved_by: $approved_by, revision: $revision}})
-CREATE (r)-[:{TARGETED}]->(s)
 SET m.revision = m.revision + 1
 WITH r
+UNWIND $sources AS sid
+MATCH (s:{SOURCE} {{id: sid}})
+CREATE (r)-[:{TARGETED}]->(s)
+WITH r, count(s) AS targeted
 UNWIND $changes AS c
 MATCH (n {{id: c.id}}) WHERE n:{BELIEF} OR n:{DECISION}
 CREATE (r)-[:{CHANGED} {{before: c.before, after: c.after}}]->(n)
@@ -335,14 +337,18 @@ def _why_rejected(g, justification_id, supports, target, premises, agent) -> str
 
 # --- Repair audit trail ---------------------------------------------------------------
 
-def record_repair(g, repair_id: str, *, source_id: str, approved_by: str,
+def record_repair(g, repair_id: str, *, source_ids, approved_by: str,
                   quarantine_revision: int, changes) -> None:
-    """Write the audit record of an applied quarantine. `changes` is a list of
-    {"id", "before", "after"} for every belief/decision whose validity flipped."""
+    """Write the audit record of an applied quarantine: one TARGETED edge per
+    quarantined source, one CHANGED edge per belief/decision whose validity
+    flipped (`changes` is a list of {"id", "before", "after"})."""
     # Checked up front: the query ends in an aggregate, which always returns a
     # row, so an empty result cannot signal "source not found".
-    _require(exists(g, SOURCE, source_id), f"source {source_id!r} not found")
-    _write(g, RECORD_REPAIR, id=repair_id, source=source_id, approved_by=approved_by,
+    source_ids = _unique(source_ids)
+    _require(bool(source_ids), "a repair targets at least one source")
+    missing = [s for s in source_ids if not exists(g, SOURCE, s)]
+    _require(not missing, f"sources not found: {missing}")
+    _write(g, RECORD_REPAIR, id=repair_id, sources=source_ids, approved_by=approved_by,
            revision=quarantine_revision, changes=list(changes))
     _require(exists(g, REPAIR, repair_id), f"repair {repair_id!r} was not written")
 

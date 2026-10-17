@@ -17,11 +17,18 @@ from app.schema import BELIEF, EXTRACTION, INFERENCE, SOURCE, VENDOR
 AGENT_ID = "a_researcher"
 BELIEF_ID = re.compile(r"^b_[a-z0-9_]{2,60}$")
 TAG = re.compile(r"<[^>]+>")
-NUMBER = re.compile(r"\d+(?:[.,:\-]\d+)*")
-# Typographic variants an LLM may swap when copying text.
-TYPOGRAPHY = str.maketrans({"‐": "-", "‑": "-", "‒": "-", "–": "-",
-                            "—": "-", "‘": "'", "’": "'", "“": '"',
-                            "”": '"', " ": " "})
+DIGITS = re.compile(r"\d+")
+# Typographic variants an LLM may swap when copying text: dashes, curly
+# quotes and the no-break space become their plain forms.
+TYPOGRAPHY = str.maketrans({chr(0x2010): "-", chr(0x2011): "-", chr(0x2012): "-",
+                            chr(0x2013): "-", chr(0x2014): "-", chr(0x2018): "'",
+                            chr(0x2019): "'", chr(0x201C): '"', chr(0x201D): '"',
+                            chr(0x00A0): " "})
+
+
+def numbers(text: str | None) -> set[str]:
+    """Every run of digits: 'ISO 13485:2016, $480' -> {'13485', '2016', '480'}."""
+    return set(DIGITS.findall(text or ""))
 
 
 def _text(fragment: str) -> str:
@@ -49,8 +56,9 @@ def source_text(g, source_id: str) -> str:
 def conflicting_specifics(a: str, b: str) -> bool:
     """True if two claims disagree on numbers: neither claim's set of numbers
     contains the other's (ISO 13485 vs ISO 9001, $480 vs $520, 2 vs 3 weeks).
-    A paraphrase that only adds a detail, like a certificate number, is fine."""
-    na, nb = set(NUMBER.findall(a)), set(NUMBER.findall(b))
+    A paraphrase that only adds a detail, like a certificate number or the
+    year of a standard (ISO 13485 vs ISO 13485:2016), is fine."""
+    na, nb = numbers(a), numbers(b)
     return not (na <= nb or nb <= na)
 
 
@@ -161,6 +169,12 @@ def record_extractions(g, extraction: dict) -> list[str]:
             rejected.append(f"{belief_id}: not a valid belief id")
         elif _text(c["quote"]) not in text:
             rejected.append(f"{belief_id}: quote not found in {source_id}")
+        elif numbers(c["claim"]) - numbers(c["quote"]):
+            # A real quote with an unfaithful claim: e.g. "ISO 13485" claimed
+            # from a trusted registry row that says "ISO 9001:2015".
+            rejected.append(f"{belief_id}: the claim states "
+                            f"{sorted(numbers(c['claim']) - numbers(c['quote']))}, "
+                            "which its quote does not")
         elif not ok:
             rejected.append(f"{belief_id}: unknown vendor {c.get('vendor')!r}")
         elif conflict:
@@ -190,10 +204,14 @@ def record_inferences(g, inference: dict) -> list[str]:
         premises = item["premises"]
         ok, about = _resolve(g, item.get("vendor"))
         conflict = _merge_conflict(g, belief_id, item["claim"])
+        stated = set().union(*(numbers(memory.belief_claim(g, p)) for p in premises))
         if not BELIEF_ID.match(belief_id):
             rejected.append(f"{belief_id!r}: not a valid belief id")
         elif not all(BELIEF_ID.match(p) for p in premises):
             rejected.append(f"{belief_id}: premises must be belief ids")
+        elif numbers(item["claim"]) - stated:
+            rejected.append(f"{belief_id}: the conclusion states "
+                            f"{sorted(numbers(item['claim']) - stated)}, which its premises do not")
         elif not ok:
             rejected.append(f"{belief_id}: unknown vendor {item.get('vendor')!r}")
         elif conflict:

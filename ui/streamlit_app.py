@@ -260,6 +260,9 @@ with right:
         st.markdown(f"##### Preview: quarantine `{preview.source_id}`")
         st.caption(f"Computed on `{preview.graph_name}`, a copy of your graph at revision "
                    f"{preview.base_revision}. Nothing has changed yet.")
+        if len(preview.sources) > 1:
+            st.markdown("**Also quarantined, same origin (copies of the same claim):** "
+                        + ", ".join(f"`{s}`" for s in preview.sources[1:]))
         st.markdown(f"**Loses all support ({len(preview.lost)})**")
         for n in preview.lost:
             st.markdown(f"- ❌ `{n['id']}` {md(n['text'])}")
@@ -370,7 +373,7 @@ with tab_audit:
     if not found:
         st.caption("No repairs yet.")
     for r in found:
-        st.markdown(f"**{r['id']}** · quarantined *{r['title']}* · approved by {r['approved_by']} "
+        st.markdown(f"**{r['id']}** · quarantined *{', '.join(r['titles'])}* · approved by {r['approved_by']} "
                     f"· revision {r['revision']}  \nwithdrew: "
                     + ", ".join(f"`{c}`" for c in sorted(r["changed"])))
     st.markdown("**Sources**")

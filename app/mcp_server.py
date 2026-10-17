@@ -77,7 +77,8 @@ def create_server(graph=get_graph) -> MCPServer:
         except ValueError as e:
             return {"error": str(e)}
         repair.discard(p)
-        return {"source_id": source_id, "lost": p.lost, "survived": p.survived,
+        return {"source_id": source_id, "quarantines": p.sources,
+                "lost": p.lost, "survived": p.survived,
                 "orders_blocked": [o["id"] for o in p.orders_blocked],
                 "executed_affected": [o["id"] for o in p.executed_affected]}
 

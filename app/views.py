@@ -50,8 +50,9 @@ ORDER BY s.id
 
 REPAIRS = f"""
 MATCH (r:{REPAIR})-[:{TARGETED}]->(s:{SOURCE})
-OPTIONAL MATCH (r)-[c:{CHANGED}]->(n)
-RETURN r.id, r.approved_by, r.revision, s.id, s.title, collect(n.id)
+WITH r, collect(s.title) AS titles
+OPTIONAL MATCH (r)-[:{CHANGED}]->(n)
+RETURN r.id, r.approved_by, r.revision, titles, collect(n.id)
 ORDER BY r.revision
 """
 
@@ -111,8 +112,8 @@ def sources(g) -> list[dict]:
 
 
 def repairs(g) -> list[dict]:
-    return [{"id": i, "approved_by": a, "revision": r, "source": s, "title": t, "changed": c}
-            for i, a, r, s, t, c in g.ro_query(REPAIRS).result_set]
+    return [{"id": i, "approved_by": a, "revision": r, "titles": t, "changed": c}
+            for i, a, r, t, c in g.ro_query(REPAIRS).result_set]
 
 
 def counts(g) -> dict[tuple[str, bool], int]:

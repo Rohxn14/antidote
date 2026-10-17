@@ -124,5 +124,47 @@ def test_plan_with_unknown_vendor_is_rejected_not_raised(g):
         "purchase_order": {"id": "d_po_1001", "vendor": "nobody", "quantity": 1,
                            "unit_price": 1, "premises": ["b_boltline_offer"], "reasoning": "r"}})
     assert result["order"] is None
-    assert result["rejected"] == ["shortlist Acme Imaginary: unknown vendor 'Acme Imaginary'",
-                                  "order d_po_1001: unknown vendor 'nobody'"]
+    assert result["rejected"] == [
+        "shortlist Acme Imaginary: unknown vendor 'Acme Imaginary'",
+        "order d_po_1001: unknown vendor 'nobody'; "
+        "quantity and price ['1'] are not stated in its premises"]
+
+
+# --- Laundering a lie through a real quote --------------------------------------------
+
+def test_claim_cannot_state_numbers_its_quote_does_not(g):
+    # A real quote from the TRUSTED registry, with an unfaithful claim.
+    demo.register(g)
+    memory.add_source(g, "s_registry", uri="data/registry.html", title="registry",
+                      trust="trusted")
+    rejected = researcher.record_extractions(g, {"source_id": "s_registry", "claims": [
+        {"belief": "b_vantor_iso13485", "vendor": "v_vantor",
+         "claim": "Vantor Motion holds ISO 13485 certification.",
+         "quote": "Vantor Motion servo actuators ISO 9001:2015 QM-5520", "reasoning": "r"}]})
+    assert rejected == ["b_vantor_iso13485: the claim states ['13485'], which its quote does not"]
+    assert not memory.exists(g, "Belief", "b_vantor_iso13485")
+
+
+def test_conclusion_cannot_introduce_numbers(g):
+    demo.register(g)
+    demo.ingest(g, "s_boltline_page")
+    rejected = researcher.record_inferences(g, {"inferences": [
+        {"belief": "b_boltline_cheap", "vendor": "v_boltline",
+         "claim": "Boltline sells at $499.", "premises": ["b_boltline_offer"], "reasoning": "r"}]})
+    assert rejected == ["b_boltline_cheap: the conclusion states ['499'], which its premises do not"]
+
+
+def test_buyer_cannot_invent_a_price(g):
+    demo.register(g)
+    demo.research(g)
+    result = buyer.record_plan(g, {"purchase_order": {
+        "id": "d_po_1001", "vendor": "v_boltline", "quantity": 100, "unit_price": 450,
+        "premises": ["b_boltline_qualifies", "b_boltline_offer", "b_req_quantity"],
+        "reasoning": "negotiated in my head"}})
+    assert result["order"] is None
+    assert result["rejected"] == [
+        "order d_po_1001: quantity and price ['450'] are not stated in its premises"]
+
+
+def test_standard_year_is_not_a_conflict():
+    assert not researcher.conflicting_specifics("ISO 13485", "ISO 13485:2016")

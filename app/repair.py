@@ -35,6 +35,7 @@ class Preview:
     source_id: str
     base_revision: int
     graph_name: str
+    sources: list[str] = field(default_factory=list)    # everything to quarantine
     lost: list[dict] = field(default_factory=list)      # lose all support
     survived: list[dict] = field(default_factory=list)  # lose a reason, keep another
     orders_blocked: list[dict] = field(default_factory=list)   # open orders the gate will stop
@@ -74,14 +75,27 @@ ORDER BY n.id, kept.id
 
 SOURCE_TRUST = f"MATCH (s:{SOURCE} {{id: $id}}) RETURN s.trust"
 
+# Copies and mirrors repeat the same original claim, so they share an origin:
+# quarantining one source also quarantines the others with its origin.
+SAME_ORIGIN = f"""
+MATCH (s:{SOURCE} {{id: $id}})
+MATCH (t:{SOURCE}) WHERE t.origin = s.origin AND t.id <> s.id AND t.trust <> $quarantined
+RETURN t.id ORDER BY t.id
+"""
 
-def preview(g, source_id: str) -> Preview:
-    """Show what quarantining `source_id` would change, without changing it."""
+
+def preview(g, source_id: str, include_origin: bool = True) -> Preview:
+    """Show what quarantining `source_id` (and, by default, every other source
+    with the same origin) would change, without changing it."""
     rows = g.ro_query(SOURCE_TRUST, {"id": source_id}).result_set
     if not rows:
         raise ValueError(f"source {source_id!r} not found")
     if rows[0][0] == QUARANTINED:
         raise ValueError(f"source {source_id!r} is already quarantined")
+    targets = [source_id]
+    if include_origin:
+        targets += [r[0] for r in g.ro_query(
+            SAME_ORIGIN, {"id": source_id, "quarantined": QUARANTINED}).result_set]
 
     support.recompute(g)  # make sure the main graph's cache is fresh first
     base = memory.revision(g)
@@ -91,10 +105,12 @@ def preview(g, source_id: str) -> Preview:
 
     copy.query(SNAPSHOT_CONCLUSIONS)
     copy.query(SNAPSHOT_JUSTIFICATIONS)
-    memory.set_trust(copy, source_id, QUARANTINED)  # on the copy, with recompute
+    for sid in targets:  # on the copy
+        memory.set_trust(copy, sid, QUARANTINED, recompute=False)
+    support.recompute(copy)
 
     p = Preview(source_id=source_id, base_revision=base, graph_name=name,
-                expected=support.status(copy))
+                sources=targets, expected=support.status(copy))
     for node_id, label, text, kind, state, amount in copy.ro_query(LOST).result_set:
         item = {"id": node_id, "label": label, "text": text, "kind": kind,
                 "state": state, "amount": amount}
@@ -117,7 +133,9 @@ def apply(g, p: Preview, approved_by: str) -> str:
         raise StalePreview(f"graph changed since the preview (revision {p.base_revision} "
                            f"-> {current}); regenerate the preview")
 
-    memory.set_trust(g, p.source_id, QUARANTINED)  # bumps revision, recomputes
+    for sid in p.sources:  # each write bumps the revision
+        memory.set_trust(g, sid, QUARANTINED, recompute=False)
+    support.recompute(g)
     actual = support.status(g)
     if actual != p.expected:
         diff = sorted(k for k in actual.keys() | p.expected.keys()
@@ -126,7 +144,7 @@ def apply(g, p: Preview, approved_by: str) -> str:
 
     quarantine_revision = memory.revision(g)
     repair_id = f"repair_{p.source_id}_{quarantine_revision}"
-    memory.record_repair(g, repair_id, source_id=p.source_id, approved_by=approved_by,
+    memory.record_repair(g, repair_id, source_ids=p.sources, approved_by=approved_by,
                          quarantine_revision=quarantine_revision,
                          changes=[{"id": n["id"], "before": True, "after": False}
                                   for n in p.lost])
