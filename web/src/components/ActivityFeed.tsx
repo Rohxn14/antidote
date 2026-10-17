@@ -91,11 +91,15 @@ export function ActivityFeed({ feed, documents, running, onOpenDocument, classNa
   const follow = useRef(true);
 
   useEffect(() => {
-    // An instant jump: a smooth scroll fires scroll events on its way down, which would
-    // look like the reader scrolling up and stop the feed from following.
     const el = box.current;
     if (el && follow.current) el.scrollTop = el.scrollHeight;
   }, [feed.length]);
+
+  // Only the reader's own gestures stop the feed from following. Scroll events alone can't
+  // tell: ours arrive late, after a burst of new lines, and would look like scrolling up.
+  const stopFollowing = () => {
+    follow.current = false;
+  };
 
   return (
     <Card className={cx("flex min-h-0 flex-col overflow-hidden", className)}>
@@ -109,8 +113,12 @@ export function ActivityFeed({ feed, documents, running, onOpenDocument, classNa
         ref={box}
         onScroll={(e) => {
           const el = e.currentTarget;
-          follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+          if (el.scrollHeight - el.scrollTop - el.clientHeight < 48) follow.current = true;
         }}
+        onWheel={(e) => e.deltaY < 0 && stopFollowing()}
+        onTouchMove={stopFollowing}
+        onKeyDown={(e) => ["ArrowUp", "PageUp", "Home"].includes(e.key) && stopFollowing()}
+        tabIndex={0}
         className="scroll-thin min-h-0 flex-1 overflow-y-auto px-2.5 py-2"
       >
         {feed.length === 0 ? (
