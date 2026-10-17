@@ -4,8 +4,8 @@
 Configuration (environment or .env):
     LLM_API_KEY   the provider key
     LLM_MODEL     a model ID copied from the provider's console
-    LLM_BASE_URL  optional; defaults to Gemini's OpenAI-compatible endpoint
-                  (Groq: https://api.groq.com/openai/v1)
+    LLM_BASE_URL  optional; defaults to Groq's OpenAI-compatible endpoint
+                  (Gemini: https://generativelanguage.googleapis.com/v1beta/openai/)
 
 We ask for strict structured output (a JSON schema). If the provider rejects
 JSON-schema mode we fall back to JSON mode with the schema in the prompt.
@@ -14,7 +14,7 @@ Callers validate the result anyway: the LLM proposes, the code checks.
 import json
 import os
 
-GEMINI_OPENAI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+GROQ_OPENAI_URL = "https://api.groq.com/openai/v1"
 
 
 class LLMNotConfigured(RuntimeError):
@@ -44,7 +44,7 @@ def complete_json(system: str, user: str, schema: dict, name: str) -> dict:
     from openai import BadRequestError, OpenAI  # lazy: the demo runs without a key
 
     client = OpenAI(api_key=os.environ["LLM_API_KEY"],
-                    base_url=os.getenv("LLM_BASE_URL") or GEMINI_OPENAI_URL,
+                    base_url=os.getenv("LLM_BASE_URL") or GROQ_OPENAI_URL,
                     max_retries=4, timeout=90)
     messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
     try:
