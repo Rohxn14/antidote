@@ -1,0 +1,32 @@
+# Render Blueprint: one free web service running the Streamlit demo.
+# Secrets are `sync: false`: Render asks for their values in the dashboard,
+# so they never live in this repository.
+services:
+  - type: web
+    name: antidote
+    runtime: python
+    region: singapore          # closest Render region to FalkorDB Cloud ap-south-1
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: >-
+      streamlit run ui/streamlit_app.py
+      --server.port $PORT --server.address 0.0.0.0
+      --server.headless true --browser.gatherUsageStats false
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: FALKORDB_GRAPH
+        value: antidote
+      - key: FALKORDB_HOST
+        sync: false
+      - key: FALKORDB_PORT
+        sync: false
+      - key: FALKORDB_USERNAME
+        sync: false
+      - key: FALKORDB_PASSWORD
+        sync: false
+      - key: LLM_API_KEY        # optional: enables the live-LLM toggle and agent button
+        sync: false
+      - key: LLM_MODEL
+        sync: false
