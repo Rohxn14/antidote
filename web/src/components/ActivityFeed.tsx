@@ -91,8 +91,10 @@ export function ActivityFeed({ feed, documents, running, onOpenDocument, classNa
   const follow = useRef(true);
 
   useEffect(() => {
+    // An instant jump: a smooth scroll fires scroll events on its way down, which would
+    // look like the reader scrolling up and stop the feed from following.
     const el = box.current;
-    if (el && follow.current) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    if (el && follow.current) el.scrollTop = el.scrollHeight;
   }, [feed.length]);
 
   return (
