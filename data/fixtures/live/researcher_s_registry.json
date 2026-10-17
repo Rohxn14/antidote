@@ -1,0 +1,125 @@
+{
+  "source_id": "s_registry",
+  "model": "openai/gpt-oss-120b",
+  "claims": [
+    {
+      "belief": "b_boltline_makes_servo_actuators",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation is registered to produce servo actuators.",
+      "quote": "<tr><td>Boltline Automation</td><td>servo actuators</td><td>ISO 13485:2016</td><td>MD-2231</td><td>2027-08-31</td></tr>",
+      "reasoning": "The table row lists Boltline Automation under Supplier with 'servo actuators' in the Registered products column, indicating they make servo actuators."
+    },
+    {
+      "belief": "b_boltline_iso13485",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation holds an ISO 13485:2016 certification.",
+      "quote": "<tr><td>Boltline Automation</td><td>servo actuators</td><td>ISO 13485:2016</td><td>MD-2231</td><td>2027-08-31</td></tr>",
+      "reasoning": "The Certification on file column for Boltline Automation shows 'ISO 13485:2016', confirming the certification."
+    },
+    {
+      "belief": "b_boltline_certificate_md2231",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation's certificate number is MD-2231.",
+      "quote": "<tr><td>Boltline Automation</td><td>servo actuators</td><td>ISO 13485:2016</td><td>MD-2231</td><td>2027-08-31</td></tr>",
+      "reasoning": "The Certificate column for Boltline Automation contains 'MD-2231'."
+    },
+    {
+      "belief": "b_boltline_cert_valid_until_2027_08_31",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation's certification is valid until 2027-08-31.",
+      "quote": "<tr><td>Boltline Automation</td><td>servo actuators</td><td>ISO 13485:2016</td><td>MD-2231</td><td>2027-08-31</td></tr>",
+      "reasoning": "The Valid until column for Boltline Automation shows the date '2027-08-31'."
+    },
+    {
+      "belief": "b_ferrocraft_makes_servo_actuators",
+      "vendor": "v_ferrocraft",
+      "claim": "Ferrocraft Servo is registered to produce servo actuators.",
+      "quote": "<tr><td>Ferrocraft Servo</td><td>servo actuators, gearboxes</td><td>ISO 13485:2016</td><td>MD-1187</td><td>2027-03-31</td></tr>",
+      "reasoning": "The Registered products column for Ferrocraft Servo includes 'servo actuators'."
+    },
+    {
+      "belief": "b_ferrocraft_makes_gearboxes",
+      "vendor": "v_ferrocraft",
+      "claim": "Ferrocraft Servo is registered to produce gearboxes.",
+      "quote": "<tr><td>Ferrocraft Servo</td><td>servo actuators, gearboxes</td><td>ISO 13485:2016</td><td>MD-1187</td><td>2027-03-31</td></tr>",
+      "reasoning": "The Registered products column for Ferrocraft Servo lists 'gearboxes'."
+    },
+    {
+      "belief": "b_ferrocraft_iso13485",
+      "vendor": "v_ferrocraft",
+      "claim": "Ferrocraft Servo holds an ISO 13485:2016 certification.",
+      "quote": "<tr><td>Ferrocraft Servo</td><td>servo actuators, gearboxes</td><td>ISO 13485:2016</td><td>MD-1187</td><td>2027-03-31</td></tr>",
+      "reasoning": "The Certification on file column for Ferrocraft Servo shows 'ISO 13485:2016'."
+    },
+    {
+      "belief": "b_ferrocraft_certificate_md1187",
+      "vendor": "v_ferrocraft",
+      "claim": "Ferrocraft Servo's certificate number is MD-1187.",
+      "quote": "<tr><td>Ferrocraft Servo</td><td>servo actuators, gearboxes</td><td>ISO 13485:2016</td><td>MD-1187</td><td>2027-03-31</td></tr>",
+      "reasoning": "The Certificate column for Ferrocraft Servo contains 'MD-1187'."
+    },
+    {
+      "belief": "b_ferrocraft_cert_valid_until_2027_03_31",
+      "vendor": "v_ferrocraft",
+      "claim": "Ferrocraft Servo's certification is valid until 2027-03-31.",
+      "quote": "<tr><td>Ferrocraft Servo</td><td>servo actuators, gearboxes</td><td>ISO 13485:2016</td><td>MD-1187</td><td>2027-03-31</td></tr>",
+      "reasoning": "The Valid until column for Ferrocraft Servo shows the date '2027-03-31'."
+    },
+    {
+      "belief": "b_vantor_makes_servo_actuators",
+      "vendor": "v_vantor",
+      "claim": "Vantor Motion is registered to produce servo actuators.",
+      "quote": "<tr><td>Vantor Motion</td><td>servo actuators</td><td>ISO 9001:2015</td><td>QM-5520</td><td>2027-01-31</td></tr>",
+      "reasoning": "The Registered products column for Vantor Motion lists 'servo actuators'."
+    },
+    {
+      "belief": "b_vantor_iso9001",
+      "vendor": "v_vantor",
+      "claim": "Vantor Motion holds an ISO 9001:2015 certification.",
+      "quote": "<tr><td>Vantor Motion</td><td>servo actuators</td><td>ISO 9001:2015</td><td>QM-5520</td><td>2027-01-31</td></tr>",
+      "reasoning": "The Certification on file column for Vantor Motion shows 'ISO 9001:2015'."
+    },
+    {
+      "belief": "b_vantor_certificate_qm5520",
+      "vendor": "v_vantor",
+      "claim": "Vantor Motion's certificate number is QM-5520.",
+      "quote": "<tr><td>Vantor Motion</td><td>servo actuators</td><td>ISO 9001:2015</td><td>QM-5520</td><td>2027-01-31</td></tr>",
+      "reasoning": "The Certificate column for Vantor Motion contains 'QM-5520'."
+    },
+    {
+      "belief": "b_vantor_cert_valid_until_2027_01_31",
+      "vendor": "v_vantor",
+      "claim": "Vantor Motion's certification is valid until 2027-01-31.",
+      "quote": "<tr><td>Vantor Motion</td><td>servo actuators</td><td>ISO 9001:2015</td><td>QM-5520</td><td>2027-01-31</td></tr>",
+      "reasoning": "The Valid until column for Vantor Motion shows the date '2027-01-31'."
+    },
+    {
+      "belief": "b_quillon_makes_servo_actuators",
+      "vendor": "v_quillon",
+      "claim": "Quillon Drives is registered to produce servo actuators.",
+      "quote": "<tr><td>Quillon Drives</td><td>servo actuators</td><td>ISO 9001:2015</td><td>QM-6604</td><td>2026-12-31</td></tr>",
+      "reasoning": "The Registered products column for Quillon Drives lists 'servo actuators'."
+    },
+    {
+      "belief": "b_quillon_iso9001",
+      "vendor": "v_quillon",
+      "claim": "Quillon Drives holds an ISO 9001:2015 certification.",
+      "quote": "<tr><td>Quillon Drives</td><td>servo actuators</td><td>ISO 9001:2015</td><td>QM-6604</td><td>2026-12-31</td></tr>",
+      "reasoning": "The Certification on file column for Quillon Drives shows 'ISO 9001:2015'."
+    },
+    {
+      "belief": "b_quillon_certificate_qm6604",
+      "vendor": "v_quillon",
+      "claim": "Quillon Drives's certificate number is QM-6604.",
+      "quote": "<tr><td>Quillon Drives</td><td>servo actuators</td><td>ISO 9001:2015</td><td>QM-6604</td><td>2026-12-31</td></tr>",
+      "reasoning": "The Certificate column for Quillon Drives contains 'QM-6604'."
+    },
+    {
+      "belief": "b_quillon_cert_valid_until_2026_12_31",
+      "vendor": "v_quillon",
+      "claim": "Quillon Drives's certification is valid until 2026-12-31.",
+      "quote": "<tr><td>Quillon Drives</td><td>servo actuators</td><td>ISO 9001:2015</td><td>QM-6604</td><td>2026-12-31</td></tr>",
+      "reasoning": "The Valid until column for Quillon Drives shows the date '2026-12-31'."
+    }
+  ]
+}

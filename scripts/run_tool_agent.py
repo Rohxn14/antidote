@@ -10,6 +10,7 @@ printed and saved to data/fixtures/live/tool_agent.json for the UI.
 """
 import asyncio
 import json
+import logging
 import sys
 
 from app import demo, llm, repair
@@ -22,6 +23,7 @@ OUT = demo.ROOT / "data" / "fixtures" / "live" / "tool_agent.json"
 
 def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8")
+    logging.getLogger("httpx").setLevel(logging.WARNING)  # no per-request log lines
     if not llm.configured():
         sys.exit("Set LLM_API_KEY and LLM_MODEL first (see .env.example).")
     g = get_graph("antidote_agent")

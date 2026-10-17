@@ -1,0 +1,46 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "shortlist": [
+    {
+      "vendor": "v_boltline",
+      "premises": [
+        "b_req_iso13485",
+        "b_req_quantity_100_4weeks",
+        "b_boltline_iso13485",
+        "b_boltline_makes_servo_actuators",
+        "b_boltline_leadtime_100_units_3weeks",
+        "b_boltline_qualifies"
+      ],
+      "reasoning": "Meets ISO13485, produces servo actuators, can deliver 100 units within 4 weeks, and meets all procurement qualifications."
+    },
+    {
+      "vendor": "v_ferrocraft",
+      "premises": [
+        "b_req_iso13485",
+        "b_req_quantity_100_4weeks",
+        "b_ferrocraft_iso13485",
+        "b_ferrocraft_makes_servo_actuators",
+        "b_ferrocraft_leadtime_100_units_4weeks",
+        "b_ferrocraft_qualifies"
+      ],
+      "reasoning": "Meets ISO13485, produces servo actuators, can deliver 100 units within 4 weeks, and meets all procurement qualifications."
+    }
+  ],
+  "purchase_order": {
+    "vendor": "v_boltline",
+    "quantity": 100,
+    "unit_price": 520,
+    "premises": [
+      "b_req_iso13485",
+      "b_req_quantity_100_4weeks",
+      "b_req_lowest_price",
+      "b_boltline_iso13485",
+      "b_boltline_makes_servo_actuators",
+      "b_boltline_leadtime_100_units_3weeks",
+      "b_boltline_price_520_per_unit_100plus",
+      "b_boltline_qualifies"
+    ],
+    "reasoning": "Boltline offers the lowest unit price among qualifying suppliers while satisfying ISO13485 certification, servo actuator capability, and a 3‑week lead time for 100 units.",
+    "id": "d_po_1002"
+  }
+}

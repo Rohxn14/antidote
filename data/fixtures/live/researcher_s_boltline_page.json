@@ -1,0 +1,41 @@
+{
+  "source_id": "s_boltline_page",
+  "model": "openai/gpt-oss-120b",
+  "claims": [
+    {
+      "belief": "b_boltline_makes_servo_actuators",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation is registered to produce servo actuators.",
+      "quote": "Boltline Automation manufactures servo actuators for robotic joints.",
+      "reasoning": "The quote states that Boltline Automation manufactures servo actuators, confirming it produces (is registered to produce) servo actuators."
+    },
+    {
+      "belief": "b_boltline_iso13485",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation holds ISO 13485:2016 certification.",
+      "quote": "Boltline Automation holds ISO 13485:2016 certification (certificate MD-2231).",
+      "reasoning": "The quote explicitly says Boltline Automation holds ISO 13485:2016 certification."
+    },
+    {
+      "belief": "b_boltline_certificate_md2231",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation's certificate number is MD-2231.",
+      "quote": "Boltline Automation holds ISO 13485:2016 certification (certificate MD-2231).",
+      "reasoning": "The quote includes the certificate number MD-2231 in parentheses."
+    },
+    {
+      "belief": "b_boltline_price_520_per_unit_100plus",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation offers a price of $520 per unit for orders of 100 units or more.",
+      "quote": "Price: $520 per unit with volume pricing from 100 units; 100 units ship within 3 weeks.",
+      "reasoning": "The quote states the unit price is $520 and volume pricing starts at 100 units."
+    },
+    {
+      "belief": "b_boltline_leadtime_100_units_3weeks",
+      "vendor": "v_boltline",
+      "claim": "When ordering 100 units, Boltline Automation can ship them within 3 weeks.",
+      "quote": "Price: $520 per unit with volume pricing from 100 units; 100 units ship within 3 weeks.",
+      "reasoning": "The quote indicates that 100 units ship within 3 weeks, defining the lead time."
+    }
+  ]
+}

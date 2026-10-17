@@ -70,3 +70,8 @@ def obj(properties: dict) -> dict:
 STRING = {"type": "string"}
 NULLABLE_STRING = {"type": ["string", "null"]}
 STRINGS = {"type": "array", "items": STRING}
+
+
+def described(schema: dict, text: str) -> dict:
+    """A schema with a description: models read these to fill fields correctly."""
+    return {**schema, "description": text}

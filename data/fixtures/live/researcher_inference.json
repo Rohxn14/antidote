@@ -1,0 +1,44 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "inferences": [
+    {
+      "belief": "b_boltline_qualifies",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation meets all procurement requirements.",
+      "premises": [
+        "b_boltline_iso13485",
+        "b_boltline_makes_servo_actuators",
+        "b_boltline_leadtime_100_units_3weeks",
+        "b_req_iso13485",
+        "b_req_quantity_100_4weeks"
+      ],
+      "reasoning": "Boltline holds an ISO 13485 certification (b_boltline_iso13485) satisfying the ISO requirement (b_req_iso13485), is registered to produce servo actuators (b_boltline_makes_servo_actuators), and can deliver 100 units within 3 weeks (b_boltline_leadtime_100_units_3weeks), which meets the 4‑week delivery requirement (b_req_quantity_100_4weeks). Therefore it qualifies."
+    },
+    {
+      "belief": "b_ferrocraft_qualifies",
+      "vendor": "v_ferrocraft",
+      "claim": "Ferrocraft Servo meets all procurement requirements.",
+      "premises": [
+        "b_ferrocraft_iso13485",
+        "b_ferrocraft_makes_servo_actuators",
+        "b_ferrocraft_leadtime_100_units_4weeks",
+        "b_req_iso13485",
+        "b_req_quantity_100_4weeks"
+      ],
+      "reasoning": "Ferrocraft holds an ISO 13485 certification (b_ferrocraft_iso13485) satisfying the ISO requirement (b_req_iso13485), is registered to produce servo actuators (b_ferrocraft_makes_servo_actuators), and can deliver 100 units within 4 weeks (b_ferrocraft_leadtime_100_units_4weeks), which meets the delivery requirement (b_req_quantity_100_4weeks). Therefore it qualifies."
+    },
+    {
+      "belief": "b_vantor_qualifies",
+      "vendor": "v_vantor",
+      "claim": "Vantor Motion meets all procurement requirements.",
+      "premises": [
+        "b_vantor_iso13485",
+        "b_vantor_makes_servo_actuators",
+        "b_vantor_leadtime_100_units_2weeks",
+        "b_req_iso13485",
+        "b_req_quantity_100_4weeks"
+      ],
+      "reasoning": "Vantor Motion holds an ISO 13485 certification (b_vantor_iso13485) satisfying the ISO requirement (b_req_iso13485), is registered to produce servo actuators (b_vantor_makes_servo_actuators), and can deliver 100 units within 2 weeks (b_vantor_leadtime_100_units_2weeks), which meets the 4‑week delivery requirement (b_req_quantity_100_4weeks). Therefore it qualifies."
+    }
+  ]
+}

@@ -220,6 +220,19 @@ ORDER BY b.id
 MATCH (m:Meta {id: $meta}) RETURN m.revision
 ```
 
+### belief_claim
+
+```cypher
+MATCH (b:Belief {id: $id}) RETURN b.claim
+```
+
+### resolve_vendor
+
+```cypher
+MATCH (v:Vendor) WHERE v.id = $value OR toLower(v.name) = toLower($value)
+RETURN v.id ORDER BY v.id LIMIT 1
+```
+
 ## Action gate (app/gate.py)
 
 Reads the order on the current graph; the what-if queries run on a throwaway GRAPH.COPY to test robustness to losing a trusted origin.

@@ -60,3 +60,69 @@ def test_buyer_cannot_cite_invalid_beliefs(g):
     assert result["order"] is None
     assert result["rejected"] == [
         "order d_po_1001: not valid beliefs ['b_vantor_qualifies', 'b_vantor_offer']"]
+
+
+# --- Found in the first live run with openai/gpt-oss-120b ------------------------------
+
+def test_quote_copied_with_html_tags_still_matches_the_page(g):
+    demo.register(g)
+    memory.add_source(g, "s_registry", uri="data/registry.html", title="registry",
+                      trust="trusted")
+    rejected = researcher.record_extractions(g, {"source_id": "s_registry", "claims": [
+        {"belief": "b_boltline_iso13485", "vendor": "v_boltline",
+         "claim": "Boltline Automation has ISO 13485:2016 on file.",
+         "quote": "<tr><td>Boltline Automation</td><td>servo actuators</td>"
+                  "<td>ISO 13485:2016</td><td>MD-2231</td><td>2027-08-31</td></tr>",
+         "reasoning": "registry row"}]})
+    assert rejected == []
+
+
+def test_an_id_is_never_reused_for_a_contradicting_claim(g):
+    # The live model filed the registry's "ISO 9001" and the page's "ISO 13485"
+    # under one id. Merged, the page's lie would survive its own quarantine.
+    demo.register(g)
+    demo.ingest(g, "s_registry")
+    memory.add_belief(g, "b_vantor_iso_certified", claim="Vantor Motion has ISO 9001:2015 on file.",
+                      about=["v_vantor"])
+    memory.add_justification(g, "j_reg", supports="b_vantor_iso_certified",
+                             premises=["s_registry"], kind="extraction", reasoning="r",
+                             quote="Vantor Motion servo actuators ISO 9001:2015 QM-5520")
+    memory.add_source(g, "s_vantor_page", uri="data/vendors/vantor.html", title="page",
+                      trust="unverified")
+    rejected = researcher.record_extractions(g, {"source_id": "s_vantor_page", "claims": [
+        {"belief": "b_vantor_iso_certified", "vendor": "v_vantor",
+         "claim": "Vantor Motion is ISO 13485:2016 certified.",
+         "quote": "Vantor Motion is ISO 13485:2016 certified for medical-grade motion components.",
+         "reasoning": "quality section"}]})
+    assert len(rejected) == 1 and "differs in its specifics" in rejected[0]
+    assert not memory.exists(g, "Justification", "j_vantor_iso_certified__s_vantor_page")
+
+
+def test_conflicting_specifics():
+    assert researcher.conflicting_specifics("ISO 9001:2015", "ISO 13485:2016")
+    assert researcher.conflicting_specifics("$480 per unit", "$520 per unit")
+    assert not researcher.conflicting_specifics("holds ISO 13485:2016",
+                                                "ISO 13485:2016 (certificate MD-2231)")
+    assert not researcher.conflicting_specifics("makes servo actuators", "manufactures servos")
+
+
+def test_vendor_given_by_name_is_resolved_to_its_id(g):
+    demo.register(g)
+    demo.ingest(g, "s_boltline_page")
+    researcher.record_inferences(g, {"inferences": [
+        {"belief": "b_boltline_ok", "vendor": "Boltline Automation", "claim": "ok",
+         "premises": ["b_boltline_offer"], "reasoning": "r"}]})
+    rows = g.ro_query("MATCH (:Belief {id:'b_boltline_ok'})-[:ABOUT]->(v) RETURN v.id").result_set
+    assert rows == [["v_boltline"]]
+
+
+def test_plan_with_unknown_vendor_is_rejected_not_raised(g):
+    demo.register(g)
+    demo.research(g)
+    result = buyer.record_plan(g, {"shortlist": [
+        {"vendor": "Acme Imaginary", "premises": ["b_boltline_qualifies"], "reasoning": "r"}],
+        "purchase_order": {"id": "d_po_1001", "vendor": "nobody", "quantity": 1,
+                           "unit_price": 1, "premises": ["b_boltline_offer"], "reasoning": "r"}})
+    assert result["order"] is None
+    assert result["rejected"] == ["shortlist Acme Imaginary: unknown vendor 'Acme Imaginary'",
+                                  "order d_po_1001: unknown vendor 'nobody'"]

@@ -154,6 +154,29 @@ Order states: `draft → pending_approval → authorized → executed`, or `bloc
   ([app/agents/tool_agent.py](app/agents/tool_agent.py)) lets the LLM choose which tools
   to call.
 
+### What real LLM runs taught us
+
+Recording the agents with `openai/gpt-oss-120b` exposed three failure modes that the
+hand-written fixtures never did, and each became a guard with a regression test:
+
+- **Merged claims.** The model filed the registry's "Vantor: ISO 9001" and the page's
+  "Vantor: ISO 13485" under one belief id. Merged, the trusted registry would have kept the
+  page's lie alive after the quarantine, and the poisoned $48,000 order would have survived.
+  Now an id can only be reused for a claim whose numbers do not conflict.
+- **Quotes with markup.** It quoted table rows with their HTML tags; the quote check now
+  compares page and quote in the same normalised form (still verbatim).
+- **Names for ids** and swapped fields: prompts now show ids explicitly, schemas describe
+  every field, and a bad answer is reported as a rejection instead of crashing.
+
+The first is exactly the limitation stated below, caught in practice: Antidote is only as
+complete as the dependencies the agents record, so the write path checks them.
+
+After these fixes the live run reproduces the whole story with zero rejections: 36 beliefs
+from 6 sources, PO-1001 to Vantor for $48,000, blocked after the repair, and PO-1002 to
+Boltline for $52,000. The MCP tool-using Buyer, after the repair, called
+`supported_beliefs` (Vantor's beliefs were invisible to it) and then
+`propose_purchase_order` for Boltline, which waited for a human.
+
 ## Graph data model
 
 ```mermaid
@@ -224,7 +247,7 @@ instead of 396 lost beliefs and decisions that would have to be re-learned.
 
 ## Correctness
 
-80 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+85 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
 
 - Required cases: alternative justifications; a multi-premise justification losing one
   premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
@@ -251,7 +274,7 @@ python -m venv .venv
 pip install -r requirements.txt
 cp .env.example .env                  # Windows PowerShell: copy .env.example .env
 
-python -m pytest                      # 80 tests
+python -m pytest                      # 85 tests
 python -m scripts.seed_demo --story   # the whole story in the terminal
 streamlit run ui/streamlit_app.py     # the UI: http://localhost:8501
 python -m scripts.benchmark           # the benchmark table
@@ -264,7 +287,9 @@ To look inside, open the FalkorDB Browser at http://localhost:3000, pick the gra
 **Live LLM (optional).** Everything above replays recorded agent outputs. To run the agents
 for real, put `LLM_API_KEY` and `LLM_MODEL` (a Groq model with structured outputs and tool
 use) in `.env`, then `python -m scripts.record_fixtures` (records to `data/fixtures/live/`)
-and `python -m scripts.run_tool_agent` (the MCP tool-using Buyer).
+and `python -m scripts.run_tool_agent` (the MCP tool-using Buyer). `data/fixtures/live/`
+already holds a run from `openai/gpt-oss-120b` on Groq; replay its story with
+`DEMO_FIXTURES=live python -m scripts.seed_demo --story`.
 
 **FalkorDB Cloud.** Put the instance's host, port, username and password in `.env.cloud`
 and prefix any command with `ENV_FILE=.env.cloud` (PowerShell: `$env:ENV_FILE=".env.cloud"`).

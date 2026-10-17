@@ -151,6 +151,13 @@ WITH b, v WHERE $vendor IS NULL OR v.id = $vendor
 RETURN b.id, b.claim, v.id, v.name
 ORDER BY b.id"""
 
+BELIEF_CLAIM = f"MATCH (b:{BELIEF} {{id: $id}}) RETURN b.claim"
+
+# An agent may name a vendor by id or by its exact name (case-insensitive).
+RESOLVE_VENDOR = f"""
+MATCH (v:{VENDOR}) WHERE v.id = $value OR toLower(v.name) = toLower($value)
+RETURN v.id ORDER BY v.id LIMIT 1"""
+
 QUERIES = {
     "add_agent": ADD_AGENT, "add_vendor": ADD_VENDOR, "add_source": ADD_SOURCE,
     "set_trust": SET_TRUST, "add_belief": ADD_BELIEF, "add_decision": ADD_DECISION,
@@ -158,6 +165,7 @@ QUERIES = {
     "add_justification (for a belief)": ADD_JUSTIFICATION[BELIEF],
     "add_justification (for a decision)": ADD_JUSTIFICATION[DECISION],
     "record_repair": RECORD_REPAIR, "valid_beliefs": VALID_BELIEFS, "revision": REVISION,
+    "belief_claim": BELIEF_CLAIM, "resolve_vendor": RESOLVE_VENDOR,
 }
 
 
@@ -347,3 +355,16 @@ def valid_beliefs(g, vendor_id: str | None = None) -> list[dict]:
     such as the procurement requirements)."""
     rows = g.ro_query(VALID_BELIEFS, {"vendor": vendor_id}).result_set
     return [{"id": b, "claim": c, "vendor_id": v, "vendor": n} for b, c, v, n in rows]
+
+
+def belief_claim(g, belief_id: str) -> str | None:
+    rows = g.ro_query(BELIEF_CLAIM, {"id": belief_id}).result_set
+    return rows[0][0] if rows else None
+
+
+def resolve_vendor(g, value: str | None) -> str | None:
+    """The vendor id for an id or an exact vendor name; None if there is none."""
+    if not value:
+        return None
+    rows = g.ro_query(RESOLVE_VENDOR, {"value": value.strip()}).result_set
+    return rows[0][0] if rows else None

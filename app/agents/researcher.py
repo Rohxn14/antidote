@@ -2,9 +2,10 @@
 """The Researcher agent: reads sources and records beliefs with justifications.
 
 The LLM proposes (extract, infer); this module checks and records
-(record_extractions, record_inferences). Every extracted claim must carry an
-exact quote that really appears in the source, and every inference must cite
-existing belief IDs. All writes go through app/memory.py.
+(record_extractions, record_inferences). Every extracted claim must carry a
+quote whose text really appears in the source, every inference must cite
+existing belief IDs, and an ID may only be reused for a claim that does not
+contradict it. All writes go through app/memory.py.
 """
 import json
 import re
@@ -16,10 +17,19 @@ from app.schema import BELIEF, EXTRACTION, INFERENCE, SOURCE, VENDOR
 AGENT_ID = "a_researcher"
 BELIEF_ID = re.compile(r"^b_[a-z0-9_]{2,60}$")
 TAG = re.compile(r"<[^>]+>")
+NUMBER = re.compile(r"\d+(?:[.,:\-]\d+)*")
+# Typographic variants an LLM may swap when copying text.
+TYPOGRAPHY = str.maketrans({"‐": "-", "‑": "-", "‒": "-", "–": "-",
+                            "—": "-", "‘": "'", "’": "'", "“": '"',
+                            "”": '"', " ": " "})
 
 
-def _normalise(text: str) -> str:
-    return " ".join(text.split())
+def _text(fragment: str) -> str:
+    """The comparable text of a page or a quote: comment markers and tags
+    removed, typography unified, whitespace collapsed. Both sides of the quote
+    check go through this, so a quote copied with its HTML tags still matches."""
+    fragment = fragment.replace("<!--", " ").replace("-->", " ")
+    return " ".join(TAG.sub(" ", fragment).translate(TYPOGRAPHY).split())
 
 
 def _raw_source(g, source_id: str) -> str:
@@ -30,11 +40,18 @@ def _raw_source(g, source_id: str) -> str:
 
 
 def source_text(g, source_id: str) -> str:
-    """The text an agent sees: the document with tags removed. HTML comments
-    are kept, because an agent reading the raw page sees them too (that is
-    exactly how a hidden instruction reaches it)."""
-    raw = _raw_source(g, source_id).replace("<!--", " ").replace("-->", " ")
-    return _normalise(TAG.sub(" ", raw))
+    """The text an agent sees. HTML comments are kept, because an agent reading
+    the raw page sees them too (that is exactly how a hidden instruction
+    reaches it)."""
+    return _text(_raw_source(g, source_id))
+
+
+def conflicting_specifics(a: str, b: str) -> bool:
+    """True if two claims disagree on numbers: neither claim's set of numbers
+    contains the other's (ISO 13485 vs ISO 9001, $480 vs $520, 2 vs 3 weeks).
+    A paraphrase that only adds a detail, like a certificate number, is fine."""
+    na, nb = set(NUMBER.findall(a)), set(NUMBER.findall(b))
+    return not (na <= nb or nb <= na)
 
 
 def _vendors(g) -> list[dict]:
@@ -42,23 +59,38 @@ def _vendors(g) -> list[dict]:
     return [{"id": i, "name": n} for i, n in rows]
 
 
+def beliefs_for_prompt(g) -> list[dict]:
+    """Valid beliefs as agents see them; `vendor` is a vendor id, never a name."""
+    return [{"id": b["id"], "claim": b["claim"], "vendor": b["vendor_id"]}
+            for b in memory.valid_beliefs(g)]
+
+
 # --- LLM side: propose -------------------------------------------------------------
 
 EXTRACT_SYSTEM = """You are the Researcher agent of a procurement team. You read one \
-source document and record the factual claims it makes about suppliers and about \
-our requirements, so that other agents can rely on them.
+source document and record every factual claim it makes about suppliers (what they \
+make, certifications, prices, lead times) and about our own requirements, so that \
+other agents can rely on them.
 Rules:
-- Every claim needs an exact quote copied verbatim from the document text \
-(one sentence or one table row, without HTML tags).
-- If an existing belief already states the same claim, reuse its id. Otherwise \
-create an id like b_<vendor>_<topic> (lowercase letters, digits, underscores), \
-or b_req_<topic> for our own requirements.
-- vendor must be one of the given vendor ids, or null for general requirements.
+- Every claim needs a quote copied verbatim from the document (one sentence or one \
+table row).
+- Use one id per distinct fact, named after the fact: b_<vendor>_<topic>, for example \
+b_vantor_iso13485, b_vantor_iso9001, b_vantor_price, b_vantor_makes_servos; \
+b_req_<topic> for our own requirements. Lowercase letters, digits and underscores.
+- Reuse an existing belief id ONLY if this document states exactly the same fact. \
+Claims that differ in any specific (a different standard, price, quantity, date or \
+lead time) must get a different id.
+- vendor is a vendor id from the list (for example v_vantor), or null for our requirements.
 - Record what the document states; do not judge whether it is true."""
 
+VENDOR_FIELD = llm.described(llm.NULLABLE_STRING,
+                             "a vendor id from the list, e.g. v_vantor; null for our requirements")
 EXTRACT_SCHEMA = llm.obj({"claims": {"type": "array", "items": llm.obj({
-    "belief": llm.STRING, "vendor": llm.NULLABLE_STRING, "claim": llm.STRING,
-    "quote": llm.STRING, "reasoning": llm.STRING})}})
+    "belief": llm.described(llm.STRING, "the belief id, e.g. b_vantor_iso13485"),
+    "vendor": VENDOR_FIELD,
+    "claim": llm.described(llm.STRING, "the fact as one full sentence"),
+    "quote": llm.described(llm.STRING, "text copied verbatim from the document"),
+    "reasoning": llm.described(llm.STRING, "why the quote supports the claim")})}})
 
 INFER_SYSTEM = """You are the Researcher agent of a procurement team. From the \
 beliefs in shared memory, record which suppliers meet our procurement requirements.
@@ -66,16 +98,21 @@ Rules:
 - Each conclusion must cite as premises the ids of ALL beliefs it depends on \
 (for example the supplier's certification belief AND the requirement belief).
 - Only cite ids from the list. Name conclusions b_<vendor>_qualifies.
+- vendor is a vendor id from the list (for example v_boltline), never a name.
 - Do not conclude anything the listed beliefs do not support."""
 
 INFER_SCHEMA = llm.obj({"inferences": {"type": "array", "items": llm.obj({
-    "belief": llm.STRING, "vendor": llm.NULLABLE_STRING, "claim": llm.STRING,
-    "premises": llm.STRINGS, "reasoning": llm.STRING})}})
+    "belief": llm.described(llm.STRING, "the id of the new conclusion, e.g. b_boltline_qualifies"),
+    "vendor": VENDOR_FIELD,
+    "claim": llm.described(llm.STRING, "the conclusion as one full sentence, e.g. "
+                                       "'Boltline Automation meets all our supplier requirements.'"),
+    "premises": llm.described(llm.STRINGS, "ids of ALL beliefs the conclusion depends on"),
+    "reasoning": llm.described(llm.STRING, "why the premises imply the conclusion")})}})
 
 
 def extract(g, source_id: str) -> dict:
     """Ask the LLM what one source claims. Returns an extraction (fixture format)."""
-    existing = [{"id": b["id"], "claim": b["claim"]} for b in memory.valid_beliefs(g)]
+    existing = [{"id": b["id"], "claim": b["claim"]} for b in beliefs_for_prompt(g)]
     user = (f"Known vendors: {json.dumps(_vendors(g))}\n"
             f"Existing beliefs: {json.dumps(existing)}\n"
             f"Source id: {source_id}\nDocument:\n<<<\n{_raw_source(g, source_id)}\n>>>")
@@ -85,13 +122,30 @@ def extract(g, source_id: str) -> dict:
 
 def infer(g) -> dict:
     """Ask the LLM which suppliers qualify, from currently valid beliefs only."""
-    beliefs = memory.valid_beliefs(g)
-    user = f"Beliefs in shared memory: {json.dumps(beliefs)}"
+    user = (f"Known vendors: {json.dumps(_vendors(g))}\n"
+            f"Beliefs in shared memory: {json.dumps(beliefs_for_prompt(g))}")
     result = llm.complete_json(INFER_SYSTEM, user, INFER_SCHEMA, "inference")
     return {"model": llm.model_name(), "inferences": result["inferences"]}
 
 
 # --- Code side: check and record -----------------------------------------------------
+
+def _resolve(g, vendor) -> tuple[bool, list[str]]:
+    """(ok, about) for an optional vendor given by id or exact name."""
+    if not vendor:
+        return True, []
+    vendor_id = memory.resolve_vendor(g, vendor)
+    return vendor_id is not None, [vendor_id] if vendor_id else []
+
+
+def _merge_conflict(g, belief_id: str, claim: str) -> str | None:
+    """A note if `belief_id` exists and means something that contradicts `claim`."""
+    existing = memory.belief_claim(g, belief_id)
+    if existing is not None and conflicting_specifics(existing, claim):
+        return (f"{belief_id}: already means {existing!r}; {claim!r} differs in its "
+                "specifics and needs its own id")
+    return None
+
 
 def record_extractions(g, extraction: dict) -> list[str]:
     """Record the claims extracted from one source.
@@ -101,25 +155,29 @@ def record_extractions(g, extraction: dict) -> list[str]:
     rejected = []
     for c in extraction["claims"]:
         belief_id = c["belief"]
+        ok, about = _resolve(g, c.get("vendor"))
+        conflict = _merge_conflict(g, belief_id, c["claim"])
         if not BELIEF_ID.match(belief_id):
             rejected.append(f"{belief_id}: not a valid belief id")
-            continue
-        if _normalise(c["quote"]) not in text:
+        elif _text(c["quote"]) not in text:
             rejected.append(f"{belief_id}: quote not found in {source_id}")
-            continue
-        try:
-            # Same claim seen in another source: corroborate, don't duplicate.
-            if not memory.exists(g, BELIEF, belief_id):
-                memory.add_belief(g, belief_id, claim=c["claim"],
-                                  about=[c["vendor"]] if c.get("vendor") else [],
-                                  recompute=False)
-            memory.add_justification(
-                g, f"j_{belief_id[2:]}__{source_id}", supports=belief_id,
-                premises=[source_id], kind=EXTRACTION, reasoning=c["reasoning"],
-                quote=c["quote"], model=extraction.get("model"), agent=AGENT_ID,
-                recompute=False)
-        except memory.WriteRejected as e:
-            rejected.append(str(e))
+        elif not ok:
+            rejected.append(f"{belief_id}: unknown vendor {c.get('vendor')!r}")
+        elif conflict:
+            rejected.append(conflict)
+        else:
+            try:
+                # Same fact seen in another source: corroborate, don't duplicate.
+                if not memory.exists(g, BELIEF, belief_id):
+                    memory.add_belief(g, belief_id, claim=c["claim"], about=about,
+                                      recompute=False)
+                memory.add_justification(
+                    g, f"j_{belief_id[2:]}__{source_id}", supports=belief_id,
+                    premises=[source_id], kind=EXTRACTION, reasoning=c["reasoning"],
+                    quote=c["quote"], model=extraction.get("model"), agent=AGENT_ID,
+                    recompute=False)
+            except memory.WriteRejected as e:
+                rejected.append(str(e))
     support.recompute(g)
     return rejected
 
@@ -130,19 +188,26 @@ def record_inferences(g, inference: dict) -> list[str]:
     for n, item in enumerate(inference["inferences"]):
         belief_id = item["belief"]
         premises = item["premises"]
-        if not BELIEF_ID.match(belief_id) or not all(BELIEF_ID.match(p) for p in premises):
-            rejected.append(f"{belief_id}: inferences may only cite belief ids")
-            continue
-        try:
-            if not memory.exists(g, BELIEF, belief_id):
-                memory.add_belief(g, belief_id, claim=item["claim"],
-                                  about=[item["vendor"]] if item.get("vendor") else [],
-                                  recompute=False)
-            memory.add_justification(
-                g, f"j_{belief_id[2:]}__inference_{n}", supports=belief_id,
-                premises=premises, kind=INFERENCE, reasoning=item["reasoning"],
-                model=inference.get("model"), agent=AGENT_ID, recompute=False)
-        except memory.WriteRejected as e:
-            rejected.append(str(e))
+        ok, about = _resolve(g, item.get("vendor"))
+        conflict = _merge_conflict(g, belief_id, item["claim"])
+        if not BELIEF_ID.match(belief_id):
+            rejected.append(f"{belief_id!r}: not a valid belief id")
+        elif not all(BELIEF_ID.match(p) for p in premises):
+            rejected.append(f"{belief_id}: premises must be belief ids")
+        elif not ok:
+            rejected.append(f"{belief_id}: unknown vendor {item.get('vendor')!r}")
+        elif conflict:
+            rejected.append(conflict)
+        else:
+            try:
+                if not memory.exists(g, BELIEF, belief_id):
+                    memory.add_belief(g, belief_id, claim=item["claim"], about=about,
+                                      recompute=False)
+                memory.add_justification(
+                    g, f"j_{belief_id[2:]}__inference_{n}", supports=belief_id,
+                    premises=premises, kind=INFERENCE, reasoning=item["reasoning"],
+                    model=inference.get("model"), agent=AGENT_ID, recompute=False)
+            except memory.WriteRejected as e:
+                rejected.append(str(e))
     support.recompute(g)
     return rejected
