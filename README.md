@@ -105,7 +105,9 @@ justifications that cite missing evidence. **All 29 queries the product depends 
 1. **Detect** ([app/detector.py](app/detector.py)): rules for HTML comments that address an AI,
    hidden elements and injection phrases, or a manual report. It only *proposes*.
 2. **Preview** ([app/repair.py](app/repair.py)): `GRAPH.COPY` the memory, store every flag as
-   `was_valid` on the copy, quarantine the source there, recompute, and diff with Cypher:
+   `was_valid` on the copy, quarantine the source there (and every other source with the same
+   `origin`: copies and mirrors of a poisoned page carry the same lie, and the preview lists
+   them), recompute, and diff with Cypher:
    what loses all support, what loses a reason but survives (and through which
    justification), which open orders the gate will block, and which orders were already
    executed (memory can be repaired; a real-world action needs a human).
@@ -135,14 +137,30 @@ needs origin A *and* origin B is correctly not counted as redundancy.
 
 Order states: `draft → pending_approval → authorized → executed`, or `blocked`.
 
+### Evidence strength
+
+Antidote cannot tell what is true, but it can tell how much each conclusion rests on
+sources you don't trust ([app/evidence.py](app/evidence.py)). Every belief and decision is
+**unsupported**, **unverified only**, resting on a **single trusted origin**, or **robust**
+(still supported on trusted sources alone after losing any one trusted origin, which is
+what the gate demands of automatic actions). It is computed on one throwaway `GRAPH.COPY`
+with the gate's what-if queries and shown in the graph (dashed outline = unverified only,
+double outline = robust), in the "why?" tree and in the MCP tools. In the demo, Vantor's
+ISO 13485 claim is *unverified only* from the start: the lie was visible before anyone
+knew it was a lie.
+
 ### Agents and MCP tools
 
 - The **Researcher** ([app/agents/researcher.py](app/agents/researcher.py)) gets the raw
   page, HTML comments included, as a scraping agent would. Every claim must carry a quote that
-  appears **verbatim** in the source, or it is rejected.
+  appears **verbatim** in the source, and **numbers must come from the evidence**: a claim may
+  not state numbers its quote doesn't (this stops a lie laundered through a real quote from a
+  *trusted* source, e.g. "ISO 13485" claimed from a registry line that says ISO 9001), and a
+  conclusion may not state numbers its premises don't.
 - The **Buyer** ([app/agents/buyer.py](app/agents/buyer.py)) is prompted with **valid beliefs
   only**, and its plan is re-checked at write time: citing an unsupported belief is
-  rejected. The order amount is computed in code, not by the LLM.
+  rejected, and its quantity and unit price must appear in the beliefs it cites. The order
+  amount is computed in code, not by the LLM.
 - Both use strict structured output (JSON schema) through any OpenAI-compatible provider
   (Groq by default). Outputs are recorded as fixtures, so the demo and tests replay them
   deterministically without API calls.
@@ -176,6 +194,15 @@ from 6 sources, PO-1001 to Vantor for $48,000, blocked after the repair, and PO-
 Boltline for $52,000. The MCP tool-using Buyer, after the repair, called
 `supported_beliefs` (Vantor's beliefs were invisible to it) and then
 `propose_purchase_order` for Boltline, which waited for a human.
+
+### The Playground: design your own world
+
+The UI's **Playground** mode loads a world you write in JSON into a private graph:
+sources with a trust level and an origin, beliefs and decisions with
+`"because": [["a", "b"], ["c"]]` (a AND b, OR c). Then quarantine, lift, submit orders and
+read the evidence. Five example worlds each teach one idea (AND/OR, loops, the gate, the
+agent checks), and [docs/playground.md](docs/playground.md) has a manual test plan and
+recipes for attacking Antidote yourself.
 
 ## Graph data model
 
@@ -247,7 +274,7 @@ instead of 396 lost beliefs and decisions that would have to be re-learned.
 
 ## Correctness
 
-85 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+108 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
 
 - Required cases: alternative justifications; a multi-premise justification losing one
   premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
@@ -258,8 +285,13 @@ instead of 396 lost beliefs and decisions that would have to be re-learned.
   justification citing a missing premise is rejected and writes nothing.
 - **Fuzzing:** 25 random graphs (21 with cycles), each checked in 5 trust states, must agree
   with the independent reference solver on every node and justification.
-- The full story end to end, the Streamlit UI clicked through headless, and the MCP tools
-  through a real MCP client.
+- The full story end to end, the Streamlit UI (demo and Playground) clicked through
+  headless, every Playground example world, and the MCP tools through a real MCP client.
+- **Concurrency.** Two intermittent failures led to a FalkorDB detail: `GRAPH.COPY` forks the
+  server, and only one fork runs at a time, so concurrent copies failed with "could not fork"
+  (49 of 100 in a 4-thread stress test). Every copy now goes through one helper that
+  serializes and retries: 200 of 200 succeeded across two processes. A demo with many
+  visitors would have hit this.
 
 ## Run it locally
 
@@ -274,7 +306,7 @@ python -m venv .venv
 pip install -r requirements.txt
 cp .env.example .env                  # Windows PowerShell: copy .env.example .env
 
-python -m pytest                      # 85 tests
+python -m pytest                      # 108 tests
 python -m scripts.seed_demo --story   # the whole story in the terminal
 streamlit run ui/streamlit_app.py     # the UI: http://localhost:8501
 python -m scripts.benchmark           # the benchmark table
@@ -314,11 +346,15 @@ app/mcp_server.py Antidote memory as MCP tools
 app/llm.py        OpenAI-compatible client with structured output
 app/demo.py       the demo scenario and story steps
 app/views.py      read-only queries for the UI and MCP tools
+app/evidence.py   evidence strength (unverified only ... robust)
+app/scenario.py   the Playground: load a JSON world through memory.py
 app/sessions.py   a private graph copy per web visitor
 ui/               Streamlit app
 scripts/          seed_demo, benchmark, record_fixtures, run_tool_agent, export_cypher
 data/             synthetic vendor pages, registry, policy memo, agent fixtures
-docs/             decisions.md (every design decision), cypher.md, benchmark.md, overview.md
+scenarios/        example Playground worlds
+docs/             decisions.md (every design decision), cypher.md, benchmark.md,
+                  overview.md, playground.md (hands-on guide and manual tests)
 tests/            pytest suite and the reference solver
 ```
 
