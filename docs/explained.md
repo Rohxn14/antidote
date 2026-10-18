@@ -108,9 +108,13 @@ judgement and the query that makes it.
 | 10 | Real LLM runs (Groq) | Found three real failure modes, each now a guard |
 | 11 | Evidence strength, numbers checks, origin quarantine, Playground | Your questions about undetected lies |
 | 12 | AgentDojo attacks, RippleEdits test set | A published attack and an outside test set |
+| 13 | The web app, then every judgement moved into Cypher | What judges see; the "graph must do the work" rule |
+| 14 | Checks before the Buyer decides: suspend, blacklist or clear | Your review: a flagged page must never reach an order |
+| 15 | The scenario suite: 400 cases, 4 to 12 suppliers, published attacks | Your concern: one story proves little |
+| 16 | A real model run, recorded word for word, replayed by default | No hand-written agent answers on the live site |
 
 Every decision, with what was rejected and why, is in [decisions.md](decisions.md)
-(49 entries). The git history tells the same story in 15 commits.
+(64 entries).
 
 ---
 
@@ -127,6 +131,10 @@ Every decision, with what was rejected and why, is in [decisions.md](decisions.m
      |                                       FALKORDB GRAPH (shared memory)
      |                                       beliefs + the reasons for them
      |                                                   |
+     |                       CHECKS BEFORE ANYONE DECIDES: hidden instructions,
+     |                       facts from hidden text, claims trusted documents
+     |                       contradict -> document UNDER REVIEW, supplier suspended
+     |                                                   |
      |                                    SUPPORT ENGINE (Cypher): what is still valid?
      |                                                   |
  BUYER agent (LLM)  <--sees ONLY supported beliefs------+
@@ -134,8 +142,8 @@ Every decision, with what was rejected and why, is in [decisions.md](decisions.m
      v
  ACTION GATE  --> blocked / needs a human / may proceed
      ^
-     |                                   DETECTOR flags a document
-     |                                          |  a human confirms
+     |                                   A PERSON blacklists (or clears)
+     |                                          |
      |                                          v
      +--- blocks orders that lost support   REPAIR: preview on a copy -> approve
                                              -> apply -> verify -> audit record
@@ -151,7 +159,7 @@ Every decision, with what was rejected and why, is in [decisions.md](decisions.m
 |---|---|---|
 | `Source` | A document an agent read, with a **trust** level and an **origin** | `s_vantor_page`: Vantor's product page, unverified |
 | `Belief` | A claim the memory may hold | "Vantor Motion holds ISO 13485 certification." |
-| `Decision` | A shortlist entry or a purchase order | "PO-1001: 100 servo actuators from Vantor at $480 = $48,000" |
+| `Decision` | A shortlist entry or a purchase order | "PO-1001: 100 servo actuators from Boltline Automation at $520 = $52,000" |
 | `Justification` | **One reason**: some premises together support one conclusion | "the Vantor page says so" |
 | `Agent` | Who wrote a reason | the Researcher, the Buyer |
 | `Vendor` | A supplier the beliefs are about | Vantor Motion |
@@ -185,10 +193,13 @@ With Justification nodes it is explicit: **AND inside one reason, OR across reas
 - **Computed flags**: `valid` (sources, beliefs, decisions) and `holds` (reasons). These
   are a **cache** that only the support engine writes.
 
-### A real chain: why PO-1001 existed
+### A real chain: what an order for Vantor rests on
+
+This is the chain behind a Vantor order when Vantor's page counts (in the scripted story after
+a false alarm is cleared, for example):
 
 ```
-PO-1001 ($48,000 to Vantor)
+PO ($48,000 to Vantor)
  └ reason (Buyer): cheapest qualifying supplier, needs ALL of:
      ├ "Vantor meets the ISO 13485 requirement"
      │   └ reason (Researcher), needs ALL of:
@@ -286,12 +297,21 @@ Everything is **fictional**: the company, the vendors, the registry and the peop
 | `data/vendors/boltline.html` | unverified | $520/unit, ISO 13485 (registry confirms) |
 | `data/vendors/ferrocraft.html` | unverified | $560/unit, ISO 13485 (registry confirms) |
 | `data/vendors/quillon.html` | unverified | $390/unit, only ISO 9001, so it doesn't qualify |
+| `data/vendors/nexapoint.html` | unverified | $545/unit, 3 weeks, ISO 13485 (registry confirms) |
+| `data/vendors/orvane.html` | unverified | $610/unit, 2 weeks, ISO 13485 (registry confirms) |
+| `data/vendors/talisk.html` | unverified | $450/unit but 6 weeks for 100 units (20 in stock): too slow |
+| `data/vendors/brennick.html` | unverified | $505/unit, ISO 9001; its ISO 13485 audit is only "scheduled" |
 
-**The story**: the Buyer picks the cheapest qualifying vendor, Vantor, and drafts PO-1001
-for $48,000. The gate holds it for a human (over $5,000). The detector flags Vantor's page.
-The preview shows 6 things would fall, and one survives: "Vantor makes servo actuators" is
-also in the registry. The repair is approved. The manager approves PO-1001 anyway: the gate
-**blocks** it. The Buyer re-decides on clean memory: PO-1002 to Boltline, $52,000.
+Every page also says more than the essentials (specifications, warranty, terms, compliance),
+so an agent has to pick out what matters. The honest answer is Boltline at $520.
+
+**The story** (as the live site shows it): the Researcher reads all ten documents, hidden text
+included. Before anyone decides, the checks put Vantor's page **under review** (hidden
+instructions, facts read in hidden text, and a claim the registry contradicts) and suspend
+Vantor. The Buyer, seeing only what still counts, orders from **Boltline** (PO-1001, $52,000).
+A person then **blacklists** Vantor (the preview shows what rests only on its page) and
+approves, or calls it a **false alarm**: the page counts again, the Buyer re-plans to Vantor,
+and the certification hold stops that $48,000 order because nothing trusted confirms it.
 
 ---
 
@@ -428,13 +448,15 @@ In the graph, the agents are `Agent` nodes (`a_researcher`, `a_buyer`) linked by
 
 **How they run.** Agents are not separate programs or servers. They run when something
 calls them:
-- `scripts/record_fixtures.py` runs the Researcher and Buyer for real (9 LLM calls) and saves
-  their answers.
+- **Live AI** in the web app (on your laptop, with a key) runs the Researcher and the Buyer for
+  real, through the same steps and checks as everything else.
+- `scripts/record_run.py` runs them for real and saves every exchange verbatim (14 calls for
+  the story and two follow-ups); the live site replays that recording by default, without
+  calling any model (section 13).
 - `scripts/run_tool_agent.py` runs the tool-using Buyer for real.
 - The Streamlit Lab can run the Buyer live (sidebar toggle) or the tool-using Buyer (Agents tab),
   if a key is configured.
-- Everything else **replays** the Researcher's hand-authored answers and applies the Buyer's
-  rules (section 13). That includes the live site, where no AI runs.
+- The **Scripted** mode and the tests use hand-written answers and a rule-based Buyer.
 
 **How a live Researcher step works**, concretely:
 1. `extract()` sends the LLM: the vendor list, the beliefs already in memory, and the raw page.
@@ -465,10 +487,9 @@ falls back to plain JSON mode. Without a key, everything still works by replayin
 
 ---
 
-## 13. Fixtures: recorded agent answers
+## 13. Where the agents' answers come from
 
-A **fixture** is a saved agent answer: the exact JSON the LLM returned, stored in a file and
-replayed later.
+Three places, and the screen always says which one is in use.
 
 | Folder | What | Used by |
 |---|---|---|
@@ -485,10 +506,13 @@ applies the request's rules (D61). *Live AI*: the model called now, only on your
 key. **The live site never calls a model.** Every recording attempt is logged in
 `data/recordings/attempts.log`, kept or not; the replayed run was attempt 1 of 1.
 
-**Why:** the demo and tests give the same result every time, need no API key, and cost
-nothing. Replayed answers go through **the same checks** as live ones.
+**Why keep the scripted answers:** the tests need the same answers every time, with no API key
+and no cost, and a case you build can't call a model on the site. Replayed answers, scripted or
+recorded, go through **the same checks** as live ones.
 
-**To re-record**: `python -m scripts.record_fixtures` (needs your Groq key).
+**To record a new real run:** `python -m scripts.record_run` (needs your Groq key; every
+attempt, kept or failed, is logged). The older `record_fixtures` script saves the 17 Oct format
+(parsed replies only).
 
 ---
 
@@ -541,14 +565,17 @@ executed**, and every time it **recomputes first** on the current graph.
 | No reason for the order holds | **blocked**, even if a human approves (stopping trust in a document blocks the open orders that lost their support at once, saying which facts went and why) |
 | It is for a suspended or blacklisted supplier | **blocked** |
 | It rests on a document under review (only if the fact is also backed elsewhere) | **held**: approval waits until a person decides about the document |
-| $5,000 or more, and a conclusion it rests on (like "Vantor meets the ISO 13485 requirement") is backed only by unverified documents | **held** until a trusted document confirms it |
+| $5,000 or more, and a certification it rests on, directly or through a conclusion (like "Vantor holds ISO 13485"), is backed only by unverified documents | **held** until a trusted document confirms it |
 | $5,000 or more, or not reversible, or not robust | **waits for a human** |
 | Otherwise | proceeds automatically |
 
 The holds came from reviewing the app: a $48,000 order resting on a page with hidden
 instructions, or on a supplier's own unconfirmed word, could otherwise be approved with one
-click. Prices only ever come from suppliers' own pages, so only *conclusions* must be
-confirmed, not every fact.
+click. Prices and delivery times only ever come from suppliers' own pages, and no document
+can confirm them, so what must be confirmed is the **certifications** the order rests on. The
+first version checked *conclusions* instead; the recorded real model run showed why that was
+wrong: after a false alarm, the model cited Vantor's certificate directly, with no conclusion
+in between, and the order slipped through (decision D64).
 
 **Robust** means: counting only *trusted* sources, the order stays valid even if any one
 trusted origin is lost. Tested by what-ifs on a throwaway copy. Two copies of the same
@@ -621,7 +648,8 @@ logic of its own: it shows what the API returns and calls the tested modules.
 - **Case bar:** what the case is about, its status (open alerts, distrusted documents, the
   order's state) and one suggestion for what to look at next, all worked out from the memory.
 - **1. Request and documents:** the request, **Start the agents** (it becomes **Skip to
-  result**), a **Live AI** switch (off on the public server), **Build your own case**, and the
+  result**), the mode: **Real run** (the default: the recorded gpt-oss-120b run, with a badge
+  saying so), **Scripted** or **Live AI** (local only, needs a key), **Build your own case**, and the
   documents with their trust. A document opens in a side panel: what the AI reads (hidden
   parts in red), what a person sees (a sandboxed frame with scripts off), and **What if we stop
   trusting it?** for any document.
@@ -630,12 +658,14 @@ logic of its own: it shows what the API returns and calls the tested modules.
   activity feed. While the agents work, the camera follows each new fact.
 - **3. Recommendation and action:** the order card (the Buyer's reasoning, "What it rests on",
   holds, blocks, "Why the change" after a re-plan, Approve, Place the order, Re-plan), the
-  security alert, the impact preview with **Stop trusting this document**, and the repair log.
+  review card for a flagged document (**Blacklist…** or **It's a false alarm**), the impact
+  preview, and the repair log.
 - **Under the hood:** each capability run live with the exact Cypher FalkorDB executed, the
-  same code run with FalkorDB unplugged (every one fails), the graph model, the benchmark and
-  every query.
-- **Build your own case:** a form (delivery deadline; per supplier: price, delivery time,
-  certificate claimed, registry confirms it, hidden instructions) with four presets. The
+  same code run with FalkorDB unplugged (every one fails), the graph model, the benchmark, the
+  scenario suite and every query.
+- **Build your own case:** a form with up to 12 suppliers (per supplier: price, delivery time,
+  certificate claimed, registry confirms it, an open "only certified" claim, and hidden text:
+  which published attack, hidden how, pushing whom) and eleven presets. The
   documents and the agents' answers are generated from it ([app/casebuilder.py](../app/casebuilder.py));
   no AI runs in a built case, and the screen says so. Everything after is the real engine.
 - **Your case is private and persistent:** an unguessable token in your browser maps to your
@@ -665,6 +695,10 @@ logic of its own: it shows what the API returns and calls the tested modules.
   Lab clicked through** without a browser. The web app itself was walked through in a
   headless browser, locally and on the live site.
 - **The RippleEdits cases** (section 22) and a check that no real identities slipped in.
+- **The recorded real run**, replayed answer for answer, with its file hash and prompt hashes
+  checked, and **the 21 named scenarios** of the scenario suite.
+- **Tests never call a real model:** the key is blanked for the test run, so a call that slips
+  past a stub fails instead of spending tokens.
 
 **A bug the tests uncovered.** Two tests failed once each, at random. The cause: FalkorDB
 makes a graph copy by briefly *forking* itself, and only one fork can run at a time. Under
@@ -686,15 +720,22 @@ Antidote's engine.
 
 | Scenario | Method | Left active (should be gone) | Wrongly lost | Poisoned orders that still pass |
 |---|---|---|---|---|
-| Demo (65 nodes) | **Antidote** | **0** | **0** | **0** |
+| Demo (111 nodes) | **Antidote** | **0** | **0** | **0** |
 | | Delete only | 6 | 0 | 1 |
-| | Rollback | 0 | 8 | 0 |
+| | Rollback | 0 | 15 | 0 |
 | 100 vendors (1,874 nodes) | **Antidote** | **0** | **0** | **0** |
 | | Delete only | 54 | 0 | 5 |
 | | Rollback | 0 | 396 | 0 |
 
 Plus the external RippleEdits test set: Antidote exact on 15 of 15 cases (section 22). Full
 tables: [benchmark.md](benchmark.md).
+
+**The scenario suite** (`python -m scripts.scenario_suite`) asks a different question: across
+400 random cases with 4 to 12 suppliers, published attacks hidden the ways real incidents did,
+and failures built in on purpose, which supplier gets approved by a reviewer who approves
+everything? With Antidote, 296 cases end right and 17 wrong (none to a supplier that tried to
+manipulate the agents); without it, 116 right and 284 wrong (145 to manipulators). Details:
+[scenario_suite.md](scenario_suite.md).
 
 ---
 
@@ -762,7 +803,9 @@ false about it), and OpenSanctions needs a licence for business use.
 | `support.py` | The support engine (the reset and the round queries) |
 | `gate.py` | The action gate and its what-if tests |
 | `repair.py` | Preview, stale check, apply, verify, audit |
-| `detector.py` | The rule-based injection detector |
+| `detector.py` | The rule-based injection detector, and what a person can see on a page |
+| `review.py` | The checks before anyone decides (scan, hidden facts, conflict check); review, clear |
+| `recording.py` | Replays a recorded real model run: each exact prompt gets its recorded reply |
 | `evidence.py` | Evidence strength levels |
 | `config.py` | The demo policy numbers ($5,000; one origin) |
 | `views.py` | Read-only queries for the app and MCP |
@@ -792,12 +835,15 @@ false about it), and OpenSanctions needs a licence for business use.
 |---|---|
 | `seed_demo.py` | Seeds the demo; `--story` plays it in the terminal |
 | `benchmark.py` | The comparison against delete-only and rollback, plus RippleEdits |
-| `record_fixtures.py` | Runs the real agents and saves their answers |
+| `record_run.py` | Records a real model run verbatim (prompts, replies, provenance); logs every attempt |
+| `scenario_suite.py` | The scenario suite: named and random cases, judged against the truth |
+| `without_falkordb.py` | Runs every capability with no database behind it: all of them fail |
+| `record_fixtures.py` | The older recorder (17 Oct format: parsed replies only) |
 | `run_tool_agent.py` | Runs the real tool-using Buyer and saves its transcript |
 | `import_rippleedits.py` | One-off: turns 15 RippleEdits cases into anonymised structure |
 | `rippleedits.py` | Loads and evaluates the RippleEdits test set |
 | `export_cypher.py` | Writes every query into `docs/cypher.md` |
-| `keepalive.py` | Wakes the free Cloud database by hand (the GitHub Action now asks the app for `/api/health` every 12 minutes, which keeps both awake) |
+| `keepalive.py` | Wakes the free Cloud database by hand (the GitHub Action asks the app for `/api/health` instead) |
 | `smoke_test.py` | Your first connection test |
 | `seed.py` | Empty leftover from the first setup; safe to delete |
 
@@ -806,14 +852,15 @@ false about it), and OpenSanctions needs a licence for business use.
 | Path | Purpose |
 |---|---|
 | `data/vendors/*.html`, `data/registry.html`, `data/policy.txt` | The fictional documents |
-| `data/fixtures/` | Recorded agent answers (hand-authored and `live/`) |
+| `data/fixtures/` | Scripted answers (hand-written, with `provenance.json`) and the 17 Oct real run (`live/`) |
+| `data/recordings/` | The recorded real run the live site replays, verbatim, with `provenance.json` and `attempts.log` |
 | `data/rippleedits/cases.json` | The anonymised external test set |
 | `scenarios/*.json` | Playground example worlds |
 | `tests/` | The 190 tests; `reference.py` is the independent solver |
 | `docs/` | This file, decisions, Cypher reference, benchmark, overview (with judge Q&A), Playground guide, video script |
 | `docker-compose.yml` | Local FalkorDB (port 6379) and its Browser (port 3000) |
 | `Dockerfile`, `render.yaml`, `.streamlit/config.toml` | Deployment and app settings |
-| `.github/workflows/keepalive.yml` | Asks the app for its health every 12 minutes during judging |
+| `.github/workflows/keepalive.yml` | Asks the app for its health every 12 minutes (best effort) and emails if it fails |
 | `.env.example` | Template for `.env` (local) and `.env.cloud` (Cloud); real ones are never committed |
 | `requirements.txt`, `pytest.ini` | Dependencies and test settings |
 
@@ -823,17 +870,22 @@ false about it), and OpenSanctions needs a licence for business use.
 
 ```bash
 docker compose up -d                       # FalkorDB + its Browser
+py -3.12 -m venv .venv                     # once (macOS/Linux: python3.12 -m venv .venv)
 .venv\Scripts\activate                     # macOS/Linux: source .venv/bin/activate
-cd web && npm ci && npm run build && cd ..  # build the web app once (Node 22)
+pip install -r requirements.txt            # once
+cd web && npm ci && npm run build && cd ..  # build the web app once (Node 22 or newer)
 uvicorn api.server:app --port 8000         # the web app: http://localhost:8000
 python -m pytest                           # 190 tests
-python -m scripts.seed_demo --story        # the whole story in the terminal
-streamlit run ui/streamlit_app.py          # the Streamlit Lab: http://localhost:8501
+python -m scripts.scenario_suite           # the scenario suite (about 5 minutes)
 python -m scripts.benchmark                # the benchmark tables
-python -m scripts.record_fixtures          # real agent run (needs the Groq key)
-python -m scripts.run_tool_agent           # real tool-using agent run
+python -m scripts.record_run               # record a real model run (needs the Groq key)
+python -m scripts.seed_demo --story        # the older story, in the terminal
+streamlit run ui/streamlit_app.py          # the Streamlit Lab: http://localhost:8501
 python -m app.mcp_server                   # MCP server for any MCP host
 ```
+
+From a fresh clone to a running app took 3 min 41 s on this laptop (filmed for the video).
+With `LLM_API_KEY` and `LLM_MODEL` in `.env`, pick **Live AI** in the app to run the real agents.
 
 - **Look inside the database:** FalkorDB Browser at http://localhost:3000; the graph names
   are in section 5.
@@ -854,8 +906,8 @@ Each of these was found by testing, and each shaped the code:
 - An aggregate like `count(*)` always returns one row; with a grouping key it can return
   none. Both caused bugs that the tests caught.
 - `GRAPH.COPY` forks the server and only one fork runs at a time (section 20).
-- FalkorDB Cloud's free tier: no TLS, no stored data across restarts, and it stops after a
-  day idle. Every Cypher statement is a network round trip: about 34 ms from India, and 62 ms
+- FalkorDB Cloud's free tier: no TLS, no backups, and an instance is stopped after a day
+  without use and deleted after a week. Every Cypher statement is a network round trip: about 34 ms from India, and 62 ms
   from the server in Singapore to the database in Mumbai, which made a full-speed run take
   27 s instead of 1 to 2 s (decision D50: put the app and the database in the same area). That
   is also why the engine was cut from 11 to 5 queries per recompute (preview went from 1.2 s
@@ -873,10 +925,14 @@ Each of these was found by testing, and each shaped the code:
   local run; moving both to Northern Virginia (decision D50) is prepared on the
   `region-virginia` branch.
 - **Secrets:** typed into Render's dashboard, never committed. Live AI is off on the public
-  server (`ANTIDOTE_LIVE_AI=off`).
-- **Keep-alive:** a GitHub Action asks the app for `/api/health` every 12 minutes during judging;
-  the app pings FalkorDB to answer, so neither the web service nor the database goes to sleep.
-- **Before submitting:** make the repository public after a last secret scan.
+  server (`ANTIDOTE_LIVE_AI=off`); the site replays the recorded real run instead.
+- **Keep-alive:** the app answers `/api/health` by running commands on FalkorDB, so a ping keeps
+  both awake (Render sleeps after 15 idle minutes; a free FalkorDB instance is stopped after a
+  day idle). A GitHub Action pings it (it needs the `APP_URL` repository variable, which is
+  set), but GitHub runs frequent schedules on a best-effort basis (on the first day it fired
+  once in about 3½ hours), so an external pinger (cron-job.org or UptimeRobot, every 5 minutes)
+  is the dependable way. The Action stays as the alarm: it emails when the health check fails.
+- **The repository is public;** a scan of every commit found no keys and no `.env` files.
 
 ---
 
@@ -886,7 +942,16 @@ Each of these was found by testing, and each shaped the code:
   you find out, the repair is complete.
 - **It can only follow reasons that were recorded.** If an agent leaves out a dependency,
   contamination can remain. The write checks narrow this gap; they can't close it.
-- **The detector catches known patterns**, not plainly stated lies or new phrasings.
+- **The detector catches known patterns** and documented hiding techniques, not plainly stated
+  lies or new phrasings. The certification hold is the backstop.
+- **Some lies no document can reveal:** a wrong trusted registry, or a supplier lying about its
+  delivery time, gets through (measured in the scenario suite).
+- **Suspension can be abused:** a competitor can frame an honest supplier with hidden text; it
+  stays suspended until a person clears it.
+- **The live site replays one real model run.** Another run may answer differently; Live AI runs
+  locally.
+- **Support is recomputed over the whole graph** after every change: fine for thousands of
+  facts, not millions.
 - **Wording-only lies** ("not certified" turned into "certified") pass the numbers check.
   Anything at stake goes to a human.
 - **One writer at a time.** It is not built for many agents writing at once.
@@ -915,6 +980,13 @@ Each of these was found by testing, and each shaped the code:
 | Gate | The check every order must pass, on the current graph |
 | Robust | Still supported after losing any one trusted origin |
 | Fixture | A saved agent answer, replayed instead of calling the LLM |
+| Real run (recording) | A real model run saved verbatim; replayed by giving each exact prompt its recorded reply |
+| Scripted | Hand-written answers in the LLM's format, for tests and as an option |
+| Under review | A flagged document: it counts for nothing until a person clears or distrusts it |
+| Suspended / blacklisted | A supplier whose document is under review / was distrusted: no order can go to it |
+| Hidden fact | A fact an agent took from text a person cannot see on the page |
+| Conflict check | A Cypher query: "the only certified one" against trusted certification records |
+| Certification hold | A large order waits until a trusted document confirms each certification it rests on |
 | MCP | A standard way to hand tools to an AI model |
 | Prompt injection | Hidden text that tries to give an AI instructions |
 | GRAPH.COPY | FalkorDB's command for copying a whole graph |
