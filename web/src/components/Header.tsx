@@ -34,7 +34,7 @@ function MemoryPill({ health, syncing }: { health: HealthResponse | null; syncin
       ) : (
         <span className={cx("size-2 rounded-full", up ? "bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.18)]" : "bg-rose-400")} />
       )}
-      <span className="font-medium text-white">FalkorDB</span>
+      <span className="hidden font-medium text-white sm:inline">FalkorDB</span>
       <span className="hidden sm:inline">
         {!up ? "unreachable" : syncing ? "updating…" : `connected${used ? ` · ${used} in use` : ""}`}
       </span>
@@ -54,7 +54,7 @@ export function Header({ health, syncing, onStartOver, restarting, page, onNavig
       onClick={() => onNavigate(p)}
       aria-current={page === p ? "page" : undefined}
       className={cx(
-        "rounded-lg px-3 py-1.5 text-[13px] font-medium transition",
+        "whitespace-nowrap rounded-lg px-2 py-1.5 text-[12.5px] font-medium transition sm:px-3 sm:text-[13px]",
         page === p ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white",
       )}
     >
@@ -63,13 +63,13 @@ export function Header({ health, syncing, onStartOver, restarting, page, onNavig
   );
   return (
     <header className="bg-ink text-white">
-      <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center gap-3 px-4">
+      <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center gap-2 px-4 sm:gap-3">
         <Logo />
         <div className="flex items-baseline gap-3">
-          <span className="text-[16px] font-semibold tracking-tight">Antidote</span>
+          <span className="hidden text-[16px] font-semibold tracking-tight sm:inline">Antidote</span>
           <span className="hidden text-[13px] text-slate-400 xl:inline">Procurement agents with a memory you can audit</span>
         </div>
-        <nav className="ml-2 flex items-center gap-1 sm:ml-4">
+        <nav className="flex items-center gap-0.5 sm:ml-4 sm:gap-1">
           {tab("case", "Purchase case")}
           {tab("hood", "Under the hood")}
         </nav>
