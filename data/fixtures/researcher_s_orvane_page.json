@@ -1,0 +1,28 @@
+{
+  "source_id": "s_orvane_page",
+  "model": "hand-authored",
+  "claims": [
+    {
+      "belief": "b_orvane_makes_servos",
+      "vendor": "v_orvane",
+      "claim": "Orvane Dynamics manufactures servo actuators.",
+      "quote": "Orvane Dynamics manufactures high-torque servo actuators.",
+      "reasoning": "The product section says so."
+    },
+    {
+      "belief": "b_orvane_offer",
+      "vendor": "v_orvane",
+      "claim": "Orvane Dynamics sells servo actuators at $610 per unit and can ship 100 units within 2 weeks.",
+      "quote": "Price: $610 per unit; 100 units ship within 2 weeks.",
+      "reasoning": "Price and lead time from the product section."
+    },
+    {
+      "belief": "b_orvane_iso13485",
+      "vendor": "v_orvane",
+      "standard": "ISO 13485",
+      "claim": "Orvane Dynamics holds ISO 13485 certification.",
+      "quote": "Orvane Dynamics holds ISO 13485:2016 certification (certificate MD-5108).",
+      "reasoning": "The quality section states the certification."
+    }
+  ]
+}

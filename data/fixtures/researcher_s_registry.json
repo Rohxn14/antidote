@@ -2,29 +2,109 @@
   "source_id": "s_registry",
   "model": "hand-authored",
   "claims": [
-    {"belief": "b_boltline_iso13485", "vendor": "v_boltline", "standard": "ISO 13485",
-     "claim": "Boltline Automation holds ISO 13485 certification.",
-     "quote": "Boltline Automation servo actuators ISO 13485:2016 MD-2231",
-     "reasoning": "The registry lists ISO 13485:2016 on file for Boltline Automation."},
-    {"belief": "b_boltline_makes_servos", "vendor": "v_boltline",
-     "claim": "Boltline Automation manufactures servo actuators.",
-     "quote": "Boltline Automation servo actuators ISO 13485:2016",
-     "reasoning": "The registry lists servo actuators as a registered product."},
-    {"belief": "b_ferrocraft_iso13485", "vendor": "v_ferrocraft", "standard": "ISO 13485",
-     "claim": "Ferrocraft Servo holds ISO 13485 certification.",
-     "quote": "Ferrocraft Servo servo actuators, gearboxes ISO 13485:2016 MD-1187",
-     "reasoning": "The registry lists ISO 13485:2016 on file for Ferrocraft Servo."},
-    {"belief": "b_ferrocraft_makes_servos", "vendor": "v_ferrocraft",
-     "claim": "Ferrocraft Servo manufactures servo actuators.",
-     "quote": "Ferrocraft Servo servo actuators, gearboxes",
-     "reasoning": "The registry lists servo actuators as a registered product."},
-    {"belief": "b_vantor_makes_servos", "vendor": "v_vantor",
-     "claim": "Vantor Motion manufactures servo actuators.",
-     "quote": "Vantor Motion servo actuators ISO 9001:2015 QM-5520",
-     "reasoning": "The registry lists servo actuators as a registered product."},
-    {"belief": "b_quillon_makes_servos", "vendor": "v_quillon",
-     "claim": "Quillon Drives manufactures servo actuators.",
-     "quote": "Quillon Drives servo actuators ISO 9001:2015 QM-6604",
-     "reasoning": "The registry lists servo actuators as a registered product."}
+    {
+      "belief": "b_boltline_iso13485",
+      "vendor": "v_boltline",
+      "standard": "ISO 13485",
+      "claim": "Boltline Automation holds ISO 13485 certification.",
+      "quote": "Boltline Automation servo actuators ISO 13485:2016 MD-2231",
+      "reasoning": "The registry lists ISO 13485:2016 on file for Boltline Automation."
+    },
+    {
+      "belief": "b_boltline_makes_servos",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation manufactures servo actuators.",
+      "quote": "Boltline Automation servo actuators ISO 13485:2016",
+      "reasoning": "The registry lists servo actuators as a registered product."
+    },
+    {
+      "belief": "b_ferrocraft_iso13485",
+      "vendor": "v_ferrocraft",
+      "standard": "ISO 13485",
+      "claim": "Ferrocraft Servo holds ISO 13485 certification.",
+      "quote": "Ferrocraft Servo servo actuators, gearboxes ISO 13485:2016 MD-1187",
+      "reasoning": "The registry lists ISO 13485:2016 on file for Ferrocraft Servo."
+    },
+    {
+      "belief": "b_ferrocraft_makes_servos",
+      "vendor": "v_ferrocraft",
+      "claim": "Ferrocraft Servo manufactures servo actuators.",
+      "quote": "Ferrocraft Servo servo actuators, gearboxes",
+      "reasoning": "The registry lists servo actuators as a registered product."
+    },
+    {
+      "belief": "b_vantor_makes_servos",
+      "vendor": "v_vantor",
+      "claim": "Vantor Motion manufactures servo actuators.",
+      "quote": "Vantor Motion servo actuators ISO 9001:2015 QM-5520",
+      "reasoning": "The registry lists servo actuators as a registered product."
+    },
+    {
+      "belief": "b_quillon_makes_servos",
+      "vendor": "v_quillon",
+      "claim": "Quillon Drives manufactures servo actuators.",
+      "quote": "Quillon Drives servo actuators ISO 9001:2015 QM-6604",
+      "reasoning": "The registry lists servo actuators as a registered product."
+    },
+    {
+      "belief": "b_nexapoint_iso13485",
+      "vendor": "v_nexapoint",
+      "standard": "ISO 13485",
+      "claim": "Nexapoint Actuation holds ISO 13485 certification.",
+      "quote": "Nexapoint Actuation servo actuators ISO 13485:2016 MD-3392",
+      "reasoning": "The registry lists ISO 13485:2016 on file for Nexapoint Actuation."
+    },
+    {
+      "belief": "b_nexapoint_makes_servos",
+      "vendor": "v_nexapoint",
+      "claim": "Nexapoint Actuation manufactures servo actuators.",
+      "quote": "Nexapoint Actuation servo actuators ISO 13485:2016",
+      "reasoning": "The registry lists servo actuators as a registered product."
+    },
+    {
+      "belief": "b_orvane_iso13485",
+      "vendor": "v_orvane",
+      "standard": "ISO 13485",
+      "claim": "Orvane Dynamics holds ISO 13485 certification.",
+      "quote": "Orvane Dynamics servo actuators ISO 13485:2016 MD-5108",
+      "reasoning": "The registry lists ISO 13485:2016 on file for Orvane Dynamics."
+    },
+    {
+      "belief": "b_orvane_makes_servos",
+      "vendor": "v_orvane",
+      "claim": "Orvane Dynamics manufactures servo actuators.",
+      "quote": "Orvane Dynamics servo actuators ISO 13485:2016",
+      "reasoning": "The registry lists servo actuators as a registered product."
+    },
+    {
+      "belief": "b_talisk_iso13485",
+      "vendor": "v_talisk",
+      "standard": "ISO 13485",
+      "claim": "Talisk Motion holds ISO 13485 certification.",
+      "quote": "Talisk Motion servo actuators ISO 13485:2016 MD-2964",
+      "reasoning": "The registry lists ISO 13485:2016 on file for Talisk Motion."
+    },
+    {
+      "belief": "b_talisk_makes_servos",
+      "vendor": "v_talisk",
+      "claim": "Talisk Motion manufactures servo actuators.",
+      "quote": "Talisk Motion servo actuators ISO 13485:2016",
+      "reasoning": "The registry lists servo actuators as a registered product."
+    },
+    {
+      "belief": "b_brennick_iso9001",
+      "vendor": "v_brennick",
+      "standard": "ISO 9001",
+      "claim": "Brennick Servo holds ISO 9001 certification.",
+      "quote": "Brennick Servo servo actuators ISO 9001:2015 QM-8823",
+      "reasoning": "The registry lists ISO 9001:2015 on file for Brennick Servo."
+    },
+    {
+      "belief": "b_brennick_makes_servos",
+      "vendor": "v_brennick",
+      "claim": "Brennick Servo manufactures servo actuators.",
+      "quote": "Brennick Servo servo actuators ISO 9001:2015",
+      "reasoning": "The registry lists servo actuators as a registered product."
+    }
   ]
 }

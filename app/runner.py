@@ -16,7 +16,7 @@ write path (app/memory.py) as everywhere else. Events are plain dicts
 """
 import time
 
-from app import casebuilder, demo, memory, review, support, views
+from app import casebuilder, demo, llm, memory, recording, review, support, views
 from app.agents import buyer, researcher
 from app.schema import (ABOUT, AGENT, AUTHORED, BELIEF, DECISION, HOLDS, JUSTIFICATION,
                         PREMISE, SOURCE, SUPPORTS, VENDOR)
@@ -60,16 +60,33 @@ def status(agent: str, message: str, state: str = "working", document_id: str | 
 # The story's suppliers as the planner sees them (prices and delivery from their pages).
 STORY_CASE = {"max_weeks": 4, "suppliers": [
     {"slot": "vantor", "price": 480, "weeks": 2}, {"slot": "boltline", "price": 520, "weeks": 3},
-    {"slot": "ferrocraft", "price": 560, "weeks": 4}, {"slot": "quillon", "price": 390, "weeks": 2}]}
+    {"slot": "ferrocraft", "price": 560, "weeks": 4}, {"slot": "quillon", "price": 390, "weeks": 2},
+    {"slot": "nexapoint", "price": 545, "weeks": 3}, {"slot": "orvane", "price": 610, "weeks": 2},
+    {"slot": "talisk", "price": 450, "weeks": 6}, {"slot": "brennick", "price": 505, "weeks": 3}]}
 
 
 class StoryScript:
-    """Where a run's documents and the agents' answers come from: here, the demo
-    story, with the recorded agents (replay) or the real ones (live). A built case
-    (app/casebuilder.CaseScript) has the same shape."""
+    """Where a run's documents and the agents' answers come from, for the demo story.
+    A built case (app/casebuilder.CaseScript) has the same shape.
 
-    def __init__(self, mode: str = "replay", request_text: str = DEFAULT_REQUEST):
-        self.live = mode == "live"
+        replay    scripted: hand-written answers in the LLM's format for the Researcher
+                  (data/fixtures/), and a Buyer that applies the request's rules
+        recorded  a real model run (app/recording.py): the agents' own code runs, and
+                  each prompt gets the reply the model really gave to that prompt
+        live      the real model, called now (needs a key; off on the deployed site)
+    """
+
+    def __init__(self, mode: str = "replay", request_text: str = DEFAULT_REQUEST, client=None):
+        self.mode = mode
+        if client is None and mode == "live":
+            client = llm.LIVE
+        if client is None and mode == "recorded":
+            client = recording.default()
+            if client is None:
+                raise recording.NotRecorded("No recorded model run is available.")
+        self.client = client  # None: scripted answers
+        if mode == "recorded":
+            request_text = DEFAULT_REQUEST  # the recording's prompts contain this request
         self.request_text = request_text[:MAX_REQUEST] or DEFAULT_REQUEST
 
     def sources(self) -> list[tuple]:
@@ -79,22 +96,28 @@ class StoryScript:
                 for sid, uri, title, trust, origin in demo.SOURCES]
 
     def extraction(self, g, source_id: str) -> dict:
-        return researcher.extract(g, source_id) if self.live else demo.fixture(f"researcher_{source_id}")
+        if self.client:
+            return researcher.extract(g, source_id, self.client)
+        return demo.fixture(f"researcher_{source_id}")
 
     def inference(self, g) -> dict:
-        return researcher.infer(g) if self.live else demo.fixture("researcher_inference")
+        return researcher.infer(g, self.client) if self.client else demo.fixture("researcher_inference")
 
     def vendors(self) -> list[tuple]:
         return demo.VENDORS
 
-    # The recorded Buyer follows the request's rules on what memory supports right now
+    # Scripted, the Buyer applies the request's rules to what memory supports right now
     # (the same planner as a built case): which documents are under review or distrusted
-    # changes its answer, so one fixed recorded answer could not.
+    # changes its answer, so one fixed written answer could not.
     def plan(self, g) -> dict:
-        return buyer.decide(g, demo.FIRST_ORDER) if self.live else             casebuilder.CaseScript(STORY_CASE).plan(g)
+        if self.client:
+            return buyer.decide(g, demo.FIRST_ORDER, self.client)
+        return casebuilder.CaseScript(STORY_CASE).plan(g)
 
     def replan(self, g) -> dict:
-        return buyer.decide(g) if self.live else casebuilder.CaseScript(STORY_CASE).replan(g)
+        if self.client:
+            return buyer.decide(g, client=self.client)
+        return casebuilder.CaseScript(STORY_CASE).replan(g)
 
 
 def prepare(g, script=DEFAULT_REQUEST) -> None:

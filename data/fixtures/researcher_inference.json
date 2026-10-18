@@ -1,17 +1,65 @@
 {
   "model": "hand-authored",
   "inferences": [
-    {"belief": "b_vantor_qualifies", "vendor": "v_vantor",
-     "claim": "Vantor Motion meets the ISO 13485 supplier requirement.",
-     "premises": ["b_vantor_iso13485", "b_req_iso13485"],
-     "reasoning": "The requirement is ISO 13485 and Vantor holds it."},
-    {"belief": "b_boltline_qualifies", "vendor": "v_boltline",
-     "claim": "Boltline Automation meets the ISO 13485 supplier requirement.",
-     "premises": ["b_boltline_iso13485", "b_req_iso13485"],
-     "reasoning": "The requirement is ISO 13485 and Boltline holds it."},
-    {"belief": "b_ferrocraft_qualifies", "vendor": "v_ferrocraft",
-     "claim": "Ferrocraft Servo meets the ISO 13485 supplier requirement.",
-     "premises": ["b_ferrocraft_iso13485", "b_req_iso13485"],
-     "reasoning": "The requirement is ISO 13485 and Ferrocraft holds it."}
+    {
+      "belief": "b_vantor_qualifies",
+      "vendor": "v_vantor",
+      "claim": "Vantor Motion meets the ISO 13485 supplier requirement.",
+      "premises": [
+        "b_vantor_iso13485",
+        "b_req_iso13485"
+      ],
+      "reasoning": "The requirement is ISO 13485 and Vantor holds it."
+    },
+    {
+      "belief": "b_boltline_qualifies",
+      "vendor": "v_boltline",
+      "claim": "Boltline Automation meets the ISO 13485 supplier requirement.",
+      "premises": [
+        "b_boltline_iso13485",
+        "b_req_iso13485"
+      ],
+      "reasoning": "The requirement is ISO 13485 and Boltline holds it."
+    },
+    {
+      "belief": "b_ferrocraft_qualifies",
+      "vendor": "v_ferrocraft",
+      "claim": "Ferrocraft Servo meets the ISO 13485 supplier requirement.",
+      "premises": [
+        "b_ferrocraft_iso13485",
+        "b_req_iso13485"
+      ],
+      "reasoning": "The requirement is ISO 13485 and Ferrocraft holds it."
+    },
+    {
+      "belief": "b_nexapoint_qualifies",
+      "vendor": "v_nexapoint",
+      "claim": "Nexapoint Actuation meets the ISO 13485 supplier requirement.",
+      "premises": [
+        "b_nexapoint_iso13485",
+        "b_req_iso13485"
+      ],
+      "reasoning": "The requirement is ISO 13485 and Nexapoint holds it."
+    },
+    {
+      "belief": "b_orvane_qualifies",
+      "vendor": "v_orvane",
+      "claim": "Orvane Dynamics meets the ISO 13485 supplier requirement.",
+      "premises": [
+        "b_orvane_iso13485",
+        "b_req_iso13485"
+      ],
+      "reasoning": "The requirement is ISO 13485 and Orvane holds it."
+    },
+    {
+      "belief": "b_talisk_qualifies",
+      "vendor": "v_talisk",
+      "claim": "Talisk Motion meets the ISO 13485 supplier requirement.",
+      "premises": [
+        "b_talisk_iso13485",
+        "b_req_iso13485"
+      ],
+      "reasoning": "The requirement is ISO 13485 and Talisk holds it."
+    }
   ]
 }

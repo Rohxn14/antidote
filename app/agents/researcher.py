@@ -128,22 +128,22 @@ INFER_SCHEMA = llm.obj({"inferences": {"type": "array", "items": llm.obj({
     "reasoning": llm.described(llm.STRING, "why the premises imply the conclusion")})}})
 
 
-def extract(g, source_id: str) -> dict:
+def extract(g, source_id: str, client=llm.LIVE) -> dict:
     """Ask the LLM what one source claims. Returns an extraction (fixture format)."""
     existing = [{"id": b["id"], "claim": b["claim"]} for b in beliefs_for_prompt(g)]
     user = (f"Known vendors: {json.dumps(_vendors(g))}\n"
             f"Existing beliefs: {json.dumps(existing)}\n"
             f"Source id: {source_id}\nDocument:\n<<<\n{_raw_source(g, source_id)}\n>>>")
-    result = llm.complete_json(EXTRACT_SYSTEM, user, EXTRACT_SCHEMA, "extraction")
-    return {"source_id": source_id, "model": llm.model_name(), "claims": result["claims"]}
+    result = client.complete_json(EXTRACT_SYSTEM, user, EXTRACT_SCHEMA, "extraction")
+    return {"source_id": source_id, "model": client.model, "claims": result["claims"]}
 
 
-def infer(g) -> dict:
+def infer(g, client=llm.LIVE) -> dict:
     """Ask the LLM which suppliers qualify, from currently valid beliefs only."""
     user = (f"Known vendors: {json.dumps(_vendors(g))}\n"
             f"Beliefs in shared memory: {json.dumps(beliefs_for_prompt(g))}")
-    result = llm.complete_json(INFER_SYSTEM, user, INFER_SCHEMA, "inference")
-    return {"model": llm.model_name(), "inferences": result["inferences"]}
+    result = client.complete_json(INFER_SYSTEM, user, INFER_SCHEMA, "inference")
+    return {"model": client.model, "inferences": result["inferences"]}
 
 
 # --- Code side: check and record -----------------------------------------------------

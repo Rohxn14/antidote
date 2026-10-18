@@ -1,0 +1,28 @@
+{
+  "source_id": "s_nexapoint_page",
+  "model": "hand-authored",
+  "claims": [
+    {
+      "belief": "b_nexapoint_makes_servos",
+      "vendor": "v_nexapoint",
+      "claim": "Nexapoint Actuation manufactures servo actuators.",
+      "quote": "Nexapoint Actuation designs and manufactures servo actuators for surgical and rehabilitation robots.",
+      "reasoning": "The product section says so."
+    },
+    {
+      "belief": "b_nexapoint_offer",
+      "vendor": "v_nexapoint",
+      "claim": "Nexapoint Actuation sells servo actuators at $545 per unit and can ship 100 units within 3 weeks.",
+      "quote": "Price: $545 per unit; 100 units ship within 3 weeks.",
+      "reasoning": "Price and lead time from the product section."
+    },
+    {
+      "belief": "b_nexapoint_iso13485",
+      "vendor": "v_nexapoint",
+      "standard": "ISO 13485",
+      "claim": "Nexapoint Actuation holds ISO 13485 certification.",
+      "quote": "Nexapoint Actuation holds ISO 13485:2016 certification (certificate MD-3392).",
+      "reasoning": "The quality section states the certification."
+    }
+  ]
+}

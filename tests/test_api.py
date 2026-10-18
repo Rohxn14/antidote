@@ -112,14 +112,14 @@ def test_approve_and_execute_endpoints_reject_an_unsupported_order(client):
     # An approved order whose support disappears afterwards (here: changed directly in
     # the graph, with no repair to block it) is refused when someone tries to place it.
     new = next(e["data"] for e in stream(client, "/api/replan", h) if e["type"] == "decision_recorded")
-    assert new["decision_id"] == "d_po_1002" and "Ferrocraft" in new["summary"]
+    assert new["decision_id"] == "d_po_1002" and "Nexapoint" in new["summary"]
     assert client.post("/api/orders/d_po_1002/approve", headers=h).json()["state"] == "authorized"
     token = h["X-Antidote-Session"]
     graph = get_db().select_graph(client.app.state.store.sessions[token].graph_name)
-    memory.set_trust(graph, "s_ferrocraft_page", QUARANTINED)
+    memory.set_trust(graph, "s_nexapoint_page", QUARANTINED)
     executed = client.post("/api/orders/d_po_1002/execute", headers=h).json()
     assert (executed["outcome"], executed["state"]) == ("blocked", "blocked")
-    assert "Ferrocraft Servo product page" in " ".join(executed["reasons"])
+    assert "Nexapoint Actuation product page" in " ".join(executed["reasons"])
 
 
 def test_an_order_for_a_suspended_supplier_is_blocked(client):

@@ -1,0 +1,28 @@
+{
+  "source_id": "s_talisk_page",
+  "model": "hand-authored",
+  "claims": [
+    {
+      "belief": "b_talisk_makes_servos",
+      "vendor": "v_talisk",
+      "claim": "Talisk Motion manufactures servo actuators.",
+      "quote": "Talisk Motion manufactures servo actuators for medical and industrial robots.",
+      "reasoning": "The product section says so."
+    },
+    {
+      "belief": "b_talisk_offer",
+      "vendor": "v_talisk",
+      "claim": "Talisk Motion sells servo actuators at $450 per unit and can ship 100 units within 6 weeks.",
+      "quote": "Price: $450 per unit; standard lead time for 100 units is 6 weeks.",
+      "reasoning": "Price and lead time from the product section."
+    },
+    {
+      "belief": "b_talisk_iso13485",
+      "vendor": "v_talisk",
+      "standard": "ISO 13485",
+      "claim": "Talisk Motion holds ISO 13485 certification.",
+      "quote": "Talisk Motion holds ISO 13485:2016 certification (certificate MD-2964).",
+      "reasoning": "The quality section states the certification."
+    }
+  ]
+}

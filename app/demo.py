@@ -21,7 +21,9 @@ if os.getenv("DEMO_FIXTURES") == "live":
 
 AGENTS = [("a_researcher", "Researcher", RESEARCHER), ("a_buyer", "Buyer", BUYER)]
 VENDORS = [("v_vantor", "Vantor Motion"), ("v_boltline", "Boltline Automation"),
-           ("v_ferrocraft", "Ferrocraft Servo"), ("v_quillon", "Quillon Drives")]
+           ("v_ferrocraft", "Ferrocraft Servo"), ("v_quillon", "Quillon Drives"),
+           ("v_nexapoint", "Nexapoint Actuation"), ("v_orvane", "Orvane Dynamics"),
+           ("v_talisk", "Talisk Motion"), ("v_brennick", "Brennick Servo")]
 
 # In ingestion order. The rollback baseline restores to just before the
 # poisoned page, so everything after it is the "good knowledge" it would lose.
@@ -38,6 +40,14 @@ SOURCES = [  # id, uri, title, trust, origin
      UNVERIFIED, "ferrocraft.example"),
     ("s_quillon_page", "data/vendors/quillon.html", "Quillon Drives product page",
      UNVERIFIED, "quillon.example"),
+    ("s_nexapoint_page", "data/vendors/nexapoint.html", "Nexapoint Actuation product page",
+     UNVERIFIED, "nexapoint.example"),
+    ("s_orvane_page", "data/vendors/orvane.html", "Orvane Dynamics product page",
+     UNVERIFIED, "orvane.example"),
+    ("s_talisk_page", "data/vendors/talisk.html", "Talisk Motion product page",
+     UNVERIFIED, "talisk.example"),
+    ("s_brennick_page", "data/vendors/brennick.html", "Brennick Servo product page",
+     UNVERIFIED, "brennick.example"),
 ]
 SOURCE_BY_ID = {s[0]: s for s in SOURCES}
 

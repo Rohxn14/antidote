@@ -1,0 +1,28 @@
+{
+  "source_id": "s_brennick_page",
+  "model": "hand-authored",
+  "claims": [
+    {
+      "belief": "b_brennick_makes_servos",
+      "vendor": "v_brennick",
+      "claim": "Brennick Servo manufactures servo actuators.",
+      "quote": "Brennick Servo manufactures servo actuators for collaborative robots.",
+      "reasoning": "The product section says so."
+    },
+    {
+      "belief": "b_brennick_offer",
+      "vendor": "v_brennick",
+      "claim": "Brennick Servo sells servo actuators at $505 per unit and can ship 100 units within 3 weeks.",
+      "quote": "Price: $505 per unit; 100 units ship within 3 weeks.",
+      "reasoning": "Price and lead time from the product section."
+    },
+    {
+      "belief": "b_brennick_iso9001",
+      "vendor": "v_brennick",
+      "standard": "ISO 9001",
+      "claim": "Brennick Servo holds ISO 9001 certification.",
+      "quote": "Brennick Servo is ISO 9001:2015 certified.",
+      "reasoning": "The quality section states the certification; ISO 13485 is only planned."
+    }
+  ]
+}

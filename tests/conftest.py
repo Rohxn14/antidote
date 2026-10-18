@@ -2,10 +2,16 @@
 """Every test gets a fresh graph named `antidote_test`, separate from the demo
 graph. It is deleted before and after each test, together with any preview or
 what-if copies made from it."""
+import os
+
 import pytest
 
-from app.db import drop_graph, get_db
-from app.schema import ensure_schema
+# Tests never call a real model: with an empty key (which .env loading does not
+# override), a call that slipped past a stub fails instead of spending tokens.
+os.environ["LLM_API_KEY"] = ""
+
+from app.db import drop_graph, get_db  # noqa: E402
+from app.schema import ensure_schema  # noqa: E402
 
 TEST_GRAPH = "antidote_test"
 

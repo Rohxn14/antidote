@@ -65,15 +65,15 @@ def next_order_id(g) -> str:
     return f"d_po_{1001 + rows[0][0]}"
 
 
-def decide(g, order_id: str | None = None) -> dict:
+def decide(g, order_id: str | None = None, client=llm.LIVE) -> dict:
     """Ask the LLM for a shortlist and one purchase order (fixture format)."""
     support.recompute(g)
     vendors = g.ro_query(f"MATCH (v:{VENDOR}) RETURN v.id, v.name ORDER BY v.id").result_set
     user = (f"Vendors: {json.dumps([{'id': i, 'name': n} for i, n in vendors])}\n"
             f"Supported beliefs: {json.dumps(beliefs_for_prompt(g))}")  # never unsupported ones
-    result = llm.complete_json(DECIDE_SYSTEM, user, DECIDE_SCHEMA, "decision")
+    result = client.complete_json(DECIDE_SYSTEM, user, DECIDE_SCHEMA, "decision")
     result["purchase_order"]["id"] = order_id or next_order_id(g)
-    return {"model": llm.model_name(), **result}
+    return {"model": client.model, **result}
 
 
 def record_plan(g, plan: dict) -> dict:
