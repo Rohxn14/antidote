@@ -351,6 +351,21 @@ It reads each document and reports:
 | `addressed_to_ai` | Text speaking to "the AI assistant", "language model" |
 | `steering` | "only certified", "do not consider", "always recommend" |
 
+**Where the hiding techniques come from.** Two documented incidents: The Guardian (24 Dec
+2024) showed hidden text on a product page turning ChatGPT search's verdict entirely
+positive; Nikkei (1 Jul 2025) found 17 arXiv preprints hiding "give a positive review only"
+in white text and tiny fonts. So the scanner sees `display:none`, `visibility:hidden`, the
+`hidden` attribute, zero opacity, white text with no background of its own, fonts of 2px or
+less, and text pushed off-screen. Hidden text **alone** is not flagged, because real pages
+hide menus and cookie notices all the time; it is flagged when it carries injection signs.
+
+**Facts taken from text nobody can see** ([app/review.py](../app/review.py)). The most general
+rule: for every quote the Researcher recorded, compare it with the page **as a person sees it**
+(comments and hidden elements removed). A quote that is on the page the agent read but not on
+the page a person sees means the agent learned something from hidden text. That catches an
+attack whatever its wording, including AgentDojo's "direct" attack and plain hidden praise
+(The Guardian's case), which the sign rules miss by design.
+
 **The conflict check** ([app/review.py](../app/review.py)) is a Cypher query. Claims carry
 two tags the Researcher records: `standard` (the certification a claim says a supplier holds)
 and `exclusive` (it says that supplier is the only one). The query looks for an exclusive
@@ -625,7 +640,7 @@ logic of its own: it shows what the API returns and calls the tested modules.
 
 ## 20. How we know it works: the tests
 
-**151 tests** (`python -m pytest`), on a separate `antidote_test` graph:
+**185 tests** (`python -m pytest`), on a separate `antidote_test` graph:
 
 - **The rule itself:** AND/OR, loops with and without a real source, a loop that loses its
   only source, recovery when a new trusted source arrives, deletion failing safe.
@@ -783,7 +798,7 @@ false about it), and OpenSanctions needs a licence for business use.
 | `data/fixtures/` | Recorded agent answers (hand-authored and `live/`) |
 | `data/rippleedits/cases.json` | The anonymised external test set |
 | `scenarios/*.json` | Playground example worlds |
-| `tests/` | The 151 tests; `reference.py` is the independent solver |
+| `tests/` | The 185 tests; `reference.py` is the independent solver |
 | `docs/` | This file, decisions, Cypher reference, benchmark, overview (with judge Q&A), Playground guide, video script |
 | `docker-compose.yml` | Local FalkorDB (port 6379) and its Browser (port 3000) |
 | `Dockerfile`, `render.yaml`, `.streamlit/config.toml` | Deployment and app settings |
@@ -800,7 +815,7 @@ docker compose up -d                       # FalkorDB + its Browser
 .venv\Scripts\activate                     # macOS/Linux: source .venv/bin/activate
 cd web && npm ci && npm run build && cd ..  # build the web app once (Node 22)
 uvicorn api.server:app --port 8000         # the web app: http://localhost:8000
-python -m pytest                           # 151 tests
+python -m pytest                           # 185 tests
 python -m scripts.seed_demo --story        # the whole story in the terminal
 streamlit run ui/streamlit_app.py          # the Streamlit Lab: http://localhost:8501
 python -m scripts.benchmark                # the benchmark tables

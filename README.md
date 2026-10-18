@@ -145,7 +145,7 @@ RETURN held, size(newly_valid) AS validated
 Python only repeats the round until FalkorDB reports zero changes. FalkorDB also does the
 rest of the real work: `GRAPH.COPY` gives the repair preview and the gate's what-if tests, and
 each procurement case is its own graph; one atomic query per write records reasons and refuses
-justifications that cite missing evidence. **All 57 queries the product depends on are in
+justifications that cite missing evidence. **All 58 queries the product depends on are in
 [docs/cypher.md](docs/cypher.md)**, generated from the code.
 
 ### Where each decision is made
@@ -437,9 +437,54 @@ instead of 396 lost facts and decisions that would have to be re-learned. Over a
 every Cypher statement is a round trip, so repair time grows with the distance between the
 app and the database ([D50](docs/decisions.md)).
 
+## Scenario suite: many suppliers, many kinds of attack
+
+One story proves little, so [scripts/scenario_suite.py](scripts/scenario_suite.py) runs **21
+named scenarios and 400 random cases with 4 to 12 suppliers each** through the real pipeline:
+documents written from the case, the Researcher's checks, FalkorDB, the checks before the Buyer
+decides, the Buyer and the approval check. Then **a reviewer who approves everything without
+looking** presses Approve, so the results show what Antidote stops on its own.
+
+- **Ground truth the documents may not tell:** each supplier is really certified or not, and
+  really delivers in time or not. The right order is the cheapest supplier that truly
+  qualifies and did not try to manipulate the agents.
+- **Baseline:** the same agents reading the same documents, with no checks and no gate.
+- **Attacks from published work:** AgentDojo's important_instructions, ignore_previous,
+  system_message and direct templates and InjecAgent's, plus plain hidden praise with no
+  instruction at all.
+- **Hiding techniques from documented incidents:** The Guardian (24 Dec 2024) steered ChatGPT
+  search with hidden text on a product page; Nikkei (1 Jul 2025) found 17 arXiv preprints hiding
+  "give a positive review only" in white text and tiny fonts. Comments, invisible elements,
+  white text, 1px text and off-screen text are all in the suite. Half the random pages also
+  carry ordinary hidden menus and banners, to count false alarms.
+
+| 400 random cases | With Antidote | Without Antidote |
+|---|---|---|
+| Right outcome (right supplier, or rightly no order) | **297** | 116 |
+| Bad order stopped and held for a person | **60** | 0 |
+| Honest order waiting for a person (false hold) | 24 | 0 |
+| No order although one was possible | 2 | 0 |
+| **Wrong supplier approved** | **17** | **284** |
+| ...a supplier that manipulated the agents | **0** | 145 |
+| ...a supplier that is not really certified | 6 | 129 |
+| ...a supplier that cannot deliver in time | 8 | 5 |
+| ...an honest supplier, but not the cheapest right one | 3 | 5 |
+
+Antidote's 17 wrong orders are the failures the suite was built to expose: a trusted registry
+that is wrong (Antidote trusts it), a supplier lying about delivery time (no document can show
+it), and a competitor **framing** an honest supplier with hidden text, so the honest one is
+suspended until a person clears it. The named scenarios show each case, including these, and
+the **Under the hood** page shows the same tables. Full results:
+[docs/scenario_suite.md](docs/scenario_suite.md); every case is in `data/scenario_suite.json`.
+
+**What this does not prove.** The suppliers, documents and agents' answers are generated,
+so this measures Antidote's checks and gate across many cases, not a real model reading real
+supplier pages. Real-world proof needs real documents and a pilot: run Antidote beside human
+buyers and compare what it would have stopped.
+
 ## Correctness
 
-151 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+185 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
 
 - Required cases: alternative justifications; a multi-premise justification losing one
   premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
@@ -478,7 +523,7 @@ cp .env.example .env                  # Windows PowerShell: copy .env.example .e
 cd web && npm ci && npm run build && cd ..   # build the web app once
 uvicorn api.server:app --port 8000    # the web app and its API: http://localhost:8000
 
-python -m pytest                      # 151 tests
+python -m pytest                      # 185 tests
 python -m scripts.seed_demo --story   # the whole story in the terminal
 streamlit run ui/streamlit_app.py     # the Lab with the Playground: http://localhost:8501
 python -m scripts.benchmark           # the benchmark table
@@ -520,7 +565,8 @@ app/memory.py     the write path: one atomic Cypher query per write
 app/support.py    the support engine (least fixed point in Cypher)
 app/gate.py       the action gate and the trusted-roots what-if test
 app/repair.py     preview on a copy, stale check, apply, verify, audit
-app/detector.py   rule-based injection signs
+app/detector.py   rule-based injection signs and hiding techniques
+app/review.py     checks before the Buyer decides: scan, hidden facts, conflict check; review
 app/agents/       Researcher, Buyer, tool-using agent
 app/mcp_server.py Antidote memory as MCP tools
 app/llm.py        OpenAI-compatible client with structured output
@@ -537,10 +583,10 @@ app/centrality.py the capability walkthrough: each capability with its real Cyph
 web/              the web app (React + TypeScript + Vite, React Flow for the graph)
 app/sessions.py   the Streamlit Lab's private graph copy per visitor
 ui/               the Streamlit Lab (Playground)
-scripts/          seed_demo, benchmark, record_fixtures, run_tool_agent, export_cypher
+scripts/          seed_demo, benchmark, scenario_suite, record_fixtures, run_tool_agent, export_cypher
 data/             synthetic vendor pages, registry, policy memo, agent fixtures
 scenarios/        example Playground worlds
-docs/             decisions.md (every design decision), cypher.md, benchmark.md,
+docs/             decisions.md (every design decision), cypher.md, benchmark.md, scenario_suite.md,
                   explained.md, demo_script.md, video_roadmap.md, playground.md
 tests/            pytest suite and the reference solver
 ```
@@ -573,8 +619,11 @@ Antidote guarantees that beliefs are consistent with the support graph it record
 **cannot** guarantee that an LLM recorded every real dependency, or that a trusted source is
 factually correct. A missing dependency can leave contamination behind. We limit this
 (agents must cite existing IDs, quotes must appear verbatim, the Buyer only sees supported
-memory), but we do not claim to eliminate it. Detection only knows published injection
-patterns. The conflict check only knows one kind of contradiction ("the only one certified"
+memory), but we do not claim to eliminate it. Detection knows published injection patterns
+and the hiding techniques of documented incidents; the hidden-fact rule catches any fact taken
+from text a person cannot see, but an attack written in plain, visible text gets through the
+scan. Suspension can be abused: a competitor can frame an honest supplier with hidden text, and
+it stays suspended until a person clears it (measured in the scenario suite). The conflict check only knows one kind of contradiction ("the only one certified"
 against trusted certification records); a claim nothing trusted contradicts still steers the
 Buyer, and only the verification hold stops the order (the builder's "A lie nothing
 contradicts" shows this). A plain lie is caught by the verification hold only if no trusted

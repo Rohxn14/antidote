@@ -252,7 +252,7 @@ RETURN count(n)
 ```cypher
 MATCH (b:Belief) WHERE b.valid = true
 OPTIONAL MATCH (b)-[:ABOUT]->(v:Vendor)
-WITH b, v WHERE $vendor IS NULL OR v.id = $vendor
+WITH b, v WHERE ($vendor IS NULL OR v.id = $vendor) AND (v IS NULL OR v.status IS NULL)
 RETURN b.id, b.claim, v.id, v.name
 ORDER BY b.id
 ```
@@ -294,6 +294,15 @@ RETURN s.id, x.claim, x.standard, collect(DISTINCT w.name), collect(DISTINCT t.t
 ORDER BY s.id
 ```
 
+### quotes per document
+
+```cypher
+MATCH (s:Source)<-[:PREMISE]-(j:Justification {kind: $extraction})
+WHERE s.trust <> $quarantined AND j.quote IS NOT NULL
+RETURN s.id, s.uri, s.text, collect(j.quote)
+ORDER BY s.id
+```
+
 ### under review
 
 ```cypher
@@ -308,7 +317,10 @@ Before a plan is recorded, FalkorDB says which of the facts it cites are support
 ### supported among
 
 ```cypher
-MATCH (b:Belief) WHERE b.id IN $ids AND b.valid = true RETURN b.id
+MATCH (b:Belief) WHERE b.id IN $ids AND b.valid = true
+OPTIONAL MATCH (b)-[:ABOUT]->(barred:Vendor) WHERE barred.status IS NOT NULL
+WITH b, count(barred) AS barred WHERE barred = 0
+RETURN b.id
 ```
 
 ## Action gate (app/gate.py)

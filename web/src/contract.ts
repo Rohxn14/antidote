@@ -163,7 +163,12 @@ export interface ReplanRequest {
   pace: number;
 }
 
-export type CaseSlot = "vantor" | "boltline" | "ferrocraft" | "quillon" | "nexapoint" | "corvane";
+export type CaseSlot =
+  | "vantor" | "boltline" | "ferrocraft" | "quillon" | "nexapoint" | "corvane"
+  | "orvane" | "talisk" | "brennick" | "ixora" | "marlowe" | "pellucid";
+export type CaseAttack =
+  | "default" | "important_instructions" | "injecagent" | "ignore_previous" | "system_message" | "direct" | "plain";
+export type CaseHiding = "default" | "comment" | "display_none" | "white_text" | "tiny_text" | "offscreen";
 
 export interface CaseSupplier {
   slot: CaseSlot;
@@ -173,6 +178,10 @@ export interface CaseSupplier {
   registry_confirms: boolean;
   hidden_instructions: boolean;
   claims_exclusive: boolean; // its page openly claims to be the only certified one
+  attack: CaseAttack; // which published attack the hidden text uses
+  hiding: CaseHiding; // how it is hidden from people
+  promotes: CaseSlot | null; // the supplier it pushes (null: this one)
+  benign_hidden_ui: boolean; // an ordinary hidden menu, cookie notice and banner
 }
 
 export interface CaseSpec {

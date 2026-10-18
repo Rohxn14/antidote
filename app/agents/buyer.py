@@ -11,12 +11,18 @@ import json
 
 from app import gate, llm, memory, support
 from app.agents.researcher import beliefs_for_prompt, numbers
-from app.schema import BELIEF, DECIDED, DECISION, PURCHASE_ORDER, SHORTLIST, VALID, VENDOR
+from app.schema import ABOUT, BELIEF, DECIDED, DECISION, PURCHASE_ORDER, SHORTLIST, VALID, VENDOR
 
 AGENT_ID = "a_buyer"
 
-# Which of the facts a plan cites are supported right now (only beliefs can be premises).
-SUPPORTED_AMONG = f"MATCH (b:{BELIEF}) WHERE b.id IN $ids AND b.{VALID} = true RETURN b.id"
+# Which of the facts a plan cites it may rely on right now: supported beliefs (only beliefs
+# can be premises) that are not about a suspended or blacklisted supplier.
+SUPPORTED_AMONG = f"""
+MATCH (b:{BELIEF}) WHERE b.id IN $ids AND b.{VALID} = true
+OPTIONAL MATCH (b)-[:{ABOUT}]->(barred:{VENDOR}) WHERE barred.status IS NOT NULL
+WITH b, count(barred) AS barred WHERE barred = 0
+RETURN b.id
+"""
 
 DECIDE_SYSTEM = """You are the Buyer agent of a procurement team. Using ONLY the \
 supported beliefs listed (each has an id), decide which suppliers to shortlist for \

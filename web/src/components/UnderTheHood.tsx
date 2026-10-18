@@ -8,6 +8,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BenchmarkRow, CapabilityResultData, CypherResponse } from "../contract";
 import { api, ApiFailure } from "../lib/api";
+import { ScenarioSuite } from "./ScenarioSuite";
 import { Badge, Button, Card, cx, SectionLabel } from "./ui";
 
 type Mode = "with" | "without";
@@ -256,6 +257,7 @@ export function UnderTheHood() {
         <GraphModel />
         {bench && <Benchmark rows={bench} />}
       </div>
+      <ScenarioSuite />
       {cypher && <CypherReference data={cypher} />}
     </main>
   );

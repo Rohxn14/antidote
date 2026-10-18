@@ -4,17 +4,38 @@
 // this form (app/casebuilder.py); everything after that is the real engine.
 import { FlaskConical, Info, Play, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { CaseSlot, CaseSpec, CaseSupplier } from "../contract";
+import type { CaseAttack, CaseHiding, CaseSlot, CaseSpec, CaseSupplier } from "../contract";
 import { Button, cx, Drawer } from "./ui";
 
-const SLOTS: CaseSlot[] = ["vantor", "boltline", "ferrocraft", "quillon", "nexapoint", "corvane"];
+const SLOTS: CaseSlot[] = [
+  "vantor", "boltline", "ferrocraft", "quillon", "nexapoint", "corvane",
+  "orvane", "talisk", "brennick", "ixora", "marlowe", "pellucid",
+];
 const NAMES: Record<CaseSlot, string> = {
   vantor: "Vantor Motion", boltline: "Boltline Automation", ferrocraft: "Ferrocraft Servo",
   quillon: "Quillon Drives", nexapoint: "Nexapoint Actuation", corvane: "Corvane Robotics",
+  orvane: "Orvane Dynamics", talisk: "Talisk Motion", brennick: "Brennick Servo",
+  ixora: "Ixora Drives", marlowe: "Marlowe Actuation", pellucid: "Pellucid Robotics",
 };
 const MIN_SUPPLIERS = 3;
 
-const honest = { claims_exclusive: false, hidden_instructions: false };
+// Published attack texts (AgentDojo, InjecAgent) and ways to hide them (The Guardian 2024,
+// Nikkei 2025); app/casebuilder.py writes them into the page.
+const ATTACKS: [CaseAttack, string][] = [
+  ["default", "The demo story's two attacks"], ["important_instructions", "AgentDojo: important instructions"],
+  ["injecagent", "InjecAgent: ignore all previous"], ["ignore_previous", "AgentDojo: ignore previous"],
+  ["system_message", "AgentDojo: fake system message"], ["direct", "AgentDojo: direct (no instruction words)"],
+  ["plain", "Plain hidden praise (The Guardian, 2024)"],
+];
+const HIDINGS: [CaseHiding, string][] = [
+  ["default", "Comment and invisible element"], ["comment", "HTML comment"], ["display_none", "Invisible element"],
+  ["white_text", "White text (Nikkei, 2025)"], ["tiny_text", "1px text (Nikkei, 2025)"], ["offscreen", "Pushed off-screen"],
+];
+
+const honest = {
+  claims_exclusive: false, hidden_instructions: false, attack: "default" as CaseAttack,
+  hiding: "default" as CaseHiding, promotes: null, benign_hidden_ui: false,
+};
 // What a supplier looks like when it is added to a case.
 const DEFAULTS: Record<CaseSlot, CaseSupplier> = {
   vantor: { slot: "vantor", price: 480, weeks: 2, claims_certificate: true, registry_confirms: false, ...honest, hidden_instructions: true },
@@ -23,6 +44,12 @@ const DEFAULTS: Record<CaseSlot, CaseSupplier> = {
   quillon: { slot: "quillon", price: 390, weeks: 2, claims_certificate: false, registry_confirms: false, ...honest },
   nexapoint: { slot: "nexapoint", price: 455, weeks: 3, claims_certificate: true, registry_confirms: true, ...honest },
   corvane: { slot: "corvane", price: 300, weeks: 3, claims_certificate: true, registry_confirms: false, ...honest },
+  orvane: { slot: "orvane", price: 610, weeks: 2, claims_certificate: true, registry_confirms: true, ...honest },
+  talisk: { slot: "talisk", price: 450, weeks: 5, claims_certificate: true, registry_confirms: true, ...honest },
+  brennick: { slot: "brennick", price: 575, weeks: 3, claims_certificate: true, registry_confirms: true, ...honest },
+  ixora: { slot: "ixora", price: 410, weeks: 2, claims_certificate: true, registry_confirms: false, ...honest },
+  marlowe: { slot: "marlowe", price: 530, weeks: 4, claims_certificate: true, registry_confirms: true, ...honest },
+  pellucid: { slot: "pellucid", price: 495, weeks: 6, claims_certificate: true, registry_confirms: true, ...honest },
 };
 
 const STORY: CaseSpec = {
@@ -33,6 +60,22 @@ const STORY: CaseSpec = {
 function variant(name: string, changes: Partial<Record<CaseSlot, Partial<CaseSupplier>>>, extra: CaseSlot[] = []): CaseSpec {
   const slots = SLOTS.filter((s) => STORY.suppliers.some((x) => x.slot === s) || extra.includes(s));
   return { ...STORY, name, suppliers: slots.map((s) => ({ ...DEFAULTS[s], ...changes[s] })) };
+}
+
+function Pick<T extends string>({ value, options, onChange, label, disabled }: {
+  value: T; options: [T, string][]; onChange: (v: T) => void; label: string; disabled?: boolean;
+}) {
+  return (
+    <select
+      aria-label={label}
+      value={value}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value as T)}
+      className="h-8 w-full min-w-0 rounded-lg bg-white px-1.5 text-[11.5px] text-slate-700 ring-1 ring-inset ring-slate-200 disabled:bg-slate-50 disabled:text-slate-400"
+    >
+      {options.map(([v, text]) => <option key={v} value={v}>{text}</option>)}
+    </select>
+  );
 }
 
 const PRESETS: { spec: CaseSpec; about: string }[] = [
@@ -62,6 +105,35 @@ const PRESETS: { spec: CaseSpec; about: string }[] = [
       corvane: { hidden_instructions: true, claims_exclusive: true },
     }, ["nexapoint", "corvane"]),
     about: "The cheapest supplier hides instructions and claims to be the only certified one.",
+  },
+  {
+    spec: variant("White text, as in the 2025 arXiv papers", {
+      vantor: { attack: "direct", hiding: "white_text" },
+    }),
+    about: "No instruction words, just a sentence in white text. Caught because an agent took a fact from text nobody can see.",
+  },
+  {
+    spec: variant("Hidden praise, as in The Guardian's test", {
+      vantor: { claims_certificate: false, hidden_instructions: false },
+      nexapoint: { price: 499, hidden_instructions: true, attack: "plain", hiding: "display_none" },
+    }, ["nexapoint"]),
+    about: "The cheapest certified supplier hides glowing praise of itself. Antidote won't reward it.",
+  },
+  {
+    spec: variant("Framed by a competitor", {
+      vantor: { claims_certificate: false, hidden_instructions: false },
+      quillon: { hidden_instructions: true, attack: "injecagent", hiding: "display_none", promotes: "boltline" },
+    }),
+    about: "Quillon hides text pushing Boltline, to get the honest supplier suspended. Where suspending costs you: clear it.",
+  },
+  {
+    spec: variant("Twelve suppliers, three cheats", {
+      ...Object.fromEntries(SLOTS.map((s) => [s, { benign_hidden_ui: true }])),
+      vantor: { attack: "system_message", hiding: "tiny_text", benign_hidden_ui: true },
+      orvane: { hidden_instructions: true, attack: "plain", hiding: "offscreen", benign_hidden_ui: true },
+      ixora: { hidden_instructions: true, attack: "ignore_previous", hiding: "white_text", benign_hidden_ui: true },
+    }, SLOTS),
+    about: "Twelve pages with ordinary hidden menus. Three hide different attacks in different ways, and the cheapest claims a certificate nothing trusted confirms.",
   },
   {
     spec: variant("Nothing wrong", { vantor: { claims_certificate: false, hidden_instructions: false } }),
@@ -138,7 +210,7 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
       ...s,
       suppliers: on
         ? SLOTS.filter((x) => x === slot || s.suppliers.some((y) => y.slot === x)).map((x) => s.suppliers.find((y) => y.slot === x) ?? shelf[x])
-        : s.suppliers.filter((x) => x.slot !== slot),
+        : s.suppliers.filter((x) => x.slot !== slot).map((x) => (x.promotes === slot ? { ...x, promotes: null } : x)),
     }));
   };
   const ready = (): CaseSpec => ({
@@ -151,7 +223,7 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
     <Drawer
       open={open}
       onClose={onClose}
-      width="min(920px, 100vw)"
+      width="min(1060px, 100vw)"
       title="Build your own case"
       subtitle="Change what the documents say, then watch what the agents and Antidote do with it."
       icon={
@@ -198,7 +270,7 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
             <div className="text-[11.5px] text-slate-500">{spec.suppliers.length} of {SLOTS.length} suppliers in this case (at least {MIN_SUPPLIERS})</div>
           </div>
           <div className="scroll-thin mt-2 overflow-x-auto">
-            <table className="w-full min-w-[760px] text-[12.5px]">
+            <table className="w-full min-w-[940px] text-[12.5px]">
               <thead className="text-[11px] text-slate-500">
                 <tr className="border-b border-slate-200">
                   <th className="w-12 py-2 pr-1 text-center font-medium">In case</th>
@@ -209,6 +281,7 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
                   <th className="w-20 px-1 py-2 text-center font-medium">Registry confirms it</th>
                   <th className="w-24 px-1 py-2 text-center font-medium text-rose-700">Page says it's the only certified one</th>
                   <th className="w-20 px-1 py-2 text-center font-medium text-rose-700">Hidden text for AI on its page</th>
+                  <th className="w-44 px-1 py-2 text-left font-medium text-rose-700">Which attack, hidden how, pushing whom</th>
                 </tr>
               </thead>
               <tbody>
@@ -237,6 +310,17 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
                       <td className="px-1 py-2"><Check label={`Registry confirms ${name}`} disabled={!on} checked={s.registry_confirms} onChange={(v) => setSupplier(slot, { registry_confirms: v })} /></td>
                       <td className="px-1 py-2"><Check danger label={`${name}'s page says it is the only certified supplier`} disabled={!on} checked={s.claims_exclusive} onChange={(v) => setSupplier(slot, { claims_exclusive: v })} /></td>
                       <td className="px-1 py-2"><Check danger label={`Hidden text on ${name}'s page`} disabled={!on} checked={s.hidden_instructions} onChange={(v) => setSupplier(slot, { hidden_instructions: v })} /></td>
+                      <td className="space-y-1 px-1 py-1.5">
+                        <Pick label={`${name}: which attack`} value={s.attack} options={ATTACKS} disabled={!on || !s.hidden_instructions} onChange={(v) => setSupplier(slot, { attack: v })} />
+                        <Pick label={`${name}: hidden how`} value={s.hiding} options={HIDINGS} disabled={!on || !s.hidden_instructions} onChange={(v) => setSupplier(slot, { hiding: v })} />
+                        <Pick<string>
+                          label={`${name}: pushing whom`}
+                          value={s.promotes ?? ""}
+                          options={[["", "Pushing itself"], ...spec.suppliers.filter((x) => x.slot !== slot).map((x): [string, string] => [x.slot, `Pushing ${NAMES[x.slot]}`])]}
+                          disabled={!on || !s.hidden_instructions}
+                          onChange={(v) => setSupplier(slot, { promotes: (v || null) as CaseSlot | null })}
+                        />
+                      </td>
                     </tr>
                   );
                 })}
@@ -252,7 +336,8 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
             this form, and the agents answer by two rules: the Researcher records what each document says, with exact
             quotes and hidden text included; the Buyer orders from the cheapest supplier that qualifies and delivers in
             time, unless a fact it may rely on says one supplier is the only certified one. Before the Buyer decides,
-            Antidote checks every document for hidden instructions and for claims trusted documents contradict. Everything
+            Antidote checks every document for hidden instructions, for facts taken from text a person can't see, and for
+            claims trusted documents contradict. Everything
             is real from there: the checks on every claim, the memory in FalkorDB, the approval check, the preview and the repair.
           </p>
         </div>

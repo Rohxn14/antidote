@@ -182,10 +182,11 @@ MATCH (n {{id: c.id}}) WHERE n:{BELIEF} OR n:{DECISION}
 CREATE (r)-[:{CHANGED} {{before: c.before, after: c.after}}]->(n)
 RETURN count(n)"""
 
+# What agents may use: supported beliefs, none about a suspended or blacklisted supplier.
 VALID_BELIEFS = f"""
 MATCH (b:{BELIEF}) WHERE b.{VALID} = true
 OPTIONAL MATCH (b)-[:{ABOUT}]->(v:{VENDOR})
-WITH b, v WHERE $vendor IS NULL OR v.id = $vendor
+WITH b, v WHERE ($vendor IS NULL OR v.id = $vendor) AND (v IS NULL OR v.status IS NULL)
 RETURN b.id, b.claim, v.id, v.name
 ORDER BY b.id"""
 

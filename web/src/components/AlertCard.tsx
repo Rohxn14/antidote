@@ -9,10 +9,13 @@ import { listOf, ruleLabel } from "../lib/words";
 import { Badge, Button, Card, cx } from "./ui";
 
 function headline(alert: Alert): string {
-  const hidden = alert.findings.some((f) => f.rule !== "conflict");
+  const instructions = alert.findings.some((f) => f.rule !== "conflict" && f.rule !== "hidden_fact");
+  const unseen = alert.findings.some((f) => f.rule === "hidden_fact");
   const conflict = alert.findings.some((f) => f.rule === "conflict");
-  if (hidden && conflict) return "Hidden instructions and a contradicted claim";
-  return conflict ? "A claim trusted documents contradict" : "Hidden instructions found";
+  const hidden = instructions ? "Hidden instructions" : unseen ? "Facts hidden from people" : null;
+  if (hidden && conflict) return `${hidden} and a contradicted claim`;
+  if (hidden) return instructions ? "Hidden instructions found" : "Facts taken from text nobody can see";
+  return "A claim trusted documents contradict";
 }
 
 export function AlertCard({ alert, document, previewing, pending, busy, onShow, onPreview, onClear, onReplan }: {

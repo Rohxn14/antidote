@@ -214,7 +214,11 @@ class ReplanRequest(BaseModel):
     pace: float = 1.0
 
 
-CaseSlot = Literal["vantor", "boltline", "ferrocraft", "quillon", "nexapoint", "corvane"]
+CaseSlot = Literal["vantor", "boltline", "ferrocraft", "quillon", "nexapoint", "corvane",
+                   "orvane", "talisk", "brennick", "ixora", "marlowe", "pellucid"]
+CaseAttack = Literal["default", "important_instructions", "injecagent", "ignore_previous",
+                     "system_message", "direct", "plain"]
+CaseHiding = Literal["default", "comment", "display_none", "white_text", "tiny_text", "offscreen"]
 
 
 class CaseSupplier(BaseModel):
@@ -225,19 +229,26 @@ class CaseSupplier(BaseModel):
     registry_confirms: bool                    # the trusted registry lists ISO 13485
     hidden_instructions: bool                  # its page hides instructions for AI readers
     claims_exclusive: bool = False             # its page openly claims to be the only certified one
+    attack: CaseAttack = "default"             # which published attack the hidden text uses
+    hiding: CaseHiding = "default"             # how it is hidden from people
+    promotes: CaseSlot | None = None           # the supplier it pushes (None: this one)
+    benign_hidden_ui: bool = False             # an ordinary hidden menu, cookie notice and banner
 
 
 class CaseSpec(BaseModel):
     """A procurement case built by the visitor (app/casebuilder.py)."""
     name: str = Field(default="Your case", max_length=60)
     max_weeks: int = Field(ge=1, le=12)        # your request: delivered within this many weeks
-    suppliers: list[CaseSupplier] = Field(min_length=3, max_length=6)
+    suppliers: list[CaseSupplier] = Field(min_length=3, max_length=12)
 
     @field_validator("suppliers")
     @classmethod
     def one_per_slot(cls, suppliers):
-        if len({s.slot for s in suppliers}) != len(suppliers):
+        slots = {s.slot for s in suppliers}
+        if len(slots) != len(suppliers):
             raise ValueError("each supplier may appear only once")
+        if any(s.promotes and s.promotes not in slots for s in suppliers):
+            raise ValueError("hidden text can only promote a supplier in the case")
         return suppliers
 
 
