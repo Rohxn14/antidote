@@ -433,7 +433,8 @@ calls them:
 - `scripts/run_tool_agent.py` runs the tool-using Buyer for real.
 - The Streamlit Lab can run the Buyer live (sidebar toggle) or the tool-using Buyer (Agents tab),
   if a key is configured.
-- Everything else **replays** recorded answers (section 13).
+- Everything else **replays** the Researcher's hand-authored answers and applies the Buyer's
+  rules (section 13). That includes the live site, where no AI runs.
 
 **How a live Researcher step works**, concretely:
 1. `extract()` sends the LLM: the vendor list, the beliefs already in memory, and the raw page.
@@ -471,8 +472,14 @@ replayed later.
 
 | Folder | What | Used by |
 |---|---|---|
-| `data/fixtures/*.json` | **Hand-authored** answers in the LLM's format (`"model": "hand-authored"`) | The default demo and the tests |
-| `data/fixtures/live/*.json` | **Real** answers from gpt-oss-120b on Groq, plus the tool agent's transcript | `DEMO_FIXTURES=live`, the Lab's Agents tab |
+| `data/fixtures/*.json` | **Hand-authored** answers in the LLM's format (`"model": "hand-authored"`) | The Researcher in the default demo (the live site) and the tests |
+| `data/fixtures/live/*.json` | **Real** answers from gpt-oss-120b on Groq, plus the tool agent's transcript | `DEMO_FIXTURES=live` (locally), the Lab's Agents tab |
+
+**The Buyer is not replayed** in the demo story any more (D61): with documents checked before it
+decides, its answer depends on what memory supports at that moment, so it applies the request's
+rules (cheapest qualifying supplier on supported facts, skipping suspended ones) instead of a
+fixed recorded answer. **The live site runs no AI at all**: the Researcher's hand-authored
+answers, the rule-based Buyer, and everything Antidote does, live in FalkorDB.
 
 **Why:** the demo and tests give the same result every time, need no API key, and cost
 nothing. Replayed answers go through **the same checks** as live ones.

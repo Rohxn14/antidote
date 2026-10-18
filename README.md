@@ -9,6 +9,11 @@ knowledge that is independently supported.
 
 - **Live demo:** https://antidote-yqk6.onrender.com (first load may take a minute: free hosting wakes up)
   · **Under the hood:** [/#/under-the-hood](https://antidote-yqk6.onrender.com/#/under-the-hood)
+- **What the live site runs:** no AI. The Researcher replays answers we wrote in advance in the
+  exact format an LLM returns, and the Buyer applies the request's rules to what memory
+  supports. Everything Antidote does is live in FalkorDB: every write, what still holds, the
+  checks, the preview, the repair and the approval check. The real agents (an LLM on Groq) run
+  locally with a key; a real run by gpt-oss-120b is recorded in `data/fixtures/live/`.
 - **Demo video:** _link added at submission_
 - **Tracks:** **02 Agent Memory and Coordination** (primary) · 01 Agents That Act on Connected Data
 - **New here?** [docs/explained.md](docs/explained.md) explains everything in plain words:
@@ -244,8 +249,10 @@ knew it was a lie.
   rejected, and its quantity and unit price must appear in the beliefs it cites. The order
   amount is computed in code, not by the LLM.
 - Both use strict structured output (JSON schema) through any OpenAI-compatible provider
-  (Groq by default). Outputs are recorded as fixtures, so the demo and tests replay them
-  deterministically without API calls.
+  (Groq by default). Without a key, the demo and the tests replay the Researcher's answers
+  from hand-authored fixtures in the LLM's exact format, and the Buyer applies the request's
+  rules to what memory supports (D61); a real gpt-oss-120b run is recorded in
+  `data/fixtures/live/`.
 - **MCP server** ([app/mcp_server.py](app/mcp_server.py), `python -m app.mcp_server`):
   `supported_beliefs`, `explain`, `list_orders`, `check_order`, `scan_sources`,
   `preview_quarantine`, `record_extraction`, `record_inference`, `propose_purchase_order`.
@@ -533,7 +540,8 @@ python -m app.mcp_server              # MCP server (stdio) for any MCP host
 To look inside, open the FalkorDB Browser at http://localhost:3000, pick the graph
 `antidote` and run `MATCH p=(:Justification)-[]->() RETURN p`.
 
-**Live LLM (optional).** Everything above replays recorded agent outputs. To run the agents
+**Live LLM (optional).** Everything above runs without an LLM: hand-authored Researcher
+answers and a rule-based Buyer. To run the agents
 for real, put `LLM_API_KEY` and `LLM_MODEL` (a Groq model with structured outputs and tool
 use) in `.env`, then `python -m scripts.record_fixtures` (records to `data/fixtures/live/`)
 and `python -m scripts.run_tool_agent` (the MCP tool-using Buyer). `data/fixtures/live/`
@@ -600,8 +608,10 @@ revision to LLM agents (for example Kumiho and BeliefMem), and **Memward** adds 
 rollback to agent memory. OWASP's 2026 agentic Top 10 names memory poisoning as a threat.
 The demo's attack and the detector's rule families follow **AgentDojo** (Debenedetti et al.,
 *AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM
-Agents*, NeurIPS 2024 Datasets and Benchmarks; MIT licence): we adapted its published
-templates with a fictional goal; no AgentDojo code or data is included. The external test
+Agents*, NeurIPS 2024 Datasets and Benchmarks; MIT licence): we use its published attack
+templates word for word (a few lines of text, plus the InjecAgent template it ships) with a
+fictional goal. We do not run AgentDojo's benchmark (its workspace, travel, banking and Slack
+task suites) or include its code. The external test
 set comes from **RippleEdits** (Cohen, Biran, Yoran, Globerson, Geva, *Evaluating the Ripple
 Effects of Knowledge Editing in Language Models*, TACL 2024; MIT licence), anonymised.
 

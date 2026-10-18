@@ -54,7 +54,7 @@ export function RequestCard({ text, onTextChange, liveAvailable, model, running,
         value={live ? "live" : "replay"}
         onChange={setMode}
         options={[
-          { value: "replay", label: "Recorded agents", title: "Replays the agents' recorded answers: no AI key needed" },
+          { value: "replay", label: "Replay (no AI)", title: "No AI runs: the Researcher's answers were written in advance in an AI's output format, and the Buyer applies your request's rules" },
           {
             value: "live", label: "Live AI", disabled: !liveAvailable || !!running || !!builtCase,
             title: builtCase ? "A case you build runs without AI" : liveAvailable ? `Calls ${model ?? "the model"} for real` : "Live AI is switched off on this server",
@@ -96,7 +96,7 @@ export function RequestCard({ text, onTextChange, liveAvailable, model, running,
           ? "Your case: the documents come from your form and the agents answer by simple rules (no AI). Every check, write and decision after that is real."
           : live
             ? `Calls ${model ?? "the model"} for real: slower, and the answers vary. Antidote checks every one.`
-            : "Replays the agents' recorded answers in about 30 seconds. Every fact, reason and check runs live in FalkorDB."}
+            : "No AI runs here: the Researcher replays answers written in advance in an AI's output format, and the Buyer applies your request's rules. Every fact, reason and check runs live in FalkorDB (about 30 seconds)."}
       </p>
     </Card>
   );
