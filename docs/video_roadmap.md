@@ -1,10 +1,10 @@
 # Video roadmap
 
-How to record the ~3-minute demo video. The words to say are in
+How to record the 2-minute demo video. The words to say are in
 [demo_script.md](demo_script.md); this page is about tools, setup and order of work.
 
 What the rules ask for: "a demo video showing the working project". No length or platform is
-set, so aim for about 3 minutes, 1080p, uploaded somewhere judges can open without logging in.
+set, so aim for about 2 minutes, 1080p, uploaded somewhere judges can open without logging in.
 
 ## 1. Tools (all free on Windows 11)
 
@@ -61,7 +61,7 @@ the verification hold stops the order). It is the best answer to "is this script
 
 ## 5. Editing checklist
 
-- Cut every pause and every mis-click; keep it under 3:30.
+- Cut every pause and every mis-click; keep it around 2:00.
 - Speed up waiting (the agents' run, page loads); never speed up the moment that proves a point.
 - Zoom in on the text that matters: "Under review", the hidden text, the contradicted claim,
   "rest only on it", "Supplier blacklisted", "7 of 7 failed without FalkorDB".
