@@ -39,7 +39,7 @@ class GateError(Exception):
 @dataclass
 class Verdict:
     decision_id: str
-    outcome: str                       # BLOCK, NEEDS_APPROVAL or AUTO
+    outcome: str                       # BLOCK, NEEDS_APPROVAL, AUTO or HELD
     reasons: list[str] = field(default_factory=list)
     state: str | None = None           # the order's state after the action
 
@@ -75,14 +75,27 @@ RETURN DISTINCT b.id, b.claim
 ORDER BY b.id
 """
 
-# Which of these beliefs are valid (on a what-if copy).
-VALID_AMONG = f"MATCH (b:{BELIEF}) WHERE b.id IN $ids AND b.{VALID} = true RETURN b.id"
+# The same conclusions, run on a what-if copy: those that are no longer valid there.
+FALLEN_CONCLUSIONS_OF = f"""
+MATCH (:{DECISION} {{id: $id}})<-[:{SUPPORTS}]-(:{JUSTIFICATION})-[:{PREMISE}]->(b:{BELIEF})
+      <-[:{SUPPORTS}]-(:{JUSTIFICATION} {{kind: $inference}})-[:{PREMISE}]->(:{BELIEF})
+WHERE coalesce(b.{VALID}, false) = false
+RETURN DISTINCT b.id, b.claim
+ORDER BY b.id
+"""
 
-# Which of these ids are documents, with their trust.
-DOCUMENTS_AMONG = f"""
-MATCH (s:{SOURCE}) WHERE s.id IN $ids
-RETURN s.id, s.title, s.trust
+# The distrusted documents among these ids (what a fact rested on).
+DISTRUSTED_AMONG = f"""
+MATCH (s:{SOURCE}) WHERE s.id IN $ids AND s.trust = $quarantined
+RETURN s.title
 ORDER BY s.title
+"""
+
+# The documents under review among these ids that are still trusted or unverified.
+REVIEWED_AMONG = f"""
+MATCH (s:{SOURCE}) WHERE s.id IN $ids AND s.id IN $review AND s.trust <> $quarantined
+RETURN s.id, s.title
+ORDER BY s.id
 """
 
 TRUSTED_ORIGINS = f"""
@@ -149,16 +162,13 @@ def foundations(g, node_id: str) -> set[str]:
     return seen
 
 
-def _documents(g, ids) -> list[tuple[str, str, str]]:
-    return [tuple(r) for r in g.ro_query(DOCUMENTS_AMONG, {"ids": sorted(ids)}).result_set]
-
-
 def lost_support(g, decision_id: str) -> list[str]:
     """Why a decision is not valid: one sentence per premise that no longer holds,
     naming the distrusted documents it rested on."""
     reasons = []
     for fact_id, claim in g.ro_query(INVALID_PREMISES, {"id": decision_id}).result_set:
-        distrusted = [t for _, t, trust in _documents(g, foundations(g, fact_id)) if trust == QUARANTINED]
+        distrusted = [r[0] for r in g.ro_query(DISTRUSTED_AMONG, {
+            "ids": sorted(foundations(g, fact_id)), "quarantined": QUARANTINED}).result_set]
         if distrusted:
             verb = "is" if len(distrusted) == 1 else "are"
             reasons.append(f"“{claim}” no longer holds: it rested on "
@@ -170,28 +180,27 @@ def lost_support(g, decision_id: str) -> list[str]:
 
 def held_by(g, decision_id: str, under_review) -> list[dict]:
     """The documents under review (not yet distrusted) that this decision rests on."""
-    review = set(under_review)
-    if not review:
+    if not under_review:
         return []
-    return [{"id": i, "title": t} for i, t, trust in _documents(g, foundations(g, decision_id) & review)
-            if trust != QUARANTINED]
+    rows = g.ro_query(REVIEWED_AMONG, {"ids": sorted(foundations(g, decision_id)),
+                                       "review": list(under_review), "quarantined": QUARANTINED})
+    return [{"id": i, "title": t} for i, t in rows.result_set]
 
 
 def unverified_conclusions(g, decision_id: str) -> list[dict]:
     """The conclusions this order rests on that hold only because unverified documents
     say so: on a throwaway copy where only trusted documents count, they fall."""
-    rows = g.ro_query(CONCLUSIONS_OF, {"id": decision_id, "inference": INFERENCE}).result_set
-    if not rows:
+    if not g.ro_query(CONCLUSIONS_OF, {"id": decision_id, "inference": INFERENCE}).result_set:
         return []
     copy = copy_graph(g, f"{g.name}_whatif_{uuid4().hex[:8]}")
     try:
         copy.query(REMEMBER_TRUST)
         copy.query(SET_SCENARIO, {"trusted": TRUSTED, "quarantined": QUARANTINED, "removed": []})
         support.recompute(copy)
-        still = {r[0] for r in copy.ro_query(VALID_AMONG, {"ids": [r[0] for r in rows]}).result_set}
+        rows = copy.ro_query(FALLEN_CONCLUSIONS_OF, {"id": decision_id, "inference": INFERENCE}).result_set
     finally:
         copy.delete()
-    return [{"id": i, "claim": c} for i, c in rows if i not in still]
+    return [{"id": i, "claim": c} for i, c in rows]
 
 
 def _unverified_hold(g, decision_id: str, amount, state: str) -> Verdict | None:

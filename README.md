@@ -142,8 +142,31 @@ RETURN held, size(newly_valid) AS validated
 Python only repeats the round until FalkorDB reports zero changes. FalkorDB also does the
 rest of the real work: `GRAPH.COPY` gives the repair preview and the gate's what-if tests, and
 each procurement case is its own graph; one atomic query per write records reasons and refuses
-justifications that cite missing evidence. **All 34 queries the product depends on are in
+justifications that cite missing evidence. **All 50 queries the product depends on are in
 [docs/cypher.md](docs/cypher.md)**, generated from the code.
+
+### Where each decision is made
+
+Every judgement is a Cypher query that runs inside FalkorDB. Python never downloads the graph
+to work out an answer itself.
+
+| Question | Answered by |
+|---|---|
+| Which facts, reasons and orders are still supported? | The least fixed point above ([app/support.py](app/support.py)) |
+| Which facts may the agents see, and may the Buyer cite these? | `WHERE b.valid = true` queries ([app/memory.py](app/memory.py), [app/agents/buyer.py](app/agents/buyer.py)) |
+| Would this order survive losing any one trusted origin? Does each conclusion it rests on hold when only trusted documents count? | Scenario queries plus the fixed point, on a throwaway `GRAPH.COPY` ([app/gate.py](app/gate.py)) |
+| Why is this order blocked? Does it rest on a document under review? | What it rests on, walked one level per query, then filtered in Cypher ([app/gate.py](app/gate.py)) |
+| What would distrusting this document change? | The fixed point on a `GRAPH.COPY`, then a diff written in Cypher ([app/repair.py](app/repair.py)) |
+| How strong is each conclusion's evidence? | Each what-if world's answer is written onto one copy; a final query combines them ([app/evidence.py](app/evidence.py)) |
+| Why does the agent believe this? | A traversal from the conclusion down to its documents ([app/views.py](app/views.py)) |
+
+What Python does: it repeats a query until FalkorDB reports no change (the fixed point's
+rounds, the levels of "what it rests on", the what-if worlds). It also applies the stakes
+policy (orders of $5,000 or more, and irreversible ones, need a person), moves an order
+through its states,
+runs the agents and the hidden-text scanner, and words the answers for people. One
+comparison stays in Python: after a repair, the result on the real graph is checked against
+the preview made on the copy. That spans two graphs, so it cannot be one query.
 
 ## How it works
 

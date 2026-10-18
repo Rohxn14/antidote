@@ -26,50 +26,54 @@ SINGLE_TRUSTED = "single trusted origin"
 ROBUST = "robust"
 LEVELS = (UNSUPPORTED, UNVERIFIED_ONLY, SINGLE_TRUSTED, ROBUST)
 
-CONCLUSIONS = f"""
+# Each world's answer is written onto the copy, and the level is worked out by one
+# final query: FalkorDB both computes every world and combines them.
+REMEMBER_REAL = f"""
 MATCH (n) WHERE n:{BELIEF} OR n:{DECISION}
-RETURN n.id, coalesce(n.{VALID}, false)
+SET n.real_ok = coalesce(n.{VALID}, false), n.trusted_ok = false, n.weak_origin = null
 """
-
-
-def _valid(g) -> set[str]:
-    return {node_id for node_id, ok in g.ro_query(CONCLUSIONS).result_set if ok}
+AFTER_TRUSTED_ONLY = f"""
+MATCH (n) WHERE n:{BELIEF} OR n:{DECISION}
+SET n.trusted_ok = coalesce(n.{VALID}, false)
+"""
+AFTER_LOSING_ORIGIN = f"""
+MATCH (n) WHERE (n:{BELIEF} OR n:{DECISION})
+  AND n.trusted_ok = true AND coalesce(n.{VALID}, false) = false AND n.weak_origin IS NULL
+SET n.weak_origin = $origin
+"""
+LEVEL_OF = f"""
+MATCH (n) WHERE n:{BELIEF} OR n:{DECISION}
+RETURN n.id,
+       CASE WHEN NOT n.real_ok THEN '{UNSUPPORTED}'
+            WHEN NOT n.trusted_ok THEN '{UNVERIFIED_ONLY}'
+            WHEN n.weak_origin IS NOT NULL THEN '{SINGLE_TRUSTED}'
+            ELSE '{ROBUST}' END,
+       n.weak_origin
+"""
 
 
 def strength(g) -> dict[str, dict]:
     """{id: {"level": one of LEVELS, "weak_origin": the trusted origin whose
     loss would bring it down, or None}} for every belief and decision."""
     support.recompute(g)
-    real = dict(g.ro_query(CONCLUSIONS).result_set)
     origins = [r[0] for r in g.ro_query(gate.TRUSTED_ORIGINS, {"trusted": TRUSTED}).result_set]
 
     copy = copy_graph(g, f"{g.name}_evidence_{uuid4().hex[:8]}")
     try:
+        copy.query(REMEMBER_REAL)  # the real world, as computed on the main graph
         copy.query(gate.REMEMBER_TRUST)
 
-        def world(removed) -> set[str]:
+        def world(removed) -> None:
             copy.query(gate.SET_SCENARIO, {"trusted": TRUSTED, "quarantined": QUARANTINED,
                                            "removed": list(removed)})
             support.recompute(copy)
-            return _valid(copy)
 
-        trusted_only = world([])
-        weak = {}
+        world([])
+        copy.query(AFTER_TRUSTED_ONLY)
         for origin in origins:
-            for node_id in trusted_only - world([origin]):
-                weak.setdefault(node_id, origin)
+            world([origin])
+            copy.query(AFTER_LOSING_ORIGIN, {"origin": origin})
+        rows = copy.ro_query(LEVEL_OF).result_set
     finally:
         copy.delete()
-
-    result = {}
-    for node_id, ok in real.items():
-        if not ok:
-            level = UNSUPPORTED
-        elif node_id not in trusted_only:
-            level = UNVERIFIED_ONLY
-        elif node_id in weak:
-            level = SINGLE_TRUSTED
-        else:
-            level = ROBUST
-        result[node_id] = {"level": level, "weak_origin": weak.get(node_id)}
-    return result
+    return {node_id: {"level": level, "weak_origin": weak} for node_id, level, weak in rows}

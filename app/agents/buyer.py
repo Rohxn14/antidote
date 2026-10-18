@@ -11,9 +11,12 @@ import json
 
 from app import gate, llm, memory, support
 from app.agents.researcher import beliefs_for_prompt, numbers
-from app.schema import DECIDED, DECISION, PURCHASE_ORDER, SHORTLIST, VENDOR
+from app.schema import BELIEF, DECIDED, DECISION, PURCHASE_ORDER, SHORTLIST, VALID, VENDOR
 
 AGENT_ID = "a_buyer"
+
+# Which of the facts a plan cites are supported right now (only beliefs can be premises).
+SUPPORTED_AMONG = f"MATCH (b:{BELIEF}) WHERE b.id IN $ids AND b.{VALID} = true RETURN b.id"
 
 DECIDE_SYSTEM = """You are the Buyer agent of a procurement team. Using ONLY the \
 supported beliefs listed (each has an id), decide which suppliers to shortlist for \
@@ -71,12 +74,14 @@ def record_plan(g, plan: dict) -> dict:
     """Record a shortlist and/or a purchase order, then submit the order to
     the gate. Returns what was recorded, the gate verdict and any rejections."""
     support.recompute(g)
-    status = support.status(g)
+    cited = sorted({p for item in [*plan.get("shortlist", []), plan.get("purchase_order") or {}]
+                    for p in item.get("premises", [])})
+    supported = {r[0] for r in g.ro_query(SUPPORTED_AMONG, {"ids": cited}).result_set}  # FalkorDB says
     result = {"shortlisted": [], "order": None, "verdict": None, "rejected": []}
 
     def problems(item) -> tuple[str | None, list[str]]:
         vendor_id = memory.resolve_vendor(g, item["vendor"])
-        bad = [p for p in item["premises"] if not (p.startswith("b_") and status.get(p) is True)]
+        bad = [p for p in item["premises"] if p not in supported]
         notes = ([f"unknown vendor {item['vendor']!r}"] if vendor_id is None else []) + \
                 ([f"not valid beliefs {bad}"] if bad else [])
         if "quantity" in item:  # an order: its figures must come from what it cites

@@ -235,9 +235,19 @@ MATCH (v:Vendor) WHERE v.id = $value OR toLower(v.name) = toLower($value)
 RETURN v.id ORDER BY v.id LIMIT 1
 ```
 
+## Buyer (app/agents/buyer.py, app/casebuilder.py)
+
+Before a plan is recorded, FalkorDB says which of the facts it cites are supported now; a plan citing anything else is rejected.
+
+### supported among
+
+```cypher
+MATCH (b:Belief) WHERE b.id IN $ids AND b.valid = true RETURN b.id
+```
+
 ## Action gate (app/gate.py)
 
-Reads the order on the current graph; the what-if queries run on a throwaway GRAPH.COPY to test robustness to losing a trusted origin. What an order rests on is walked one level per query (a reason points at both its premises and its conclusion), to hold orders on flagged documents and to say why a blocked order lost its support.
+Reads the order on the current graph; the what-if queries run on a throwaway GRAPH.COPY (robustness to losing a trusted origin, and the verification hold's trusted-only world). What an order rests on is walked one level per query (a reason points at both its premises and its conclusion), to hold orders on flagged documents and to say why a blocked order lost its support.
 
 ### read decision
 
@@ -284,12 +294,77 @@ RETURN DISTINCT b.id, b.claim
 ORDER BY b.id
 ```
 
-### documents among
+### why blocked: distrusted documents among
 
 ```cypher
-MATCH (s:Source) WHERE s.id IN $ids
-RETURN s.id, s.title, s.trust
+MATCH (s:Source) WHERE s.id IN $ids AND s.trust = $quarantined
+RETURN s.title
 ORDER BY s.title
+```
+
+### alert hold: documents under review among
+
+```cypher
+MATCH (s:Source) WHERE s.id IN $ids AND s.id IN $review AND s.trust <> $quarantined
+RETURN s.id, s.title
+ORDER BY s.id
+```
+
+### verification hold: conclusions an order rests on
+
+```cypher
+MATCH (:Decision {id: $id})<-[:SUPPORTS]-(:Justification)-[:PREMISE]->(b:Belief)
+      <-[:SUPPORTS]-(:Justification {kind: $inference})-[:PREMISE]->(:Belief)
+RETURN DISTINCT b.id, b.claim
+ORDER BY b.id
+```
+
+### verification hold: conclusions fallen on the copy
+
+```cypher
+MATCH (:Decision {id: $id})<-[:SUPPORTS]-(:Justification)-[:PREMISE]->(b:Belief)
+      <-[:SUPPORTS]-(:Justification {kind: $inference})-[:PREMISE]->(:Belief)
+WHERE coalesce(b.valid, false) = false
+RETURN DISTINCT b.id, b.claim
+ORDER BY b.id
+```
+
+## Evidence strength (app/evidence.py)
+
+On one GRAPH.COPY: remember the real world, then the trusted-only world, then the trusted-only world minus each trusted origin (each world is the gate's scenario plus the support engine). One final query combines the worlds into a level per belief and decision.
+
+### remember the real world
+
+```cypher
+MATCH (n) WHERE n:Belief OR n:Decision
+SET n.real_ok = coalesce(n.valid, false), n.trusted_ok = false, n.weak_origin = null
+```
+
+### after the trusted-only world
+
+```cypher
+MATCH (n) WHERE n:Belief OR n:Decision
+SET n.trusted_ok = coalesce(n.valid, false)
+```
+
+### after losing one origin
+
+```cypher
+MATCH (n) WHERE (n:Belief OR n:Decision)
+  AND n.trusted_ok = true AND coalesce(n.valid, false) = false AND n.weak_origin IS NULL
+SET n.weak_origin = $origin
+```
+
+### level of each conclusion
+
+```cypher
+MATCH (n) WHERE n:Belief OR n:Decision
+RETURN n.id,
+       CASE WHEN NOT n.real_ok THEN 'unsupported'
+            WHEN NOT n.trusted_ok THEN 'unverified only'
+            WHEN n.weak_origin IS NOT NULL THEN 'single trusted origin'
+            ELSE 'robust' END,
+       n.weak_origin
 ```
 
 ## Repair preview (app/repair.py)
@@ -335,6 +410,14 @@ ORDER BY n.id, kept.id
 
 ```cypher
 MATCH (s:Source {id: $id}) RETURN s.trust
+```
+
+### same origin
+
+```cypher
+MATCH (s:Source {id: $id})
+MATCH (t:Source) WHERE t.origin = s.origin AND t.id <> s.id AND t.trust <> $quarantined
+RETURN t.id ORDER BY t.id
 ```
 
 ## Read-only views (app/views.py)
@@ -389,6 +472,66 @@ RETURN r.id, r.approved_by, r.revision, titles, collect(n.id)
 ORDER BY r.revision
 ```
 
+## Agent activity and page state (app/runner.py, api/server.py)
+
+Read-only: what the activity feed and the page show. They decide nothing.
+
+### reasons for a node
+
+```cypher
+MATCH (j:Justification)-[:SUPPORTS]->(n {id: $id})
+OPTIONAL MATCH (a:Agent)-[:AUTHORED]->(j)
+OPTIONAL MATCH (j)-[:PREMISE]->(p)
+RETURN j.id, j.kind, coalesce(j.holds, false), a.id, collect(p.id)
+ORDER BY j.id
+```
+
+### vendor of a node
+
+```cypher
+MATCH (n {id: $id})-[:ABOUT]->(v:Vendor) RETURN v.id LIMIT 1
+```
+
+### decision info
+
+```cypher
+MATCH (d:Decision {id: $id})
+OPTIONAL MATCH (d)-[:ABOUT]->(v:Vendor)
+RETURN d.kind, d.summary, d.amount, d.state, v.id
+```
+
+### document title
+
+```cypher
+MATCH (s:Source {id: $id}) RETURN s.title
+```
+
+### state: vendors
+
+```cypher
+MATCH (v:Vendor) RETURN v.id, v.name ORDER BY v.name
+```
+
+### state: reasons
+
+```cypher
+MATCH (j:Justification)
+OPTIONAL MATCH (a:Agent)-[:AUTHORED]->(j)
+RETURN j.id, j.kind, coalesce(j.holds, false), a.id, j.quote
+ORDER BY j.id
+```
+
+### state: decisions
+
+```cypher
+MATCH (d:Decision)
+OPTIONAL MATCH (d)-[:ABOUT]->(v:Vendor)
+OPTIONAL MATCH (j:Justification)-[:SUPPORTS]->(d)
+RETURN d.id, d.kind, d.summary, d.amount, d.state, coalesce(d.valid, false), v.id,
+       d.note, d.approved_by, collect(j.reasoning)
+ORDER BY d.id
+```
+
 ## Schema (app/schema.py)
 
 `ensure_schema()` runs `MERGE (m:Meta {id: 'graph'}) ON CREATE SET m.revision = 0`, then
@@ -407,4 +550,5 @@ CREATE INDEX FOR (n:Vendor) ON (n.name)
 ```
 
 Graph copies use the `GRAPH.COPY` command (falkordb client: `graph.copy(name)`) for the
-repair preview, the gate's what-if tests, per-visitor demo graphs and the rollback baseline.
+repair preview, the gate's what-if tests, the evidence levels, per-visitor demo graphs and
+the rollback baseline.

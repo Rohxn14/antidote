@@ -4,7 +4,9 @@ from the code itself (labels substituted), so the docs cannot drift.
 
     python -m scripts.export_cypher
 """
-from app import gate, memory, repair, schema, support, views
+from api import server
+from app import evidence, gate, memory, repair, runner, schema, support, views
+from app.agents import buyer
 from app.db import ROOT
 
 SECTIONS = [
@@ -16,24 +18,48 @@ SECTIONS = [
      "One atomic query per logical write; each starts with MATCH on the Meta node "
      "and bumps its revision.",
      memory.QUERIES),
+    ("Buyer (app/agents/buyer.py, app/casebuilder.py)",
+     "Before a plan is recorded, FalkorDB says which of the facts it cites are "
+     "supported now; a plan citing anything else is rejected.",
+     {"supported among": buyer.SUPPORTED_AMONG}),
     ("Action gate (app/gate.py)",
      "Reads the order on the current graph; the what-if queries run on a "
-     "throwaway GRAPH.COPY to test robustness to losing a trusted origin. What an "
-     "order rests on is walked one level per query (a reason points at both its "
-     "premises and its conclusion), to hold orders on flagged documents and to say "
-     "why a blocked order lost its support.",
+     "throwaway GRAPH.COPY (robustness to losing a trusted origin, and the "
+     "verification hold's trusted-only world). What an order rests on is walked "
+     "one level per query (a reason points at both its premises and its "
+     "conclusion), to hold orders on flagged documents and to say why a blocked "
+     "order lost its support.",
      {"read decision": gate.READ_DECISION, "trusted origins": gate.TRUSTED_ORIGINS,
       "what-if: remember trust": gate.REMEMBER_TRUST, "what-if: scenario": gate.SET_SCENARIO,
       "rests on: one level down": gate.ONE_LEVEL_DOWN,
       "why blocked: invalid premises": gate.INVALID_PREMISES,
-      "documents among": gate.DOCUMENTS_AMONG}),
+      "why blocked: distrusted documents among": gate.DISTRUSTED_AMONG,
+      "alert hold: documents under review among": gate.REVIEWED_AMONG,
+      "verification hold: conclusions an order rests on": gate.CONCLUSIONS_OF,
+      "verification hold: conclusions fallen on the copy": gate.FALLEN_CONCLUSIONS_OF}),
+    ("Evidence strength (app/evidence.py)",
+     "On one GRAPH.COPY: remember the real world, then the trusted-only world, then "
+     "the trusted-only world minus each trusted origin (each world is the gate's "
+     "scenario plus the support engine). One final query combines the worlds into "
+     "a level per belief and decision.",
+     {"remember the real world": evidence.REMEMBER_REAL,
+      "after the trusted-only world": evidence.AFTER_TRUSTED_ONLY,
+      "after losing one origin": evidence.AFTER_LOSING_ORIGIN,
+      "level of each conclusion": evidence.LEVEL_OF}),
     ("Repair preview (app/repair.py)",
      "Run on a GRAPH.COPY: snapshot the flags, quarantine, recompute, then diff "
      "with Cypher.",
      {"snapshot conclusions": repair.SNAPSHOT_CONCLUSIONS,
       "snapshot justifications": repair.SNAPSHOT_JUSTIFICATIONS,
-      "lost": repair.LOST, "survived": repair.SURVIVED, "source trust": repair.SOURCE_TRUST}),
+      "lost": repair.LOST, "survived": repair.SURVIVED, "source trust": repair.SOURCE_TRUST,
+      "same origin": repair.SAME_ORIGIN}),
     ("Read-only views (app/views.py)", "Used by the UI and the MCP tools.", views.QUERIES),
+    ("Agent activity and page state (app/runner.py, api/server.py)",
+     "Read-only: what the activity feed and the page show. They decide nothing.",
+     {"reasons for a node": runner.REASONS_FOR, "vendor of a node": runner.VENDOR_OF,
+      "decision info": runner.DECISION_INFO, "document title": runner.TITLE,
+      "state: vendors": server.VENDORS, "state: reasons": server.REASONS,
+      "state: decisions": server.DECISIONS}),
 ]
 
 EXTRA = f"""## Schema (app/schema.py)
@@ -46,7 +72,8 @@ creates the range indexes that do not exist yet (FalkorDB raises on duplicates):
 ```
 
 Graph copies use the `GRAPH.COPY` command (falkordb client: `graph.copy(name)`) for the
-repair preview, the gate's what-if tests, per-visitor demo graphs and the rollback baseline.
+repair preview, the gate's what-if tests, the evidence levels, per-visitor demo graphs and
+the rollback baseline.
 """
 
 

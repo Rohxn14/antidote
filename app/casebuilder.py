@@ -18,7 +18,7 @@ Everything after that is real: the Researcher's checks, the writes to FalkorDB, 
 approval check, the security scan, the preview and the repair.
 """
 from app import demo, support
-from app.agents.buyer import money, next_order_id
+from app.agents.buyer import SUPPORTED_AMONG, money, next_order_id
 from app.schema import TRUSTED, UNVERIFIED
 
 SLOTS = [("vantor", "Vantor Motion"), ("boltline", "Boltline Automation"),
@@ -271,6 +271,9 @@ class CaseScript:
         return self._decide(g, next_order_id(g), replanning=True)
 
     def _decide(self, g, order_id: str, replanning: bool) -> dict:
+        """The Buyer may rely only on facts FalkorDB says are supported now."""
         support.recompute(g)
-        status = support.status(g)  # the Buyer relies only on facts that are supported now
-        return _plan(self.case, lambda b: status.get(b) is True, order_id, replanning)
+        candidates = [f"b_{slot}_{kind}" for slot, _ in SLOTS
+                      for kind in ("qualifies", "offer", "makes_servos", "only_certified")]
+        supported = {r[0] for r in g.ro_query(SUPPORTED_AMONG, {"ids": candidates}).result_set}
+        return _plan(self.case, lambda b: b in supported, order_id, replanning)
