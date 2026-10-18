@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { ActivityFeed } from "./components/ActivityFeed";
 import { AgentStrip } from "./components/AgentStrip";
 import { AlertCard } from "./components/AlertCard";
+import { CaseBar } from "./components/CaseBar";
 import { DocumentDrawer } from "./components/DocumentDrawer";
 import { DocumentList } from "./components/DocumentList";
 import { GraphCard, type NodeKind } from "./components/EvidenceGraph";
@@ -14,10 +15,10 @@ import { ImpactPanel, RepairLog } from "./components/ImpactPanel";
 import { Guarantees, OrderCard } from "./components/OrderCard";
 import { OutageScreen } from "./components/OutageScreen";
 import { RequestCard } from "./components/RequestCard";
-import { StoryGuide } from "./components/StoryGuide";
 import { cx } from "./components/ui";
 import { WhyDrawer } from "./components/WhyDrawer";
-import { storyOf } from "./lib/story";
+import { chipsOf, suggestionOf } from "./lib/story";
+import { caseTitle } from "./lib/words";
 import { useAntidote, type Notice } from "./useAntidote";
 
 function Column({ n, title, subtitle, className, children }: {
@@ -63,42 +64,51 @@ export default function App() {
   const m = a.memory;
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [whyId, setWhyId] = useState<string | null>(null);
-  const [seenWhy, setSeenWhy] = useState(false);
   const impactRef = useRef<HTMLDivElement>(null);
+  const orderRef = useRef<HTMLDivElement>(null);
 
-  const latest = a.orders.length ? a.orders[a.orders.length - 1] : null;
-  const openWhy = useCallback((id: string) => {
-    setWhyId(id);
-    if (id === latest?.id || id.startsWith("d_po_")) setSeenWhy(true);
-  }, [latest?.id]);
   const openNode = useCallback((id: string, kind: NodeKind) => {
     if (kind === "doc") setDocumentId(id);
-    else openWhy(id);
-  }, [openWhy]);
+    else setWhyId(id);
+  }, []);
   const closeDocument = useCallback(() => setDocumentId(null), []);
   const closeWhy = useCallback(() => setWhyId(null), []);
-
-  useEffect(() => {
-    if (!m.hasRun) setSeenWhy(false);
-  }, [m.hasRun]);
+  const { previewImpact } = a;
+  const previewFromDocument = useCallback((id: string) => {
+    setDocumentId(null);
+    void previewImpact(id);
+  }, [previewImpact]);
 
   useEffect(() => {
     if (a.impact) impactRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [a.impact]);
 
+  // A new recommendation, or a change in its state (held, blocked, placed): show its top.
+  const latest = a.orders.length ? a.orders[a.orders.length - 1] : null;
+  const orderMark = latest ? `${latest.id}:${latest.state}:${latest.held_by.length}` : "";
+  useEffect(() => {
+    if (orderMark) orderRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [orderMark]);
+
   if (a.outage) return <OutageScreen detail={a.outage} />;
 
-  const story = storyOf(m, { ready: a.ready, running: a.running, impact: a.impact, seenWhy });
   const reading = a.agents.researcher.state === "working" ? a.agents.researcher.documentId : null;
   const busy = a.pending !== null || a.running !== null;
+  const situation = { ready: a.ready, running: a.running, impact: a.impact };
+  const impactFor = a.impact?.document_id ?? null;
+  const impactPanel = a.impact && (
+    <div ref={impactRef}>
+      <ImpactPanel impact={a.impact} memory={m} pending={a.pending} onConfirm={a.quarantine} onCancel={a.cancelImpact} />
+    </div>
+  );
 
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh">
       <Header health={a.health} syncing={a.pending !== null} onStartOver={a.startOver} restarting={a.pending === "restart"} />
-      <StoryGuide story={story} />
+      <CaseBar title={caseTitle(a.requestText)} chips={chipsOf(m, a.running)} suggestion={suggestionOf(m, situation)} />
       {a.notice && <NoticeBar notice={a.notice} onClose={a.dismissNotice} />}
 
-      <main className="mx-auto grid w-full max-w-[1680px] flex-1 gap-5 px-4 pb-5 pt-4 lg:min-h-0 lg:grid-cols-[minmax(290px,330px)_minmax(0,1fr)_minmax(330px,390px)]">
+      <main className="mx-auto grid w-full max-w-[1680px] flex-1 gap-5 px-4 pb-5 pt-4 lg:min-h-0 lg:grid-cols-[minmax(290px,330px)_minmax(0,1fr)_minmax(340px,400px)]">
         <Column n={1} title="Request and documents" subtitle="What they're asked, and what they can read" className="scroll-thin lg:min-h-0 lg:overflow-y-auto lg:pb-2 [&>*]:shrink-0">
           <RequestCard
             text={a.requestText}
@@ -127,47 +137,46 @@ export default function App() {
         </Column>
 
         <Column n={3} title="Recommendation and action" subtitle="What they propose, and what you decide" className="scroll-thin lg:min-h-0 lg:overflow-y-auto lg:pb-2 [&>*]:shrink-0">
-          <OrderCard
-            orders={a.orders}
-            vendors={m.vendors}
-            lastAction={a.lastAction}
-            pending={a.pending}
-            running={a.running}
-            onWhy={openWhy}
-            onDecide={a.decide}
-            onReplan={a.replan}
-          />
+          <div ref={orderRef} className="scroll-mt-2">
+            <OrderCard
+              orders={a.orders}
+              memory={m}
+              lastAction={a.lastAction}
+              pending={a.pending}
+              running={a.running}
+              onWhy={setWhyId}
+              onDecide={a.decide}
+              onReplan={a.replan}
+              onOpenDocument={setDocumentId}
+            />
+          </div>
+          {impactFor && !m.alerts.some((x) => x.document_id === impactFor) && impactPanel}
           {m.alerts.map((alert) => (
             <div key={alert.document_id} className="space-y-3">
               <AlertCard
                 alert={alert}
                 document={m.documents[alert.document_id]}
-                previewing={a.impact?.document_id === alert.document_id}
+                previewing={impactFor === alert.document_id}
                 pending={a.pending}
                 busy={busy}
                 onShow={() => setDocumentId(alert.document_id)}
                 onPreview={() => a.previewImpact(alert.document_id)}
               />
-              {a.impact?.document_id === alert.document_id && (
-                <div ref={impactRef}>
-                  <ImpactPanel impact={a.impact} memory={m} pending={a.pending} onConfirm={a.quarantine} onCancel={a.cancelImpact} />
-                </div>
-              )}
+              {impactFor === alert.document_id && impactPanel}
             </div>
           ))}
-          {a.impact && !m.alerts.some((x) => x.document_id === a.impact?.document_id) && (
-            <div ref={impactRef}>
-              <ImpactPanel impact={a.impact} memory={m} pending={a.pending} onConfirm={a.quarantine} onCancel={a.cancelImpact} />
-            </div>
-          )}
           <RepairLog repairs={m.repairs} memory={m} />
-          {m.alerts.length === 0 && <Guarantees />}
+          {m.alerts.length === 0 && !a.impact && <Guarantees />}
         </Column>
       </main>
 
       {/* The document panel comes last so it opens on top of a "Why?" panel. */}
       <WhyDrawer nodeId={whyId} revision={m.revision} onClose={closeWhy} onOpenDocument={setDocumentId} />
-      <DocumentDrawer documentId={documentId} onClose={closeDocument} />
+      <DocumentDrawer
+        documentId={documentId}
+        onClose={closeDocument}
+        onPreview={m.hasRun && !busy && !a.impact ? previewFromDocument : null}
+      />
     </div>
   );
 }

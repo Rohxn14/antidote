@@ -35,6 +35,7 @@ export const OUTCOME: Record<Outcome, string> = {
   auto: "safe to proceed automatically",
   needs_approval: "needs a person's approval",
   blocked: "blocked, no supported reason left",
+  held: "on hold until a flagged document is dealt with",
 };
 
 export const DOC_KIND: Record<DocumentKind, string> = {
@@ -87,9 +88,25 @@ export function orderParts(summary: string): OrderParts | null {
 
 export const orderLabel = (summary: string, id: string) => orderParts(summary)?.label ?? id;
 
-/** The approval check's note, as a sentence. */
-export function approvalNote(note: string): string {
-  if (/^amount .* is at or above/.test(note)) return `A person must approve it: the ${note}.`;
-  if (note.startsWith("no justification holds")) return "Blocked: none of its reasons holds on the memory as it is now.";
-  return note.charAt(0).toUpperCase() + note.slice(1) + ".";
+/** The approval check's notes (joined with "; " by the server), one sentence each. */
+export function noteLines(note: string | null): string[] {
+  return (note ?? "").split("; ").filter(Boolean).map((n) => {
+    if (/^amount .* is at or above/.test(n)) return `A person must approve it: the ${n}.`;
+    if (n.startsWith("no justification holds")) return "None of its reasons holds on the memory as it is now.";
+    if (n === "not reversible") return "It can't be undone once placed, so a person must approve it.";
+    const sentence = n.charAt(0).toUpperCase() + n.slice(1);
+    return /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
+  });
 }
+
+/** "Servo actuators for RehabArm v2 must come from…" -> "Servo actuators for RehabArm v2" */
+export function caseTitle(request: string): string {
+  const first = request.split("\n").map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim()).find(Boolean) ?? "";
+  const m = /^(.+?)\s+(?:must|should|needs?|has to|have to)\b/i.exec(first);
+  const title = (m ? m[1] : first).replace(/[.:]$/, "");
+  if (!title) return "New purchase request";
+  return title.length > 72 ? `${title.slice(0, 70)}…` : title;
+}
+
+export const listOf = (items: string[]) =>
+  items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;

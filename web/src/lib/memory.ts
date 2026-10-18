@@ -107,6 +107,7 @@ function applyEvent(m: Memory, e: AntidoteEvent): Memory {
       const decision: Decision = {
         id: d.decision_id, kind: d.kind, summary: d.summary, amount: d.amount, state: d.state,
         supported: true, evidence: null, vendor_id: d.vendor_id, note: null, approved_by: null,
+        reasoning: null, held_by: [],
       };
       return { ...m, decisions: { ...m.decisions, [decision.id]: decision }, latest: decision.id };
     }
@@ -153,6 +154,34 @@ export function ancestors(m: Memory, rootId: string): Set<string> {
     }
   }
   return seen;
+}
+
+export interface Basis {
+  id: string;
+  text: string;
+  supported: boolean;
+  // check: tests your request against a supplier's claim; claim: a supplier's own
+  // statement; rule: comes from your request alone
+  kind: "check" | "claim" | "rule";
+  documents: Document[]; // the documents beneath it (your request left out unless it is a rule)
+}
+
+const KIND_ORDER = { check: 0, claim: 1, rule: 2 };
+
+/** The facts a decision rests on directly, each with the documents beneath it. */
+export function basisOf(m: Memory, decisionId: string): Basis[] {
+  const reasons = new Set(m.edges.filter((e) => e.kind === "supports" && e.to_id === decisionId).map((e) => e.from_id));
+  const premises = [...new Set(m.edges.filter((e) => e.kind === "premise" && reasons.has(e.to_id)).map((e) => e.from_id))];
+  return premises
+    .filter((id) => m.facts[id])
+    .map((id): Basis => {
+      const documents = [...ancestors(m, id)].map((x) => m.documents[x]).filter(Boolean);
+      const fromRequest = documents.some((d) => d.kind === "request");
+      const others = documents.filter((d) => d.kind !== "request");
+      const kind = !others.length ? "rule" : fromRequest ? "check" : "claim";
+      return { id, text: m.facts[id].text, supported: m.facts[id].supported, kind, documents: kind === "rule" ? documents : others };
+    })
+    .sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
 }
 
 /** How many facts were read from each document. */

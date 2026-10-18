@@ -97,8 +97,8 @@ RETURN held, size(newly_valid) AS validated
 ```
 
 Python only repeats the round until FalkorDB reports zero changes. FalkorDB also does the
-rest of the real work: `GRAPH.COPY` gives the repair preview, the gate's what-if tests and a
-private graph per demo visitor; one atomic query per write records reasons and refuses
+rest of the real work: `GRAPH.COPY` gives the repair preview and the gate's what-if tests, and
+each procurement case is its own graph; one atomic query per write records reasons and refuses
 justifications that cite missing evidence. **All 29 queries the product depends on are in
 [docs/cypher.md](docs/cypher.md)**, generated from the code.
 
@@ -264,36 +264,38 @@ the support engine. Labels and allowed values live in [app/schema.py](app/schema
 
 ## Benchmark
 
-`python -m scripts.benchmark` builds each scenario once, snapshots it just before the first
-poisoned source is ingested, then runs each method on its own copy. **Ground truth comes from
-an independent solver** (the Dowling–Gallier linear-time Horn algorithm in
-[tests/reference.py](tests/reference.py)), not from Antidote's engine.
+**The question.** A poisoned source gets into memory and the agents build facts and orders
+on it. Later the source is found out. How cleanly can each method remove it: everything that
+rested on it, and nothing else?
 
-| Scenario | Method | Residual contamination | Collateral withdrawal | Stale-action authorization | Repair time |
-|---|---|---|---|---|---|
-| Demo story (65 nodes, 6 should go) | **Antidote** | **0** | **0** | **0** | 14 ms |
-| | Delete source only | 6 | 0 | 1 | 1 ms |
-| | Full rollback | 0 | 8 | 0 | 99 ms |
-| 20 vendors (434 nodes, 13 should go) | **Antidote** | **0** | **0** | **0** | 51 ms |
-| | Delete source only | 13 | 0 | 2 | 1 ms |
-| | Full rollback | 0 | 106 | 0 | 101 ms |
-| 100 vendors (1,874 nodes, 54 should go) | **Antidote** | **0** | **0** | **0** | 283 ms |
-| | Delete source only | 54 | 0 | 5 | 2 ms |
-| | Full rollback | 0 | 396 | 0 | 94 ms |
+**Ground truth** comes from an **independent solver**, not from Antidote's engine: the
+Dowling–Gallier linear-time Horn algorithm in [tests/reference.py](tests/reference.py), which
+shares no code with it, works out exactly what loses all support once the source is gone.
 
-- **Residual contamination:** beliefs/decisions still active but unsupported.
-- **Collateral withdrawal:** supported beliefs/decisions withdrawn or lost.
-- **Stale-action authorization:** unsupported purchase orders that still pass the gate.
-- **Repair time:** from the confirmed quarantine to the verified repaired state (local
-  Docker; against FalkorDB Cloud from India: preview ≈ 0.5 s, apply ≈ 0.3 s).
+**The three methods**, each run on its own copy of the same graph (`python -m scripts.benchmark`
+snapshots each scenario just before the first poisoned source arrives):
 
-Antidote is slower than deleting a node, and at 100 vendors slower than restoring a
-snapshot, because it recomputes and verifies. That is the trade: about a third of a second
-instead of 396 lost beliefs and decisions that would have to be re-learned.
+- **Antidote:** stop trusting the source, recompute support in FalkorDB, verify against the
+  preview, record the repair. A fact with another valid reason survives.
+- **Delete source only:** what a plain memory store does today: delete the poisoned record
+  and leave everything built on it in place.
+- **Full rollback:** restore the snapshot taken just before the poisoned source arrived. Clean,
+  but everything learned since is thrown away, good and bad alike.
+
+**The metrics** (lower is better, except exact cases):
+
+- **Exact cases:** cases where the method's result matches ground truth exactly.
+- **Residual contamination:** facts and decisions still active although nothing supports them
+  any more: the poison's leftovers.
+- **Collateral withdrawal:** facts and decisions that are still supported but were withdrawn or
+  lost anyway: good knowledge thrown away.
+- **Stale-action authorization:** purchase orders left without support that the approval check
+  would still let through.
+- **Repair time:** from the confirmed quarantine to the verified repaired state (local Docker).
 
 ### An externally defined test set: RippleEdits
 
-Our scenarios are our own, so we also test on cases someone else defined.
+Our scenarios are our own, so the headline result uses cases someone else defined.
 [RippleEdits](https://github.com/edenbiran/RippleEdits) (Cohen et al., TACL 2024) pairs a
 factual edit with the facts that should change because of it (logical generalisation,
 two kinds of composition, subject aliasing) and the facts that must not (relation
@@ -304,7 +306,7 @@ by the edit plus the knowledge-base hop it needs. Then each edit is retracted in
 
 | Method | Exact cases | Residual contamination | Collateral withdrawal |
 |---|---|---|---|
-| **Antidote** | **15 / 15** | **0** of 362 | **0** |
+| **Antidote** | **15 / 15** | **0** of 362 | **0** of 168 |
 | Delete source only | 2 / 15 | 362 | 0 |
 | Full rollback | n/a: the dataset has no timeline to roll back to | | |
 
@@ -322,9 +324,32 @@ Read this honestly:
   a placeholder (E1, A1...). MIT licence notice in
   [data/rippleedits/cases.json](data/rippleedits/cases.json).
 
+### Our scenarios
+
+The demo story, and synthetic procurement worlds with 20 and 100 vendors where several
+sources are poisoned at once.
+
+| Scenario | Method | Residual contamination | Collateral withdrawal | Stale-action authorization | Repair time |
+|---|---|---|---|---|---|
+| Demo story (65 nodes, 6 should go) | **Antidote** | **0** | **0** | **0** | 14 ms |
+| | Delete source only | 6 | 0 | 1 | 1 ms |
+| | Full rollback | 0 | 8 | 0 | 99 ms |
+| 20 vendors (434 nodes, 13 should go) | **Antidote** | **0** | **0** | **0** | 51 ms |
+| | Delete source only | 13 | 0 | 2 | 1 ms |
+| | Full rollback | 0 | 106 | 0 | 101 ms |
+| 100 vendors (1,874 nodes, 54 should go) | **Antidote** | **0** | **0** | **0** | 283 ms |
+| | Delete source only | 54 | 0 | 5 | 2 ms |
+| | Full rollback | 0 | 396 | 0 | 94 ms |
+
+Antidote is slower than deleting a node, and at 100 vendors slower than restoring a
+snapshot, because it recomputes and verifies. That is the trade: about a third of a second
+instead of 396 lost facts and decisions that would have to be re-learned. Over a network,
+every Cypher statement is a round trip, so repair time grows with the distance between the
+app and the database ([D50](docs/decisions.md)).
+
 ## Correctness
 
-118 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+137 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
 
 - Required cases: alternative justifications; a multi-premise justification losing one
   premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
@@ -356,7 +381,7 @@ python -m venv .venv
 pip install -r requirements.txt
 cp .env.example .env                  # Windows PowerShell: copy .env.example .env
 
-python -m pytest                      # 118 tests
+python -m pytest                      # 137 tests
 python -m scripts.seed_demo --story   # the whole story in the terminal
 streamlit run ui/streamlit_app.py     # the UI: http://localhost:8501
 python -m scripts.benchmark           # the benchmark table
@@ -376,11 +401,18 @@ already holds a run from `openai/gpt-oss-120b` on Groq; replay its story with
 **FalkorDB Cloud.** Put the instance's host, port, username and password in `.env.cloud`
 and prefix any command with `ENV_FILE=.env.cloud` (PowerShell: `$env:ENV_FILE=".env.cloud"`).
 
-**Deploy.** [render.yaml](render.yaml) deploys the UI on Render (Singapore, close to
-FalkorDB Cloud `ap-south-1`); enter the FalkorDB secrets in the dashboard. The app seeds its
-own memory on start-up (the free cloud tier keeps no data), and each visitor gets a private
-`GRAPH.COPY`. [.github/workflows/keepalive.yml](.github/workflows/keepalive.yml) touches the
-database twice a day so the free instance is not stopped for idling.
+**Deploy.** [render.yaml](render.yaml) deploys the web app (React, served by FastAPI, one
+Docker service) on Render; enter the FalkorDB secrets in the dashboard.
+[.github/workflows/keepalive.yml](.github/workflows/keepalive.yml) touches the database so
+the free instance is not stopped for idling.
+
+**Memory scope.** Each browser works on one **procurement case**: a private graph in FalkorDB
+that the agents and the person share for that case. It is **persistent within the case**: a
+page reload resumes it (the case's random token is kept in the browser's localStorage and
+mapped to the graph on the server; the browser never names a graph). It is **cleaned up after
+2 hours without activity**, and when 25 cases are open or the database passes 70 MB (of
+FalkorDB Cloud's free 100 MB), the least recently used idle case is evicted first. Cases are
+never shared between browsers.
 
 ## Project layout
 
@@ -398,8 +430,14 @@ app/demo.py       the demo scenario and story steps
 app/views.py      read-only queries for the UI and MCP tools
 app/evidence.py   evidence strength (unverified only ... robust)
 app/scenario.py   the Playground: load a JSON world through memory.py
-app/sessions.py   a private graph copy per web visitor
-ui/               Streamlit app
+api/server.py     the web API (FastAPI): streams, actions; fails closed without FalkorDB
+api/session_store.py  procurement cases: one private graph each, idle cleanup, eviction
+api/contract.py   typed events and responses (mirrored in web/src/contract.ts)
+app/runner.py     runs the agents step by step and reports each step as an event
+app/centrality.py the capability walkthrough: each capability with its real Cypher
+web/              the web app (React + TypeScript + Vite, React Flow for the graph)
+app/sessions.py   the Streamlit Lab's private graph copy per visitor
+ui/               the Streamlit Lab (Playground)
 scripts/          seed_demo, benchmark, record_fixtures, run_tool_agent, export_cypher
 data/             synthetic vendor pages, registry, policy memo, agent fixtures
 scenarios/        example Playground worlds

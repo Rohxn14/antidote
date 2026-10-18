@@ -2,14 +2,18 @@
 // A document two ways: the text an AI agent receives (hidden parts in red) and the
 // page a person sees. The page is shown in a sandboxed frame with scripts off:
 // the document's own code never runs here.
-import { EyeOff, FileText, ShieldAlert } from "lucide-react";
+import { EyeOff, FileText, Radar, ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { DocumentResponse } from "../contract";
 import { api } from "../lib/api";
 import { DOC_KIND, plural, TRUST } from "../lib/words";
-import { Badge, Drawer, Loading, Segmented } from "./ui";
+import { Badge, Button, Drawer, Loading, Segmented } from "./ui";
 
-export function DocumentDrawer({ documentId, onClose }: { documentId: string | null; onClose: () => void }) {
+export function DocumentDrawer({ documentId, onClose, onPreview }: {
+  documentId: string | null;
+  onClose: () => void;
+  onPreview: ((id: string) => void) | null; // null when there is nothing to preview yet
+}) {
   const [doc, setDoc] = useState<DocumentResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"read" | "seen">("read");
@@ -50,6 +54,18 @@ export function DocumentDrawer({ documentId, onClose }: { documentId: string | n
             <Badge tone={TRUST[doc.trust].tone} title={TRUST[doc.trust].hint}>{TRUST[doc.trust].label}</Badge>
             {hidden > 0 && <Badge tone="red" icon={<EyeOff />}>{plural(hidden, "hidden part")}</Badge>}
           </div>
+
+          {onPreview && doc.trust !== "quarantined" && (
+            <div className="flex flex-wrap items-center gap-3 rounded-xl bg-slate-50 px-3.5 py-3 ring-1 ring-inset ring-slate-200/70">
+              <p className="min-w-[200px] flex-1 text-[12.5px] leading-5 text-slate-600">
+                Not sure about this document? See exactly what depends on it before deciding. The preview runs on
+                a copy of the memory.
+              </p>
+              <Button variant="dangerOutline" size="sm" icon={<Radar />} onClick={() => onPreview(doc.id)}>
+                What if we stop trusting it?
+              </Button>
+            </div>
+          )}
 
           {doc.html && (
             <Segmented

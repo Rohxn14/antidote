@@ -249,14 +249,24 @@ export function useAntidote() {
 
   const quarantine = useCallback(() => act("quarantine", api.quarantine, (r) => {
     dispatch({ type: "distrusted", documents: r.quarantined, withdrawn: r.withdrawn });
-    const facts = r.withdrawn.filter((id) => memoryRef.current.facts[id]).length;
+    for (const id of r.orders_blocked) dispatch({ type: "orderState", id, state: "blocked" });
+    const m = memoryRef.current;
+    const facts = r.withdrawn.filter((id) => m.facts[id]).length;
     const decisions = r.withdrawn.length - facts;
     const titles = r.quarantined.map(title).join(", ");
+    const blocked = r.orders_blocked.map((id) => (m.decisions[id] ? orderLabel(m.decisions[id].summary, id) : id));
     push({
       who: "you", tone: "blocked", title: `You stopped trusting ${titles}`,
       body: `${plural(facts, "fact")} and ${plural(decisions, "decision")} lost their support. FalkorDB recomputed what still holds and recorded the repair.`,
     });
-    setAgent("guard", "done", `Withdrew ${plural(r.withdrawn.length, "fact or decision", "facts and decisions")} that rested on ${titles}.`);
+    if (blocked.length) {
+      push({
+        who: "guard", tone: "blocked", title: `Blocked ${blocked.join(", ")}`,
+        body: "Facts it rested on no longer hold, so it cannot be approved or placed. The Buyer can re-plan.",
+      });
+      setAgent("buyer", "waiting", `${blocked.join(", ")} was blocked. Ask me to re-plan.`);
+    }
+    setAgent("guard", "done", `Withdrew ${plural(r.withdrawn.length, "fact or decision", "facts and decisions")} that rested on ${titles}${blocked.length ? `; blocked ${blocked.join(", ")}` : ""}.`);
   }, () => setImpact(null)), [act, push]);
 
   const decide = useCallback((orderId: string, action: "approve" | "execute") =>
@@ -265,6 +275,11 @@ export function useAntidote() {
       dispatch({ type: "orderState", id: orderId, state: r.state });
       const d = memoryRef.current.decisions[orderId];
       const label = d ? orderLabel(d.summary, orderId) : orderId;
+      if (r.outcome === "held") {
+        push({ who: "guard", tone: "blocked", title: `The approval check held ${label}`, body: r.message });
+        setAgent("guard", "done", `Held ${label}: it rests on a document flagged for hidden instructions.`);
+        return;
+      }
       if (r.state === "blocked") {
         push({ who: "guard", tone: "blocked", title: `The approval check blocked ${label}`, body: r.message });
         setAgent("guard", "done", `Blocked ${label}: none of its reasons holds any more.`);
