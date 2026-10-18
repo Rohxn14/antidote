@@ -1,6 +1,6 @@
 {
  "seed": 7,
- "seconds": 313,
+ "seconds": 303,
  "named": [
   {
    "name": "Nothing wrong",
@@ -8355,17 +8355,18 @@
    "truth": "talisk",
    "antidote": {
     "vendor": "talisk",
-    "outcome": "needs_approval",
-    "state": "authorized",
+    "outcome": "held",
+    "state": "pending_approval",
     "caught": [
-     "conflict"
+     "conflict",
+     "verification hold"
     ],
     "flagged": [
      "s_brennick_page",
      "s_ferrocraft_page"
     ]
    },
-   "antidote_result": "right supplier",
+   "antidote_result": "held: honest order waits",
    "baseline": "ferrocraft",
    "baseline_result": "wrong: not really certified"
   },

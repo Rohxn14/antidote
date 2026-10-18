@@ -488,9 +488,9 @@ looking** presses Approve, so the results show what Antidote stops on its own.
 
 | 400 random cases | With Antidote | Without Antidote |
 |---|---|---|
-| Right outcome (right supplier, or rightly no order) | **297** | 116 |
+| Right outcome (right supplier, or rightly no order) | **296** | 116 |
 | Bad order stopped and held for a person | **60** | 0 |
-| Honest order waiting for a person (false hold) | 24 | 0 |
+| Honest order waiting for a person (false hold) | 25 | 0 |
 | No order although one was possible | 2 | 0 |
 | **Wrong supplier approved** | **17** | **284** |
 | ...a supplier that manipulated the agents | **0** | 145 |
