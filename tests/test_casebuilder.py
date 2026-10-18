@@ -167,7 +167,7 @@ def test_a_plain_lie_is_held_until_verified_then_the_honest_supplier_goes_throug
     assert [e for e in events if e["type"] == "security_alert"] == []      # nothing to detect
     order = next(d for d in client.get("/api/state", headers=h).json()["decisions"] if d["id"] == "d_po_1001")
     assert order["held_by"] == [] and order["needs_verification"] == [
-        "Vantor Motion meets the ISO 13485 supplier requirement."]
+        "Vantor Motion holds ISO 13485 certification."]  # the certification, not a conclusion (D64)
     held = client.post("/api/orders/d_po_1001/approve", headers=h).json()
     assert (held["outcome"], held["state"]) == ("held", "pending_approval")
     assert "trusted document" in held["message"]

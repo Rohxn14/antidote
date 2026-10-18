@@ -1,0 +1,27 @@
+{
+  "kind": "scripted",
+  "label": "Scripted answers (LLM format)",
+  "model": null,
+  "written_by": "Claude (AI coding assistant), by hand, in the exact JSON format the LLM returns",
+  "history": [
+    "2026-10-17 13:11 IST, commit a5b78be: written for the demo story, before any real LLM run existed (docs/decisions.md D30, D41)",
+    "2026-10-18 14:32 IST, commit 369e02a: 'standard' and 'exclusive' tags added to certification claims",
+    "2026-10-18, commit f6c1bbe: answers added for four new suppliers (Nexapoint, Orvane, Talisk, Brennick)"
+  ],
+  "used_by": "the 'Scripted' replay mode and the tests; buyer_initial.json and buyer_after_repair.json are kept for the terminal story (scripts/seed_demo.py) only: the web app's scripted Buyer applies the request's rules (D61)",
+  "files_sha256": {
+    "buyer_after_repair.json": "91d19ecc8010eda13db60f00b6256ec6d6a32d7191e0e1a76c8bb5c2f3f29b3d",
+    "buyer_initial.json": "8fcb556ee02210405ffcedfcb0443c49f975a4131b7fca224640394659dc8ada",
+    "researcher_inference.json": "30b42d35b6d10a268c08e708cfc2919341cf82cfda8ec38bdab60c2d3a900473",
+    "researcher_s_boltline_page.json": "e53c07b9bbd720d305051ecfce1b73c5e5ebe55e644721454caffa5361e9116f",
+    "researcher_s_brennick_page.json": "20fc59ec139d42a08dc2aefda3940cb4bde09f15286d0849297d6c4df940a2fc",
+    "researcher_s_ferrocraft_page.json": "314f7d377b9b7f2d2b9cde362a5efd3f1dc45565f0cdf39e7106773eed9658e8",
+    "researcher_s_nexapoint_page.json": "2c769ac9c2fbfa4407a245af2c489f1d949a315492d7c88cc09cf3d289ec30ff",
+    "researcher_s_orvane_page.json": "d9316bab72671331a97f033d24d8fc6bb410595df1c62acbc5f5b236db7c2612",
+    "researcher_s_policy.json": "3ec32785b9f1a2a6be9226e7268cee6359536e957ee0d9b21bee63fc2cd8ea20",
+    "researcher_s_quillon_page.json": "2eaf27cce7de2e1571344dd813e4e7fee08afdd0e00c7cc6131401c94e6a51e7",
+    "researcher_s_registry.json": "e42236610ee5c2ed78137b059d7aceb40e98cf17958ecc6c02a5e056972288bc",
+    "researcher_s_talisk_page.json": "18579b550782e68e3e6563a8422f1e9f298da266c8a91cefcf25993c689c5952",
+    "researcher_s_vantor_page.json": "57465874d6a9019199fdb1c73cc0a7134f062eba9aabe429c83877eb6364367d"
+  }
+}

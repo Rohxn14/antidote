@@ -43,7 +43,8 @@ SECTIONS = [
       "why blocked: distrusted documents among": gate.DISTRUSTED_AMONG,
       "alert hold: documents under review among": gate.REVIEWED_AMONG,
       "verification hold: conclusions an order rests on": gate.CONCLUSIONS_OF,
-      "verification hold: conclusions fallen on the copy": gate.FALLEN_CONCLUSIONS_OF}),
+      "verification hold: certifications among what it rests on": gate.CERTIFICATIONS_AMONG,
+      "verification hold: fallen on the trusted-only copy": gate.FALLEN_AMONG}),
     ("Evidence strength (app/evidence.py)",
      "On one GRAPH.COPY: remember the real world, then the trusted-only world, then "
      "the trusted-only world minus each trusted origin (each world is the gate's "

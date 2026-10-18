@@ -31,7 +31,7 @@ from redis.retry import Retry
 
 from api import contract as c
 from api.session_store import Session, SessionStore
-from app import demo, evidence, gate, llm, memory, repair, review, runner, views
+from app import demo, evidence, gate, llm, memory, recording, repair, review, runner, views
 from app.agents.buyer import order_label
 from app.casebuilder import CaseScript
 from app.db import ROOT, connection_settings, drop_graph, get_db
@@ -129,6 +129,8 @@ def _stream(lines) -> StreamingResponse:
 
 
 def _plain(e: Exception) -> str:
+    if isinstance(e, recording.NotRecorded):
+        return str(e)
     if isinstance(e, (RedisConnectionError, RedisTimeoutError)):
         return "Antidote's memory (FalkorDB) is unreachable."
     return f"{type(e).__name__}: {e}"
@@ -198,8 +200,8 @@ def unverified(g, decision_id: str, amount, strength: dict) -> list[str]:
     levels: the order's conclusions that hold only because unverified documents say so."""
     if amount is None or amount < AUTO_MAX_AMOUNT:
         return []
-    rows = g.ro_query(gate.CONCLUSIONS_OF, {"id": decision_id, "inference": INFERENCE}).result_set
-    return [claim for i, claim in rows if (strength.get(i) or {}).get("level") == "unverified only"]
+    return [claim for i, claim in gate.must_be_confirmed(g, decision_id)
+            if (strength.get(i) or {}).get("level") == "unverified only"]
 
 
 def script_for(session: Session, mode: str, request_text: str | None = None):
@@ -388,12 +390,15 @@ def _free(session: Session, wait_s: float) -> bool:
 def run(body: c.RunRequest, session: Session = Depends(current)):
     if not _free(session, RUN_HANDOVER_S):
         raise ApiFailure(409, "busy", "the agents are already working")
-    if body.mode == "live" and session.case:
-        raise ApiFailure(400, "case_without_ai", "A case you build runs without AI: use the recorded agents")
+    if body.mode in ("live", "recorded") and session.case:
+        raise ApiFailure(400, "case_without_ai", "A case you build runs without AI: use the scripted agents")
+    if body.mode == "recorded" and recording.default() is None:
+        raise ApiFailure(400, "no_recording", "No recorded model run is available on this server")
     if body.mode == "live" and not live_ai():
         raise ApiFailure(400, "live_ai_unavailable", "Live AI is switched off on this server")
     script = script_for(session, body.mode, body.request if body.mode == "live" else None)
     g = graph_of(session)
+    session.mode = body.mode
 
     def events():
         if session.preview is not None:
@@ -410,11 +415,14 @@ def run(body: c.RunRequest, session: Session = Depends(current)):
 def replan(body: c.ReplanRequest, session: Session = Depends(current)):
     if session.busy:
         raise ApiFailure(409, "busy", "the agents are already working")
-    if body.mode == "live" and not live_ai():
+    mode = session.mode  # the Buyer re-plans the way the run's answers came (not the browser's guess)
+    if mode == "live" and not live_ai():
         raise ApiFailure(400, "live_ai_unavailable", "Live AI is switched off on this server")
+    if mode == "recorded" and recording.default() is None:
+        raise ApiFailure(400, "no_recording", "No recorded model run is available on this server")
     g = graph_of(session)
-    script = script_for(session, body.mode, session.request)
-    return _session_stream(session, lambda: runner.replan(g, body.mode, body.pace, script))
+    script = script_for(session, mode, session.request)
+    return _session_stream(session, lambda: runner.replan(g, mode, body.pace, script))
 
 
 @router.post("/case", response_model=c.Ack)
@@ -426,6 +434,7 @@ def set_case(body: c.CaseRequest, session: Session = Depends(current)):
     if session.preview is not None:
         repair.discard(session.preview)
     session.case = body.case.model_dump() if body.case else None
+    session.mode = "replay"  # a built case runs scripted
     script = script_for(session, "replay")
     session.preview, session.alerts, session.has_run = None, [], False
     session.request = script.request_text
@@ -691,7 +700,8 @@ def create_app(store: SessionStore | None = None, memory_probe: MemoryProbe | No
             falkordb="up" if up else "down", detail=probe.detail,
             memory=c.MemoryUse(used=probe.used(), graphs=len(get_db().list_graphs())) if up else None,
             live_ai=live_ai(), model=llm.model_name() if live_ai() else None,
-            sessions=store.count(), session_cap=store.cap)
+            sessions=store.count(), session_cap=store.cap,
+            recording=c.RecordingInfo(**recording.default().info()) if recording.default() else None)
         return body if up else JSONResponse(status_code=503, content=body.model_dump())
 
     app.include_router(router, dependencies=[Depends(require_memory)])

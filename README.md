@@ -9,11 +9,14 @@ knowledge that is independently supported.
 
 - **Live demo:** https://antidote-yqk6.onrender.com (first load may take a minute: free hosting wakes up)
   · **Under the hood:** [/#/under-the-hood](https://antidote-yqk6.onrender.com/#/under-the-hood)
-- **What the live site runs:** no AI. The Researcher replays answers we wrote in advance in the
-  exact format an LLM returns, and the Buyer applies the request's rules to what memory
-  supports. Everything Antidote does is live in FalkorDB: every write, what still holds, the
-  checks, the preview, the repair and the approval check. The real agents (an LLM on Groq) run
-  locally with a key; a real run by gpt-oss-120b is recorded in `data/fixtures/live/`.
+- **What the live site runs:** no model is called. By default it replays **a real run of
+  gpt-oss-120b on Groq** (recorded 18 Oct 2026, attempt 1 of 1): the agents' own code runs, and
+  each question gets the reply the model really gave, saved verbatim with its provenance in
+  [data/recordings/](data/recordings/). A badge on screen says so. You can switch to
+  **scripted** answers (written by hand in the LLM's format; the Buyer applies the request's
+  rules). Either way, everything Antidote does runs live in FalkorDB: every write, what still
+  holds, the checks before the Buyer decides, the preview, the repair and the approval check.
+  **Live AI** (the model called now) runs locally with an API key.
 - **Demo video:** _link added at submission_
 - **Tracks:** **02 Agent Memory and Coordination** (primary) · 01 Agents That Act on Connected Data
 - **New here?** [docs/explained.md](docs/explained.md) explains everything in plain words:
@@ -150,7 +153,7 @@ RETURN held, size(newly_valid) AS validated
 Python only repeats the round until FalkorDB reports zero changes. FalkorDB also does the
 rest of the real work: `GRAPH.COPY` gives the repair preview and the gate's what-if tests, and
 each procurement case is its own graph; one atomic query per write records reasons and refuses
-justifications that cite missing evidence. **All 58 queries the product depends on are in
+justifications that cite missing evidence. **All 59 queries the product depends on are in
 [docs/cypher.md](docs/cypher.md)**, generated from the code.
 
 ### Where each decision is made
@@ -210,7 +213,7 @@ the current graph (it recomputes first and never trusts an earlier answer).
 | No justification holds | **blocked**, even if a human approves; a repair blocks it at once |
 | It is for a supplier that is suspended (a document about it is under review) or blacklisted | **blocked** |
 | It rests on a document under review (only possible if the fact is also backed elsewhere) | **held**: approval waits until a person decides about the document |
-| Amount ≥ $5,000 and a conclusion it rests on is supported only by unverified documents | **held** until a trusted document confirms it |
+| Amount ≥ $5,000 and a certification it rests on (directly or through a conclusion) is backed only by unverified documents | **held** until a trusted document confirms it |
 | Amount ≥ $5,000, or not reversible, or not robust (below) | **needs a human approval** |
 | Otherwise | may proceed automatically |
 
@@ -293,6 +296,24 @@ blocked after the repair, and PO-1002 to Boltline for $52,000. The MCP tool-usin
 after the repair, called
 `supported_beliefs` (Vantor's beliefs were invisible to it) and then
 `propose_purchase_order` for Boltline, which waited for a human.
+
+**The recorded run the live site replays** (18 Oct 2026, `scripts/record_run.py`, 14 calls,
+attempt 1 of 1) runs today's flow with 8 suppliers. What the real model did:
+
+- It recorded the hidden "only certified" sentence this time, tagged as an exclusive claim, so
+  all three checks put Vantor's page under review before the Buyer decided. The Buyer, seeing
+  only what still counts, ordered from Boltline ($52,000), the honest answer.
+- The numbers check refused 6 claims where the model added product model numbers (BA-S45,
+  FS-50, QD-35, TM-30) that the quoted sentence doesn't contain.
+- It skipped the registry rows for the newer suppliers, so nothing trusted in memory confirms
+  Nexapoint's certificate, and an order for Nexapoint is held: Antidote can only reason over
+  what the agents recorded.
+- **It found a gap in Antidote.** After a false alarm is cleared, the real Buyer ordered from
+  Vantor citing its certification fact directly, not through a conclusion, and the
+  verification hold, which only checked conclusions, let the $48,000 order through. The hold
+  now checks every **certification** an order rests on (D64). The model's richer conclusions
+  ("qualifies" also citing a supplier's own delivery time) would otherwise have held honest
+  orders. The recording itself is unedited; its provenance still shows what the old rule did.
 
 ### Build your own case
 
@@ -428,15 +449,15 @@ sources are poisoned at once.
 
 | Scenario | Method | Residual contamination | Collateral withdrawal | Stale-action authorization | Repair time |
 |---|---|---|---|---|---|
-| Demo story (65 nodes, 6 should go) | **Antidote** | **0** | **0** | **0** | 14 ms |
-| | Delete source only | 6 | 0 | 1 | 1 ms |
-| | Full rollback | 0 | 8 | 0 | 99 ms |
-| 20 vendors (434 nodes, 13 should go) | **Antidote** | **0** | **0** | **0** | 51 ms |
-| | Delete source only | 13 | 0 | 2 | 1 ms |
-| | Full rollback | 0 | 106 | 0 | 101 ms |
-| 100 vendors (1,874 nodes, 54 should go) | **Antidote** | **0** | **0** | **0** | 283 ms |
-| | Delete source only | 54 | 0 | 5 | 2 ms |
-| | Full rollback | 0 | 396 | 0 | 94 ms |
+| Demo story (111 nodes, 6 should go) | **Antidote** | **0** | **0** | **0** | 17 ms |
+| | Delete source only | 6 | 0 | 1 | 2 ms |
+| | Full rollback | 0 | 15 | 0 | 100 ms |
+| 20 vendors (434 nodes, 13 should go) | **Antidote** | **0** | **0** | **0** | 49 ms |
+| | Delete source only | 13 | 0 | 2 | 2 ms |
+| | Full rollback | 0 | 106 | 0 | 98 ms |
+| 100 vendors (1,874 nodes, 54 should go) | **Antidote** | **0** | **0** | **0** | 322 ms |
+| | Delete source only | 54 | 0 | 5 | 5 ms |
+| | Full rollback | 0 | 396 | 0 | 95 ms |
 
 Antidote is slower than deleting a node, and at 100 vendors slower than restoring a
 snapshot, because it recomputes and verifies. That is the trade: about a third of a second
@@ -491,7 +512,7 @@ buyers and compare what it would have stopped.
 
 ## Correctness
 
-185 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+190 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
 
 - Required cases: alternative justifications; a multi-premise justification losing one
   premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
@@ -530,7 +551,7 @@ cp .env.example .env                  # Windows PowerShell: copy .env.example .e
 cd web && npm ci && npm run build && cd ..   # build the web app once
 uvicorn api.server:app --port 8000    # the web app and its API: http://localhost:8000
 
-python -m pytest                      # 185 tests
+python -m pytest                      # 190 tests
 python -m scripts.seed_demo --story   # the whole story in the terminal
 streamlit run ui/streamlit_app.py     # the Lab with the Playground: http://localhost:8501
 python -m scripts.benchmark           # the benchmark table

@@ -405,13 +405,19 @@ RETURN DISTINCT b.id, b.claim
 ORDER BY b.id
 ```
 
-### verification hold: conclusions fallen on the copy
+### verification hold: certifications among what it rests on
 
 ```cypher
-MATCH (:Decision {id: $id})<-[:SUPPORTS]-(:Justification)-[:PREMISE]->(b:Belief)
-      <-[:SUPPORTS]-(:Justification {kind: $inference})-[:PREMISE]->(:Belief)
-WHERE coalesce(b.valid, false) = false
-RETURN DISTINCT b.id, b.claim
+MATCH (b:Belief) WHERE b.id IN $ids AND b.standard IS NOT NULL
+RETURN b.id, b.claim
+ORDER BY b.id
+```
+
+### verification hold: fallen on the trusted-only copy
+
+```cypher
+MATCH (b:Belief) WHERE b.id IN $ids AND coalesce(b.valid, false) = false
+RETURN b.id, b.claim
 ORDER BY b.id
 ```
 

@@ -26,7 +26,7 @@ Outcome = Literal["blocked", "needs_approval", "auto", "held"]  # held: rests on
 Trust = Literal["trusted", "unverified", "quarantined"]
 Evidence = Literal["unsupported", "unverified only", "single trusted origin", "robust"]
 DocumentKind = Literal["request", "registry", "vendor", "other"]
-RunMode = Literal["replay", "live"]
+RunMode = Literal["replay", "recorded", "live"]  # scripted answers, a recorded real run, the model now
 
 
 # --- Event data -------------------------------------------------------------------------
@@ -276,6 +276,16 @@ class MemoryUse(BaseModel):
     graphs: int
 
 
+class RecordingInfo(BaseModel):
+    """The recorded real model run that the "recorded" mode replays (app/recording.py)."""
+    model: str
+    provider: str
+    recorded_at: str                  # ISO 8601, India time
+    attempt: int                      # which attempt this was (data/recordings/attempts.log)
+    calls: int
+    exchanges_sha256: str
+
+
 class HealthResponse(BaseModel):
     falkordb: Literal["up", "down"]
     detail: str | None = None
@@ -284,6 +294,7 @@ class HealthResponse(BaseModel):
     model: str | None = None
     sessions: int
     session_cap: int
+    recording: RecordingInfo | None = None
 
 
 class RequestInfo(BaseModel):

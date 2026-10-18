@@ -17,7 +17,16 @@ export type Outcome = "blocked" | "needs_approval" | "auto" | "held"; // held: r
 export type Trust = "trusted" | "unverified" | "quarantined";
 export type Evidence = "unsupported" | "unverified only" | "single trusted origin" | "robust";
 export type DocumentKind = "request" | "registry" | "vendor" | "other";
-export type RunMode = "replay" | "live";
+export type RunMode = "replay" | "recorded" | "live"; // scripted answers, a recorded real run, the model now
+
+export interface RecordingInfo {
+  model: string;
+  provider: string;
+  recorded_at: string; // ISO 8601, India time
+  attempt: number; // which attempt this was (data/recordings/attempts.log)
+  calls: number;
+  exchanges_sha256: string;
+}
 
 // --- Event data -------------------------------------------------------------------------
 
@@ -222,6 +231,7 @@ export interface HealthResponse {
   model: string | null;
   sessions: number;
   session_cap: number;
+  recording: RecordingInfo | null;
 }
 
 export interface RequestInfo {

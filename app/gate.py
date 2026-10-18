@@ -75,12 +75,18 @@ RETURN DISTINCT b.id, b.claim
 ORDER BY b.id
 """
 
-# The same conclusions, run on a what-if copy: those that are no longer valid there.
-FALLEN_CONCLUSIONS_OF = f"""
-MATCH (:{DECISION} {{id: $id}})<-[:{SUPPORTS}]-(:{JUSTIFICATION})-[:{PREMISE}]->(b:{BELIEF})
-      <-[:{SUPPORTS}]-(:{JUSTIFICATION} {{kind: $inference}})-[:{PREMISE}]->(:{BELIEF})
-WHERE coalesce(b.{VALID}, false) = false
-RETURN DISTINCT b.id, b.claim
+# The certification facts among what an order rests on (the Researcher tags each claim
+# that a supplier holds a standard, e.g. "ISO 13485").
+CERTIFICATIONS_AMONG = f"""
+MATCH (b:{BELIEF}) WHERE b.id IN $ids AND b.standard IS NOT NULL
+RETURN b.id, b.claim
+ORDER BY b.id
+"""
+
+# Run on a what-if copy: which of these facts are no longer valid there.
+FALLEN_AMONG = f"""
+MATCH (b:{BELIEF}) WHERE b.id IN $ids AND coalesce(b.{VALID}, false) = false
+RETURN b.id, b.claim
 ORDER BY b.id
 """
 
@@ -195,17 +201,29 @@ def held_by(g, decision_id: str, under_review) -> list[dict]:
     return [{"id": i, "title": t} for i, t in rows.result_set]
 
 
+def must_be_confirmed(g, decision_id: str) -> list[tuple[str, str]]:
+    """(id, claim) of what a trusted document must confirm before a large order goes
+    ahead: the certifications it rests on, directly or through conclusions; if no claim
+    it rests on is tagged as a certification, the conclusions it rests on (D57, D64).
+    Prices and delivery times come only from suppliers' own pages, so they are not asked."""
+    certifications = g.ro_query(CERTIFICATIONS_AMONG, {"ids": sorted(foundations(g, decision_id))}).result_set
+    if certifications:
+        return [(i, c) for i, c in certifications]
+    return [(i, c) for i, c in g.ro_query(CONCLUSIONS_OF, {"id": decision_id, "inference": INFERENCE}).result_set]
+
+
 def unverified_conclusions(g, decision_id: str) -> list[dict]:
-    """The conclusions this order rests on that hold only because unverified documents
-    say so: on a throwaway copy where only trusted documents count, they fall."""
-    if not g.ro_query(CONCLUSIONS_OF, {"id": decision_id, "inference": INFERENCE}).result_set:
+    """What this order must have confirmed that holds only because unverified documents
+    say so: on a throwaway copy where only trusted documents count, it falls."""
+    ids = [i for i, _ in must_be_confirmed(g, decision_id)]
+    if not ids:
         return []
     copy = copy_graph(g, f"{g.name}_whatif_{uuid4().hex[:8]}")
     try:
         copy.query(REMEMBER_TRUST)
         copy.query(SET_SCENARIO, {"trusted": TRUSTED, "quarantined": QUARANTINED, "removed": []})
         support.recompute(copy)
-        rows = copy.ro_query(FALLEN_CONCLUSIONS_OF, {"id": decision_id, "inference": INFERENCE}).result_set
+        rows = copy.ro_query(FALLEN_AMONG, {"ids": ids}).result_set
     finally:
         copy.delete()
     return [{"id": i, "claim": c} for i, c in rows]

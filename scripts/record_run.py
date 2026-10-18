@@ -67,6 +67,7 @@ def main() -> None:
     recording.DIR.mkdir(parents=True, exist_ok=True)
     attempt = sum(1 for line in LOG.read_text(encoding="utf-8").splitlines() if line.strip()) + 1 if LOG.exists() else 1
     started = datetime.now(IST)
+    commit, dirty = git("rev-parse", "HEAD"), bool(git("status", "--porcelain"))  # the code that runs
     model = llm.model_name()
     name = f"{model.split('/')[-1]}_{started:%Y-%m-%d}_attempt{attempt}"
     print(f"Attempt {attempt}: recording {model} -> data/recordings/{name}")
@@ -146,7 +147,7 @@ def main() -> None:
         "provider": "Groq (OpenAI-compatible chat completions API)",
         "base_url": llm.GROQ_OPENAI_URL, "recorded_at": started.isoformat(timespec="seconds"),
         "finished_at": datetime.now(IST).isoformat(timespec="seconds"),
-        "code_commit": git("rev-parse", "HEAD"), "uncommitted_changes": bool(git("status", "--porcelain")),
+        "code_commit": commit, "uncommitted_changes": dirty,
         "prompts_sha256": {"extraction": sha(researcher.EXTRACT_SYSTEM), "inference": sha(researcher.INFER_SYSTEM),
                            "decision": sha(buyer.DECIDE_SYSTEM)},
         "temperature": llm.TEMPERATURE,

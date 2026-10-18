@@ -475,11 +475,15 @@ replayed later.
 | `data/fixtures/*.json` | **Hand-authored** answers in the LLM's format (`"model": "hand-authored"`) | The Researcher in the default demo (the live site) and the tests |
 | `data/fixtures/live/*.json` | **Real** answers from gpt-oss-120b on Groq, plus the tool agent's transcript | `DEMO_FIXTURES=live` (locally), the Lab's Agents tab |
 
-**The Buyer is not replayed** in the demo story any more (D61): with documents checked before it
-decides, its answer depends on what memory supports at that moment, so it applies the request's
-rules (cheapest qualifying supplier on supported facts, skipping suspended ones) instead of a
-fixed recorded answer. **The live site runs no AI at all**: the Researcher's hand-authored
-answers, the rule-based Buyer, and everything Antidote does, live in FalkorDB.
+| `data/recordings/<run>/` | **A real run** of gpt-oss-120b on Groq through today's flow: every prompt and every reply **verbatim** (`exchanges.jsonl`), with `provenance.json` (model, provider, date, code commit, prompt hashes, temperature, file hash, attempt) | The **Real run** mode, the default on the live site |
+
+**Three modes.** *Real run* (the default): the agents' own code runs exactly as it would live,
+and each prompt gets the reply the model really gave to that exact prompt (looked up by a hash of
+the prompt, parsed by the same code). If a visitor goes somewhere the recording never went, it
+says so instead of inventing an answer. *Scripted*: the hand-written answers, and a Buyer that
+applies the request's rules (D61). *Live AI*: the model called now, only on your laptop with a
+key. **The live site never calls a model.** Every recording attempt is logged in
+`data/recordings/attempts.log`, kept or not; the replayed run was attempt 1 of 1.
 
 **Why:** the demo and tests give the same result every time, need no API key, and cost
 nothing. Replayed answers go through **the same checks** as live ones.
@@ -647,7 +651,7 @@ logic of its own: it shows what the API returns and calls the tested modules.
 
 ## 20. How we know it works: the tests
 
-**185 tests** (`python -m pytest`), on a separate `antidote_test` graph:
+**190 tests** (`python -m pytest`), on a separate `antidote_test` graph:
 
 - **The rule itself:** AND/OR, loops with and without a real source, a loop that loses its
   only source, recovery when a new trusted source arrives, deletion failing safe.
@@ -805,7 +809,7 @@ false about it), and OpenSanctions needs a licence for business use.
 | `data/fixtures/` | Recorded agent answers (hand-authored and `live/`) |
 | `data/rippleedits/cases.json` | The anonymised external test set |
 | `scenarios/*.json` | Playground example worlds |
-| `tests/` | The 185 tests; `reference.py` is the independent solver |
+| `tests/` | The 190 tests; `reference.py` is the independent solver |
 | `docs/` | This file, decisions, Cypher reference, benchmark, overview (with judge Q&A), Playground guide, video script |
 | `docker-compose.yml` | Local FalkorDB (port 6379) and its Browser (port 3000) |
 | `Dockerfile`, `render.yaml`, `.streamlit/config.toml` | Deployment and app settings |
@@ -822,7 +826,7 @@ docker compose up -d                       # FalkorDB + its Browser
 .venv\Scripts\activate                     # macOS/Linux: source .venv/bin/activate
 cd web && npm ci && npm run build && cd ..  # build the web app once (Node 22)
 uvicorn api.server:app --port 8000         # the web app: http://localhost:8000
-python -m pytest                           # 185 tests
+python -m pytest                           # 190 tests
 python -m scripts.seed_demo --story        # the whole story in the terminal
 streamlit run ui/streamlit_app.py          # the Streamlit Lab: http://localhost:8501
 python -m scripts.benchmark                # the benchmark tables

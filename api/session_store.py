@@ -39,6 +39,7 @@ class Session:
     alerts: list = field(default_factory=list)
     evidence: tuple | None = None      # (revision, strength) cache
     case: dict | None = None           # a case the visitor built (None: the demo story)
+    mode: str = "replay"               # how the last run got its answers (re-plans use the same)
 
     @property
     def busy(self) -> bool:

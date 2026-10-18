@@ -155,6 +155,7 @@ export default function App() {
             onTextChange={a.setRequestText}
             liveAvailable={a.health?.live_ai ?? false}
             model={a.health?.model ?? null}
+            recording={a.health?.recording ?? null}
             running={a.running}
             hasRun={m.hasRun}
             onStart={a.start}

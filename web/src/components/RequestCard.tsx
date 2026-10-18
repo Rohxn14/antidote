@@ -1,23 +1,38 @@
 // web/src/components/RequestCard.tsx
 // The buyer's instruction, and the button that sends the agents to work.
 import { ClipboardList, FastForward, FlaskConical, LoaderCircle, Play, RotateCcw } from "lucide-react";
-import { useState } from "react";
-import type { CaseSpec, RunMode } from "../contract";
+import { useEffect, useRef, useState } from "react";
+import type { CaseSpec, RecordingInfo, RunMode } from "../contract";
 import { Badge, Button, Card, Segmented, SectionLabel } from "./ui";
 
-export function RequestCard({ text, onTextChange, liveAvailable, model, running, hasRun, onStart, builtCase, onBuild }: {
+const day = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+const shortModel = (m: string) => m.split("/").pop() ?? m;
+
+export function RequestCard({ text, onTextChange, liveAvailable, model, recording, running, hasRun, onStart, builtCase, onBuild }: {
   text: string;
   onTextChange: (text: string) => void;
   liveAvailable: boolean;
   model: string | null;
+  recording: RecordingInfo | null;
   running: "run" | "replan" | null;
   hasRun: boolean;
   onStart: (mode: RunMode, pace: number) => void;
   builtCase: CaseSpec | null;
   onBuild: () => void;
 }) {
-  const [mode, setMode] = useState<RunMode>("replay");
+  const [mode, setMode] = useState<RunMode>(recording ? "recorded" : "replay");
+  const chosen = useRef(false);
+  useEffect(() => {
+    if (recording && !chosen.current) setMode("recorded"); // a real run is the default when there is one
+  }, [recording]);
+  const choose = (m: RunMode) => {
+    chosen.current = true;
+    setMode(m);
+  };
   const live = mode === "live" && liveAvailable && !builtCase;
+  const recorded = mode === "recorded" && !!recording && !builtCase;
+  const runMode: RunMode = live ? "live" : recorded ? "recorded" : "replay";
   const lines = text.split("\n").map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim()).filter(Boolean);
 
   return (
@@ -51,16 +66,33 @@ export function RequestCard({ text, onTextChange, liveAvailable, model, running,
 
       <Segmented
         className="mt-4 w-full [&>button]:flex-1"
-        value={live ? "live" : "replay"}
-        onChange={setMode}
+        value={runMode}
+        onChange={choose}
         options={[
-          { value: "replay", label: "Replay (no AI)", title: "No AI runs: the Researcher's answers were written in advance in an AI's output format, and the Buyer applies your request's rules" },
+          {
+            value: "recorded", label: "Real run", disabled: !recording || !!running || !!builtCase,
+            title: recording ? `Replays a real run of ${recording.model}, recorded on ${day(recording.recorded_at)}` : "No recorded model run on this server",
+          },
+          { value: "replay", label: "Scripted", title: "Answers written in advance in an LLM's output format; the Buyer applies your request's rules" },
           {
             value: "live", label: "Live AI", disabled: !liveAvailable || !!running || !!builtCase,
-            title: builtCase ? "A case you build runs without AI" : liveAvailable ? `Calls ${model ?? "the model"} for real` : "Live AI is switched off on this server",
+            title: builtCase ? "A case you build runs without AI" : liveAvailable ? `Calls ${model ?? "the model"} for real` : "Live AI runs locally only (it needs an API key)",
           },
         ]}
       />
+      {!builtCase && (
+        <div className="mt-2">
+          {recorded && recording ? (
+            <Badge tone="sky" title={`SHA-256 of the recorded exchanges: ${recording.exchanges_sha256}`}>
+              Recorded from {shortModel(recording.model)} on Groq, {day(recording.recorded_at)}
+            </Badge>
+          ) : live ? (
+            <Badge tone="green">Live: {model ?? "the model"}</Badge>
+          ) : (
+            <Badge tone="slate">Scripted answers (LLM format)</Badge>
+          )}
+        </div>
+      )}
 
       {running ? (
         <div className="mt-3 flex h-11 items-center gap-2 rounded-lg bg-indigo-50 pl-3 pr-1.5 ring-1 ring-inset ring-indigo-100">
@@ -69,7 +101,7 @@ export function RequestCard({ text, onTextChange, liveAvailable, model, running,
             {running === "run" ? "Agents at work…" : "Re-planning…"}
           </span>
           {running === "run" && !live && (
-            <Button size="sm" icon={<FastForward />} onClick={() => onStart("replay", 0)} title="Replay the rest at full speed">
+            <Button size="sm" icon={<FastForward />} onClick={() => onStart(runMode, 0)} title="Replay the rest at full speed">
               Skip to result
             </Button>
           )}
@@ -80,7 +112,7 @@ export function RequestCard({ text, onTextChange, liveAvailable, model, running,
           size="lg"
           className="mt-3 w-full"
           icon={hasRun ? <RotateCcw /> : <Play />}
-          onClick={() => onStart(live ? "live" : "replay", 1)}
+          onClick={() => onStart(runMode, 1)}
         >
           {hasRun ? "Run the agents again" : "Start the agents"}
         </Button>
@@ -96,7 +128,9 @@ export function RequestCard({ text, onTextChange, liveAvailable, model, running,
           ? "Your case: the documents come from your form and the agents answer by simple rules (no AI). Every check, write and decision after that is real."
           : live
             ? `Calls ${model ?? "the model"} for real: slower, and the answers vary. Antidote checks every one.`
-            : "No AI runs here: the Researcher replays answers written in advance in an AI's output format, and the Buyer applies your request's rules. Every fact, reason and check runs live in FalkorDB (about 30 seconds)."}
+            : recorded && recording
+              ? `A real run of ${recording.model} on Groq, recorded ${day(recording.recorded_at)} (attempt ${recording.attempt}): the agents' own code runs, and every question gets the answer the model really gave, unedited. Antidote's checks, memory and approval check run live in FalkorDB.`
+              : "Scripted: the Researcher's answers were written in advance in an LLM's output format, and the Buyer applies your request's rules. Antidote's checks, memory and approval check run live in FalkorDB."}
       </p>
     </Card>
   );
