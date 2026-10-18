@@ -349,7 +349,7 @@ app and the database ([D50](docs/decisions.md)).
 
 ## Correctness
 
-137 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+139 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
 
 - Required cases: alternative justifications; a multi-premise justification losing one
   premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
@@ -381,7 +381,7 @@ python -m venv .venv
 pip install -r requirements.txt
 cp .env.example .env                  # Windows PowerShell: copy .env.example .env
 
-python -m pytest                      # 137 tests
+python -m pytest                      # 139 tests
 python -m scripts.seed_demo --story   # the whole story in the terminal
 streamlit run ui/streamlit_app.py     # the UI: http://localhost:8501
 python -m scripts.benchmark           # the benchmark table
