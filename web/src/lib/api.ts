@@ -3,9 +3,9 @@
 // visitor's private session token; the server maps it to the visitor's own graph,
 // so the browser never names a graph. Streams are NDJSON: one event per line.
 import type {
-  Ack, AntidoteEvent, ApiError, DocumentResponse, HealthResponse, ImpactResponse,
-  OrderActionResponse, QuarantineResponse, ReplanRequest, RunRequest, SessionResponse,
-  StateResponse, WhyResponse,
+  Ack, AntidoteEvent, ApiError, BenchmarkResponse, CypherResponse, DocumentResponse, HealthResponse,
+  ImpactResponse, OrderActionResponse, QuarantineResponse, ReplanRequest, RunRequest,
+  SessionResponse, StateResponse, WhyResponse,
 } from "../contract";
 
 const TOKEN_KEY = "antidote.session";
@@ -115,4 +115,9 @@ export const api = {
   run: (body: RunRequest, onEvent: OnEvent, signal: AbortSignal) => stream("/run", body, onEvent, signal),
   replan: (body: ReplanRequest, onEvent: OnEvent, signal: AbortSignal) =>
     stream("/replan", body, onEvent, signal),
+  cypher: () => json<CypherResponse>("GET", "/cypher"),
+  benchmark: () => json<BenchmarkResponse>("GET", "/benchmark"),
+  /** Each capability through the real code on a scratch graph, with the Cypher it ran. */
+  capabilities: (withoutFalkorDB: boolean, onEvent: OnEvent, signal: AbortSignal) =>
+    stream(`/capabilities${withoutFalkorDB ? "?without=true" : ""}`, {}, onEvent, signal),
 };

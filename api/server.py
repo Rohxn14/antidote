@@ -512,8 +512,10 @@ def capabilities(request: Request, without: bool = False):
         from app import centrality
     except ModuleNotFoundError:
         raise ApiFailure(501, "not_ready", "app/centrality.py has not been written yet")
-    walkthrough: Walkthrough = request.app.state.walkthrough
-    walkthrough.start()
+    # Only the real run is rationed: without FalkorDB nothing is written anywhere.
+    walkthrough: Walkthrough | None = None if without else request.app.state.walkthrough
+    if walkthrough:
+        walkthrough.start()
 
     def produce():
         seq = 0
@@ -528,7 +530,8 @@ def capabilities(request: Request, without: bool = False):
             seq += 1
             yield _line(seq, {"type": "error", "data": {"message": _plain(e), "recoverable": True}})
         finally:
-            walkthrough.finish()
+            if walkthrough:
+                walkthrough.finish()
     return _stream(produce())
 
 

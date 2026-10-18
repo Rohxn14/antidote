@@ -10,7 +10,8 @@ import { CaseBar } from "./components/CaseBar";
 import { DocumentDrawer } from "./components/DocumentDrawer";
 import { DocumentList } from "./components/DocumentList";
 import { GraphCard, type NodeKind } from "./components/EvidenceGraph";
-import { Header } from "./components/Header";
+import { Header, type Page } from "./components/Header";
+import { UnderTheHood } from "./components/UnderTheHood";
 import { ImpactPanel, RepairLog } from "./components/ImpactPanel";
 import { Guarantees, OrderCard } from "./components/OrderCard";
 import { OutageScreen } from "./components/OutageScreen";
@@ -59,9 +60,26 @@ function NoticeBar({ notice, onClose }: { notice: Notice; onClose: () => void })
   );
 }
 
+/** Which page is showing: the case, or #/under-the-hood (a link people can share). */
+function usePage(): [Page, (page: Page) => void] {
+  const read = (): Page => (window.location.hash === "#/under-the-hood" ? "hood" : "case");
+  const [page, setPage] = useState<Page>(read);
+  useEffect(() => {
+    const onHash = () => setPage(read());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const go = useCallback((p: Page) => {
+    window.location.hash = p === "hood" ? "#/under-the-hood" : "#/";
+    window.scrollTo({ top: 0 });
+  }, []);
+  return [page, go];
+}
+
 export default function App() {
   const a = useAntidote();
   const m = a.memory;
+  const [page, setPage] = usePage();
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [whyId, setWhyId] = useState<string | null>(null);
   const impactRef = useRef<HTMLDivElement>(null);
@@ -102,9 +120,29 @@ export default function App() {
     </div>
   );
 
+  const header = (
+    <Header
+      health={a.health}
+      syncing={a.pending !== null}
+      onStartOver={a.startOver}
+      restarting={a.pending === "restart"}
+      page={page}
+      onNavigate={setPage}
+    />
+  );
+
+  if (page === "hood") {
+    return (
+      <div className="min-h-dvh">
+        {header}
+        <UnderTheHood />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh">
-      <Header health={a.health} syncing={a.pending !== null} onStartOver={a.startOver} restarting={a.pending === "restart"} />
+      {header}
       <CaseBar title={caseTitle(a.requestText)} chips={chipsOf(m, a.running)} suggestion={suggestionOf(m, situation)} />
       {a.notice && <NoticeBar notice={a.notice} onClose={a.dismissNotice} />}
 

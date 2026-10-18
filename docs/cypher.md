@@ -237,7 +237,7 @@ RETURN v.id ORDER BY v.id LIMIT 1
 
 ## Action gate (app/gate.py)
 
-Reads the order on the current graph; the what-if queries run on a throwaway GRAPH.COPY to test robustness to losing a trusted origin.
+Reads the order on the current graph; the what-if queries run on a throwaway GRAPH.COPY to test robustness to losing a trusted origin. What an order rests on is walked one level per query (a reason points at both its premises and its conclusion), to hold orders on flagged documents and to say why a blocked order lost its support.
 
 ### read decision
 
@@ -265,6 +265,31 @@ MATCH (s:Source) SET s.real_trust = s.trust
 MATCH (s:Source)
 SET s.trust = CASE WHEN s.real_trust = $trusted AND NOT (s.origin IN $removed)
                    THEN $trusted ELSE $quarantined END
+```
+
+### rests on: one level down
+
+```cypher
+MATCH (t)<-[:SUPPORTS]-(:Justification)-[:PREMISE]->(p)
+WHERE t.id IN $frontier
+RETURN DISTINCT p.id
+```
+
+### why blocked: invalid premises
+
+```cypher
+MATCH (:Decision {id: $id})<-[:SUPPORTS]-(:Justification)-[:PREMISE]->(b:Belief)
+WHERE coalesce(b.valid, false) = false
+RETURN DISTINCT b.id, b.claim
+ORDER BY b.id
+```
+
+### documents among
+
+```cypher
+MATCH (s:Source) WHERE s.id IN $ids
+RETURN s.id, s.title, s.trust
+ORDER BY s.title
 ```
 
 ## Repair preview (app/repair.py)

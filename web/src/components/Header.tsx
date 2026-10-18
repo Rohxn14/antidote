@@ -42,17 +42,37 @@ function MemoryPill({ health, syncing }: { health: HealthResponse | null; syncin
   );
 }
 
-export function Header({ health, syncing, onStartOver, restarting }: {
+export type Page = "case" | "hood";
+
+export function Header({ health, syncing, onStartOver, restarting, page, onNavigate }: {
   health: HealthResponse | null; syncing: boolean; onStartOver: () => void; restarting: boolean;
+  page: Page; onNavigate: (page: Page) => void;
 }) {
+  const tab = (p: Page, label: string) => (
+    <button
+      type="button"
+      onClick={() => onNavigate(p)}
+      aria-current={page === p ? "page" : undefined}
+      className={cx(
+        "rounded-lg px-3 py-1.5 text-[13px] font-medium transition",
+        page === p ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white",
+      )}
+    >
+      {label}
+    </button>
+  );
   return (
     <header className="bg-ink text-white">
       <div className="mx-auto flex h-14 w-full max-w-[1680px] items-center gap-3 px-4">
         <Logo />
         <div className="flex items-baseline gap-3">
           <span className="text-[16px] font-semibold tracking-tight">Antidote</span>
-          <span className="hidden text-[13px] text-slate-400 md:inline">Procurement agents with a memory you can audit</span>
+          <span className="hidden text-[13px] text-slate-400 xl:inline">Procurement agents with a memory you can audit</span>
         </div>
+        <nav className="ml-2 flex items-center gap-1 sm:ml-4">
+          {tab("case", "Purchase case")}
+          {tab("hood", "Under the hood")}
+        </nav>
         <div className="ml-auto flex items-center gap-2.5">
           <MemoryPill health={health} syncing={syncing} />
           <Button

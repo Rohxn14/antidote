@@ -18,9 +18,15 @@ SECTIONS = [
      memory.QUERIES),
     ("Action gate (app/gate.py)",
      "Reads the order on the current graph; the what-if queries run on a "
-     "throwaway GRAPH.COPY to test robustness to losing a trusted origin.",
+     "throwaway GRAPH.COPY to test robustness to losing a trusted origin. What an "
+     "order rests on is walked one level per query (a reason points at both its "
+     "premises and its conclusion), to hold orders on flagged documents and to say "
+     "why a blocked order lost its support.",
      {"read decision": gate.READ_DECISION, "trusted origins": gate.TRUSTED_ORIGINS,
-      "what-if: remember trust": gate.REMEMBER_TRUST, "what-if: scenario": gate.SET_SCENARIO}),
+      "what-if: remember trust": gate.REMEMBER_TRUST, "what-if: scenario": gate.SET_SCENARIO,
+      "rests on: one level down": gate.ONE_LEVEL_DOWN,
+      "why blocked: invalid premises": gate.INVALID_PREMISES,
+      "documents among": gate.DOCUMENTS_AMONG}),
     ("Repair preview (app/repair.py)",
      "Run on a GRAPH.COPY: snapshot the flags, quarantine, recompute, then diff "
      "with Cypher.",
