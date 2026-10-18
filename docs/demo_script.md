@@ -21,6 +21,11 @@ the app locally (`uvicorn api.server:app`, FalkorDB in Docker) so you can stop t
 
 Notes:
 - The **Under the hood** page has its own link: `<app URL>/#/under-the-hood`.
+- **The scenario suite** (on Under the hood, below the benchmark) answers "does it only work on
+  this one story?". Ten seconds is enough: "400 random cases with up to twelve suppliers and
+  attacks from published benchmarks and real incidents: without Antidote, 284 wrong orders;
+  with it, 17, and none to a supplier that manipulated the agents. The 17 are the failures we
+  built in on purpose: a wrong registry, a delivery-time lie, a framed supplier."
 - **Build your own case** is the strongest answer to "is this scripted?". Good presets to show:
   *An open lie* (no hidden text; the conflict check alone catches it), *Six suppliers, one
   cheat*, and *A lie nothing contradicts* (where the checks stop and the verification hold
