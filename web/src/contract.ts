@@ -13,7 +13,7 @@ export type AgentState = "working" | "done" | "waiting";
 export type ReasonKind = "extraction" | "inference" | "decision";
 export type DecisionKind = "shortlist" | "purchase_order";
 export type OrderState = "draft" | "pending_approval" | "authorized" | "executed" | "blocked";
-export type Outcome = "blocked" | "needs_approval" | "auto";
+export type Outcome = "blocked" | "needs_approval" | "auto" | "held"; // held: rests on a flagged document
 export type Trust = "trusted" | "unverified" | "quarantined";
 export type Evidence = "unsupported" | "unverified only" | "single trusted origin" | "robust";
 export type DocumentKind = "request" | "registry" | "vendor" | "other";
@@ -234,6 +234,8 @@ export interface Decision {
   vendor_id: string | null;
   note: string | null;
   approved_by: string | null;
+  reasoning: string | null;
+  held_by: string[];
 }
 
 export interface Edge {
@@ -317,6 +319,7 @@ export interface QuarantineResponse {
   repair_id: string;
   quarantined: string[];
   withdrawn: string[];
+  orders_blocked: string[];
 }
 
 export interface OrderActionResponse {

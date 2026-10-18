@@ -15,6 +15,7 @@ contract event per line.
 import logging
 import os
 import re
+import threading
 import time
 from typing import Literal
 
@@ -32,9 +33,9 @@ from api import contract as c
 from api.session_store import Session, SessionStore
 from app import demo, evidence, gate, llm, memory, repair, runner, views
 from app.agents.buyer import order_label
-from app.db import ROOT, connection_settings, get_db
-from app.schema import (ABOUT, AGENT, AUTHORED, DECISION, HOLDS, JUSTIFICATION, VALID,
-                        VENDOR)
+from app.db import ROOT, connection_settings, drop_graph, get_db
+from app.schema import (ABOUT, AGENT, AUTHORED, DECISION, HOLDS, JUSTIFICATION, SUPPORTS,
+                        VALID, VENDOR)
 
 log = logging.getLogger("antidote")
 EVENTS = TypeAdapter(c.Event)
@@ -82,6 +83,12 @@ class MemoryProbe:
         try:
             return self.client.info("memory").get("used_memory_human")
         except Exception:  # some hosted servers do not allow INFO
+            return None
+
+    def used_bytes(self) -> int | None:
+        try:
+            return int(self.client.info("memory").get("used_memory"))
+        except Exception:
             return None
 
 
@@ -156,10 +163,17 @@ ORDER BY j.id
 DECISIONS = f"""
 MATCH (d:{DECISION})
 OPTIONAL MATCH (d)-[:{ABOUT}]->(v:{VENDOR})
+OPTIONAL MATCH (j:{JUSTIFICATION})-[:{SUPPORTS}]->(d)
 RETURN d.id, d.kind, d.summary, d.amount, d.state, coalesce(d.{VALID}, false), v.id,
-       d.note, d.approved_by
+       d.note, d.approved_by, collect(j.reasoning)
 ORDER BY d.id
 """
+OPEN_ORDER_STATES = ("draft", "pending_approval", "authorized")
+
+
+def under_review(session: Session) -> list[str]:
+    """Documents the security scan flagged: orders resting on them wait for a person."""
+    return [a["document_id"] for a in session.alerts]
 VENDORS = f"MATCH (v:{VENDOR}) RETURN v.id, v.name ORDER BY v.name"
 DOC_KIND = {runner.REQUEST_ID: "request", "s_registry": "registry"}
 
@@ -204,8 +218,11 @@ def build_state(g, session: Session) -> c.StateResponse:
         reasons=[c.Reason(id=i, kind=k, holds=bool(h), author=runner.AGENTS.get(a), quote=q)
                  for i, k, h, a, q in g.ro_query(REASONS).result_set],
         decisions=[c.Decision(id=i, kind=k, summary=s, amount=amt, state=st, supported=bool(ok),
-                              evidence=level(i), vendor_id=v, note=note, approved_by=by)
-                   for i, k, s, amt, st, ok, v, note, by in g.ro_query(DECISIONS).result_set],
+                              evidence=level(i), vendor_id=v, note=note, approved_by=by,
+                              reasoning=next((r for r in why if r), None),
+                              held_by=[h["id"] for h in gate.held_by(g, i, under_review(session))]
+                              if st in OPEN_ORDER_STATES else [])
+                   for i, k, s, amt, st, ok, v, note, by, why in g.ro_query(DECISIONS).result_set],
         edges=edges,
         alerts=[c.Alert(**a) for a in session.alerts],
         repairs=[c.RepairRecord(id=r["id"], approved_by=r["approved_by"], revision=r["revision"],
@@ -253,8 +270,13 @@ def segments(raw: str, is_html: bool) -> list[c.Segment]:
 
 # --- Messages ------------------------------------------------------------------------------
 
-def order_message(v: gate.Verdict, action: str) -> str:
+def order_message(v: gate.Verdict, action: str, held: list[dict] = ()) -> str:
     label = order_label(v.decision_id)
+    if v.outcome == gate.HELD:
+        titles = " and ".join(h["title"] for h in held) or "a flagged document"
+        return (f"{label} is on hold: it rests on {titles}, which the security scan flagged "
+                f"for hidden instructions. Deal with the alert first: if you stop trusting the "
+                f"document, the Buyer can re-plan without it.")
     if v.state == "blocked":
         return (f"Blocked: {label} has no supported reason left. An approval cannot "
                 "override missing support.")
@@ -374,28 +396,34 @@ def quarantine(session: Session = Depends(current)):
     p = session.preview
     if p is None:
         raise ApiFailure(409, "no_preview", "preview the impact first")
+    g = graph_of(session)
     try:
-        repair_id = repair.apply(graph_of(session), p, approved_by=demo.MANAGER)
+        repair_id = repair.apply(g, p, approved_by=demo.MANAGER)
     except repair.StalePreview as e:
         raise ApiFailure(409, "stale_preview", str(e))
     finally:
         session.preview = None
+    # The preview listed the open orders that lose their support: block them now, with
+    # the reason, rather than waiting for someone to try to approve or place them.
+    blocked = [o["id"] for o in p.orders_blocked if gate.recheck(g, o["id"]).state == "blocked"]
     return c.QuarantineResponse(repair_id=repair_id, quarantined=p.sources,
-                                withdrawn=[n["id"] for n in p.lost])
+                                withdrawn=[n["id"] for n in p.lost], orders_blocked=blocked)
 
 
 @router.post("/orders/{order_id}/{action}", response_model=c.OrderActionResponse)
 def order_action(order_id: str, action: Literal["approve", "execute"],
                  session: Session = Depends(current)):
     g = graph_of(session)
+    review = under_review(session)
     try:
-        v = (gate.approve(g, order_id, approver=demo.MANAGER) if action == "approve"
-             else gate.execute(g, order_id))
+        v = (gate.approve(g, order_id, approver=demo.MANAGER, under_review=review)
+             if action == "approve" else gate.execute(g, order_id, under_review=review))
     except gate.GateError as e:
         raise ApiFailure(409, "wrong_state", str(e))
+    held = gate.held_by(g, order_id, review) if v.outcome == gate.HELD else []
     return c.OrderActionResponse(decision_id=order_id, action=action, outcome=v.outcome,
                                  state=v.state, reasons=v.reasons,
-                                 message=order_message(v, action))
+                                 message=order_message(v, action, held))
 
 
 WHY_KIND = {"Source": "document", "Belief": "fact", "Decision": "decision"}
@@ -446,14 +474,46 @@ def benchmark():
     return c.BenchmarkResponse(rows=rows)
 
 
+class Walkthrough:
+    """The capability walkthrough seeds a scratch graph, so it is rationed: one at a
+    time, a pause between runs, and leftovers of an interrupted run are deleted
+    before the next one starts (none can be in use then)."""
+
+    SCRATCH = "antidote_centrality_"
+
+    def __init__(self, gap_s: float = 10.0, stale_s: float = 180.0):
+        self.gap_s, self.stale_s = gap_s, stale_s
+        self.lock = threading.Lock()
+        self.running_since: float | None = None
+        self.last_start = 0.0
+
+    def start(self) -> None:
+        with self.lock:
+            now = time.time()
+            if self.running_since is not None and now - self.running_since < self.stale_s:
+                raise ApiFailure(429, "busy", "The walkthrough is already running. Try again in a few seconds.")
+            if now - self.last_start < self.gap_s:
+                raise ApiFailure(429, "too_soon", "The walkthrough just ran. Try again in a few seconds.")
+            self.running_since = self.last_start = now
+        for name in get_db().list_graphs():
+            if name.startswith(self.SCRATCH):
+                drop_graph(name)
+
+    def finish(self) -> None:
+        with self.lock:
+            self.running_since = None
+
+
 @router.post("/capabilities")
-def capabilities(without: bool = False):
+def capabilities(request: Request, without: bool = False):
     """The capability walkthrough: each capability through the real code, with the
     Cypher FalkorDB executed. `without=true` runs it with no server behind the graph."""
     try:
         from app import centrality
     except ModuleNotFoundError:
         raise ApiFailure(501, "not_ready", "app/centrality.py has not been written yet")
+    walkthrough: Walkthrough = request.app.state.walkthrough
+    walkthrough.start()
 
     def produce():
         seq = 0
@@ -467,6 +527,8 @@ def capabilities(without: bool = False):
         except Exception as e:
             seq += 1
             yield _line(seq, {"type": "error", "data": {"message": _plain(e), "recoverable": True}})
+        finally:
+            walkthrough.finish()
     return _stream(produce())
 
 
@@ -501,11 +563,13 @@ document.getElementById('go').onclick=async()=>{const out=document.getElementByI
 </script></body></html>"""
 
 
-def create_app(store: SessionStore | None = None, memory_probe: MemoryProbe | None = None) -> FastAPI:
+def create_app(store: SessionStore | None = None, memory_probe: MemoryProbe | None = None,
+               walkthrough: Walkthrough | None = None) -> FastAPI:
     app = FastAPI(title="Antidote API", version="1.0",
                   description="Graph-native recovery for multi-agent memory, on FalkorDB.")
-    app.state.store = store or SessionStore()
     app.state.memory = memory_probe or MemoryProbe()
+    app.state.store = store or SessionStore(memory_used=app.state.memory.used_bytes)
+    app.state.walkthrough = walkthrough or Walkthrough()
 
     @app.exception_handler(ApiFailure)
     def _failure(request: Request, e: ApiFailure):

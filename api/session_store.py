@@ -6,8 +6,9 @@ a graph name. The client never sends a graph name, so a token can only ever
 reach its own graph (and that graph's preview copies).
 
 FalkorDB Cloud's free tier holds 100 MB, so sessions idle for more than two
-hours are swept whenever a new one starts, and when the cap is reached the
-least recently used idle session is evicted. A new visitor is never refused.
+hours are swept whenever a new one starts, and the least recently used idle
+session is evicted when the cap is reached or the database uses more than
+MEMORY_LIMIT. A new visitor is never refused.
 """
 import os
 import secrets
@@ -20,7 +21,9 @@ from app.db import DEFAULT_GRAPH, drop_graph, get_db
 
 PREFIX = f"{os.getenv('FALKORDB_GRAPH', DEFAULT_GRAPH)}_u_"
 IDLE_S = 2 * 3600
-CAP = int(os.getenv("ANTIDOTE_SESSION_CAP", "40"))
+CAP = int(os.getenv("ANTIDOTE_SESSION_CAP", "25"))
+MEMORY_LIMIT = int(os.getenv("ANTIDOTE_MEMORY_LIMIT_MB", "70")) * 1024 * 1024
+MEMORY_EVICTIONS = 3  # per new session: memory may be held by graphs that are not sessions
 
 
 @dataclass
@@ -36,10 +39,17 @@ class Session:
 
 
 class SessionStore:
-    def __init__(self, prefix: str = PREFIX, cap: int = CAP, idle_s: float = IDLE_S):
+    def __init__(self, prefix: str = PREFIX, cap: int = CAP, idle_s: float = IDLE_S,
+                 memory_used=None, memory_limit: int = MEMORY_LIMIT):
         self.prefix, self.cap, self.idle_s = prefix, cap, idle_s
+        self.memory_used = memory_used or (lambda: None)  # bytes in use, None if unknown
+        self.memory_limit = memory_limit
         self.sessions: dict[str, Session] = {}
         self.lock = threading.RLock()
+
+    def _memory_full(self) -> bool:
+        used = self.memory_used()
+        return used is not None and used > self.memory_limit
 
     def create(self, prepare, request: str) -> str:
         """A new session with its own graph, prepared by `prepare(graph)`."""
@@ -47,6 +57,9 @@ class SessionStore:
             self._sweep()
             while len(self.sessions) >= self.cap and self._evict_least_recent():
                 pass  # if every session is busy we go over the cap rather than refuse
+            for _ in range(MEMORY_EVICTIONS):
+                if not (self._memory_full() and self._evict_least_recent()):
+                    break
             token = secrets.token_urlsafe(24)
             name = f"{self.prefix}{int(time.time())}_{secrets.token_hex(4)}"
             self.sessions[token] = Session(graph_name=name, request=request)

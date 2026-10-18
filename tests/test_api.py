@@ -9,9 +9,11 @@ from fastapi.testclient import TestClient
 from redis.backoff import NoBackoff
 from redis.retry import Retry
 
-from api.server import MemoryProbe, create_app
+from api.server import MemoryProbe, Walkthrough, create_app
 from api.session_store import SessionStore
+from app import memory
 from app.db import get_db
+from app.schema import QUARANTINED
 
 PREFIX = "antidote_test_u_"  # conftest deletes every antidote_test_* graph
 
@@ -50,17 +52,25 @@ def test_full_story_over_http(client):
     assert state["has_run"] and state["alerts"][0]["document_id"] == "s_vantor_page"
     order = next(d for d in state["decisions"] if d["id"] == "d_po_1001")
     assert (order["state"], order["evidence"]) == ("pending_approval", "unverified only")
+    assert order["held_by"] == ["s_vantor_page"] and order["reasoning"]
+
+    # The order rests on the flagged page, so approving it is held, and nothing moves.
+    held = client.post("/api/orders/d_po_1001/approve", headers=h).json()
+    assert (held["outcome"], held["state"]) == ("held", "pending_approval")
+    assert "Vantor Motion product page" in held["message"]
 
     impact = client.post("/api/impact", headers=h, json={"document_id": "s_vantor_page"}).json()
     assert "d_po_1001" in {i["id"] for i in impact["orders_blocked"]}
     assert [s["id"] for s in impact["survived"]] == ["b_vantor_makes_servos"]
 
+    # Stopping trust blocks the order at once, saying which facts went and why.
     repaired = client.post("/api/quarantine", headers=h).json()
     assert repaired["quarantined"] == ["s_vantor_page"] and "d_po_1001" in repaired["withdrawn"]
-
-    blocked = client.post("/api/orders/d_po_1001/approve", headers=h).json()
-    assert (blocked["outcome"], blocked["state"]) == ("blocked", "blocked")
-    assert "cannot override missing support" in blocked["message"]
+    assert repaired["orders_blocked"] == ["d_po_1001"]
+    order = next(d for d in client.get("/api/state", headers=h).json()["decisions"] if d["id"] == "d_po_1001")
+    assert order["state"] == "blocked" and order["held_by"] == []
+    assert "“Vantor Motion meets the ISO 13485 supplier requirement.” no longer holds" in order["note"]
+    assert "Vantor Motion product page, which is no longer trusted" in order["note"]
 
     replan = stream(client, "/api/replan", h)
     new = next(e["data"] for e in replan if e["type"] == "decision_recorded")
@@ -72,16 +82,21 @@ def test_full_story_over_http(client):
 def test_approve_and_execute_endpoints_reject_an_unsupported_order(client):
     h = start(client)
     stream(client, "/api/run", h)
-    # Approved while still supported, then its support is taken away...
-    assert client.post("/api/orders/d_po_1001/approve", headers=h).json()["state"] == "authorized"
+    # A blocked order cannot be approved through the endpoint.
     client.post("/api/impact", headers=h, json={"document_id": "s_vantor_page"})
     client.post("/api/quarantine", headers=h)
-    # ...so execute, called directly with no UI involved, refuses it.
-    executed = client.post("/api/orders/d_po_1001/execute", headers=h).json()
-    assert (executed["outcome"], executed["state"]) == ("blocked", "blocked")
-    # And a blocked order cannot be approved through the endpoint either.
     r = client.post("/api/orders/d_po_1001/approve", headers=h)
     assert r.status_code == 409 and r.json()["error"] == "wrong_state"
+    # An approved order whose support disappears afterwards (here: changed directly in
+    # the graph, with no repair to block it) is refused when someone tries to place it.
+    stream(client, "/api/replan", h)
+    assert client.post("/api/orders/d_po_1002/approve", headers=h).json()["state"] == "authorized"
+    token = h["X-Antidote-Session"]
+    graph = get_db().select_graph(client.app.state.store.sessions[token].graph_name)
+    memory.set_trust(graph, "s_boltline_page", QUARANTINED)
+    executed = client.post("/api/orders/d_po_1002/execute", headers=h).json()
+    assert (executed["outcome"], executed["state"]) == ("blocked", "blocked")
+    assert "Boltline Automation product page" in " ".join(executed["reasons"])
 
 
 def test_sessions_are_private_and_never_take_a_graph_name(client):
@@ -104,6 +119,28 @@ def test_session_cap_evicts_the_least_recent_and_never_refuses(g):
     assert client.get("/api/state", headers=second).status_code == 200
     assert client.get("/api/state", headers=third).status_code == 200
     assert len([n for n in get_db().list_graphs() if n.startswith(PREFIX)]) == 2
+
+
+def test_memory_pressure_evicts_the_least_recent_session(g):
+    readings = iter([None, None, 90 * 2**20, 10 * 2**20])  # MB in use as each session starts
+    store = SessionStore(prefix=PREFIX, cap=10, memory_used=lambda: next(readings, None),
+                         memory_limit=70 * 2**20)
+    client = TestClient(create_app(store))
+    first, second = start(client), start(client)
+    client.get("/api/state", headers=second)
+    third = start(client)                          # 90 MB > 70 MB: first goes, then 10 MB: stop
+    assert client.get("/api/state", headers=first).status_code == 401
+    assert client.get("/api/state", headers=second).status_code == 200
+    assert client.get("/api/state", headers=third).status_code == 200
+
+
+def test_capability_walkthrough_is_rationed_and_cleans_up(g):
+    client = TestClient(create_app(SessionStore(prefix=PREFIX, cap=5), walkthrough=Walkthrough(gap_s=60)))
+    events = stream(client, "/api/capabilities", {}, body={})
+    assert sum(e["type"] == "capability_result" and e["data"]["ok"] for e in events) == 7
+    again = client.post("/api/capabilities")
+    assert again.status_code == 429 and again.json()["error"] == "too_soon"
+    assert not [n for n in get_db().list_graphs() if n.startswith(Walkthrough.SCRATCH)]
 
 
 def test_document_view_marks_what_a_person_cannot_see(client):

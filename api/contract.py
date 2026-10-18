@@ -22,7 +22,7 @@ AgentState = Literal["working", "done", "waiting"]
 ReasonKind = Literal["extraction", "inference", "decision"]
 DecisionKind = Literal["shortlist", "purchase_order"]
 OrderState = Literal["draft", "pending_approval", "authorized", "executed", "blocked"]
-Outcome = Literal["blocked", "needs_approval", "auto"]
+Outcome = Literal["blocked", "needs_approval", "auto", "held"]  # held: rests on a flagged document
 Trust = Literal["trusted", "unverified", "quarantined"]
 Evidence = Literal["unsupported", "unverified only", "single trusted origin", "robust"]
 DocumentKind = Literal["request", "registry", "vendor", "other"]
@@ -285,6 +285,8 @@ class Decision(BaseModel):
     vendor_id: str | None
     note: str | None                  # the approval check's last reasons
     approved_by: str | None
+    reasoning: str | None             # the deciding agent's own explanation
+    held_by: list[str]                # flagged documents it rests on: approval waits for them
 
 
 class Edge(BaseModel):
@@ -368,6 +370,7 @@ class QuarantineResponse(BaseModel):
     repair_id: str
     quarantined: list[str]
     withdrawn: list[str]
+    orders_blocked: list[str]         # open orders that lost their support, blocked now
 
 
 class OrderActionResponse(BaseModel):

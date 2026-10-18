@@ -175,3 +175,55 @@ def test_what_if_copies_are_cleaned_up(g):
     _order(g, ["cert"])
     gate.evaluate(g, "po")
     assert [n for n in get_db().list_graphs() if "whatif" in n] == []
+
+
+def test_blocked_order_names_the_fact_and_the_distrusted_document(g):
+    source(g, "page")
+    belief(g, "cert")
+    justify(g, "j_cert", "cert", ["page"])
+    _order(g, ["cert"], amount=48_000)
+    gate.submit(g, "po")
+
+    memory.set_trust(g, "page", QUARANTINED)
+    v = gate.evaluate(g, "po")
+
+    assert v.outcome == gate.BLOCK
+    assert v.reasons == ["“claim cert” no longer holds: it rested on page, which is no longer trusted"]
+
+
+def test_approval_is_held_while_the_order_rests_on_a_document_under_review(g):
+    source(g, "page")
+    trusted(g, "registry")
+    belief(g, "cert")
+    belief(g, "price")
+    justify(g, "j_cert", "cert", ["registry"])
+    justify(g, "j_price", "price", ["page"])
+    _order(g, ["cert", "price"], amount=48_000)
+    gate.submit(g, "po")
+
+    v = gate.approve(g, "po", approver="manager", under_review=["page"])
+    assert (v.outcome, v.state) == (gate.HELD, PENDING_APPROVAL)  # nothing moved
+    assert _state(g) == PENDING_APPROVAL
+    assert gate.held_by(g, "po", ["page", "elsewhere"]) == [{"id": "page", "title": "page"}]
+
+    v = gate.approve(g, "po", approver="manager", under_review=["elsewhere"])
+    assert v.state == AUTHORIZED  # a flag on a document it does not rest on changes nothing
+
+
+def test_recheck_blocks_an_open_order_that_lost_its_support_and_leaves_the_rest(g):
+    source(g, "page")
+    trusted(g, "registry")
+    belief(g, "a")
+    belief(g, "b")
+    justify(g, "j_a", "a", ["page"])
+    justify(g, "j_b", "b", ["registry"])
+    _order(g, ["a"], amount=48_000, oid="po1")
+    _order(g, ["b"], amount=48_000, oid="po2")
+    gate.submit(g, "po1")
+    gate.submit(g, "po2")
+
+    memory.set_trust(g, "page", QUARANTINED)
+
+    assert gate.recheck(g, "po1").state == BLOCKED
+    assert gate.recheck(g, "po2").state == PENDING_APPROVAL
+    assert (_state(g, "po1"), _state(g, "po2")) == (BLOCKED, PENDING_APPROVAL)

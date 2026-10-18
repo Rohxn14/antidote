@@ -22,13 +22,14 @@ from uuid import uuid4
 from app import memory, support
 from app.db import copy_graph
 from app.config import AUTO_MAX_AMOUNT, MIN_INDEPENDENT_TRUSTED_ROOTS
-from app.schema import (AUTHORIZED, BLOCKED, DECISION, DRAFT, EXECUTED,
-                        PENDING_APPROVAL, PURCHASE_ORDER, QUARANTINED, SOURCE,
-                        TRUSTED, VALID)
+from app.schema import (AUTHORIZED, BELIEF, BLOCKED, DECISION, DRAFT, EXECUTED,
+                        JUSTIFICATION, PENDING_APPROVAL, PREMISE, PURCHASE_ORDER,
+                        QUARANTINED, SOURCE, SUPPORTS, TRUSTED, VALID)
 
 BLOCK = "blocked"
 NEEDS_APPROVAL = "needs_approval"
 AUTO = "auto"
+HELD = "held"  # it rests on a document under review (e.g. a security alert): not yet
 
 
 class GateError(Exception):
@@ -46,6 +47,30 @@ class Verdict:
 READ_DECISION = f"""
 MATCH (d:{DECISION} {{id: $id}})
 RETURN d.kind, d.amount, d.reversible, d.state, d.{VALID} = true, d.approved_by
+"""
+
+# What a node rests on, one level per query: the premises of the reasons for the
+# nodes found so far. (A reason points at its premises and at its conclusion, so the
+# way down alternates edge directions; walked in rounds, like support.recompute.)
+ONE_LEVEL_DOWN = f"""
+MATCH (t)<-[:{SUPPORTS}]-(:{JUSTIFICATION})-[:{PREMISE}]->(p)
+WHERE t.id IN $frontier
+RETURN DISTINCT p.id
+"""
+
+# The premises of an order's reasons that no longer hold.
+INVALID_PREMISES = f"""
+MATCH (:{DECISION} {{id: $id}})<-[:{SUPPORTS}]-(:{JUSTIFICATION})-[:{PREMISE}]->(b:{BELIEF})
+WHERE coalesce(b.{VALID}, false) = false
+RETURN DISTINCT b.id, b.claim
+ORDER BY b.id
+"""
+
+# Which of these ids are documents, with their trust.
+DOCUMENTS_AMONG = f"""
+MATCH (s:{SOURCE}) WHERE s.id IN $ids
+RETURN s.id, s.title, s.trust
+ORDER BY s.title
 """
 
 TRUSTED_ORIGINS = f"""
@@ -101,13 +126,57 @@ def trusted_root_gap(g, decision_id: str) -> str | None:
         copy.delete()
 
 
+def foundations(g, node_id: str) -> set[str]:
+    """Every node `node_id` rests on, through any chain of reasons (cycle-safe)."""
+    seen: set[str] = set()
+    frontier = [node_id]
+    while frontier:
+        rows = g.ro_query(ONE_LEVEL_DOWN, {"frontier": frontier}).result_set
+        frontier = [r[0] for r in rows if r[0] not in seen]
+        seen.update(frontier)
+    return seen
+
+
+def _documents(g, ids) -> list[tuple[str, str, str]]:
+    return [tuple(r) for r in g.ro_query(DOCUMENTS_AMONG, {"ids": sorted(ids)}).result_set]
+
+
+def lost_support(g, decision_id: str) -> list[str]:
+    """Why a decision is not valid: one sentence per premise that no longer holds,
+    naming the distrusted documents it rested on."""
+    reasons = []
+    for fact_id, claim in g.ro_query(INVALID_PREMISES, {"id": decision_id}).result_set:
+        distrusted = [t for _, t, trust in _documents(g, foundations(g, fact_id)) if trust == QUARANTINED]
+        if distrusted:
+            verb = "is" if len(distrusted) == 1 else "are"
+            reasons.append(f"“{claim}” no longer holds: it rested on "
+                           f"{' and '.join(distrusted)}, which {verb} no longer trusted")
+        else:
+            reasons.append(f"“{claim}” no longer holds")
+    return reasons or ["no justification holds on the current graph"]
+
+
+def held_by(g, decision_id: str, under_review) -> list[dict]:
+    """The documents under review (not yet distrusted) that this decision rests on."""
+    review = set(under_review)
+    if not review:
+        return []
+    return [{"id": i, "title": t} for i, t, trust in _documents(g, foundations(g, decision_id) & review)
+            if trust != QUARANTINED]
+
+
+def _hold(decision_id: str, held: list[dict], state: str) -> Verdict:
+    titles = " and ".join(h["title"] for h in held)
+    return Verdict(decision_id, HELD, [f"it rests on {titles}, which is under review"], state=state)
+
+
 def evaluate(g, decision_id: str) -> Verdict:
     """Classify an order against the current graph. Changes nothing but the
     computed cache."""
     support.recompute(g)
     d = _read(g, decision_id)
     if not d["valid"]:
-        return Verdict(decision_id, BLOCK, ["no justification holds on the current graph"])
+        return Verdict(decision_id, BLOCK, lost_support(g, decision_id))
     reasons = []
     if d["amount"] is not None and d["amount"] >= AUTO_MAX_AMOUNT:
         reasons.append(f"amount ${d['amount']:,.0f} is at or above ${AUTO_MAX_AMOUNT:,}")
@@ -145,22 +214,42 @@ def submit(g, decision_id: str) -> Verdict:
     return _move(g, verdict, next_state[verdict.outcome])
 
 
-def approve(g, decision_id: str, approver: str) -> Verdict:
+def approve(g, decision_id: str, approver: str, under_review=()) -> Verdict:
     """A human approves a pending order. This is the PURCHASE approval; it is
-    separate from approving a memory repair and never implied by it."""
+    separate from approving a memory repair and never implied by it.
+
+    `under_review`: documents a person must deal with first (e.g. flagged by the
+    security scan). An order resting on one of them is held, not approved."""
     _require_order(g, decision_id, (PENDING_APPROVAL,))
     verdict = evaluate(g, decision_id)
     if verdict.outcome == BLOCK:
         return _move(g, verdict, BLOCKED)
+    held = held_by(g, decision_id, under_review)
+    if held:
+        return _hold(decision_id, held, PENDING_APPROVAL)
     return _move(g, verdict, AUTHORIZED, approved_by=approver)
 
 
-def execute(g, decision_id: str) -> Verdict:
+def recheck(g, decision_id: str) -> Verdict:
+    """After the memory changed (a repair): an open order that lost its support is
+    blocked now, before anyone tries to approve or place it. Others are untouched."""
+    d = _require_order(g, decision_id, (DRAFT, PENDING_APPROVAL, AUTHORIZED))
+    verdict = evaluate(g, decision_id)
+    if verdict.outcome == BLOCK:
+        return _move(g, verdict, BLOCKED)
+    verdict.state = d["state"]
+    return verdict
+
+
+def execute(g, decision_id: str, under_review=()) -> Verdict:
     """Execute an authorized order, re-checking support one last time."""
     d = _require_order(g, decision_id, (AUTHORIZED,))
     verdict = evaluate(g, decision_id)
     if verdict.outcome == BLOCK:
         return _move(g, verdict, BLOCKED)
+    held = held_by(g, decision_id, under_review)
+    if held:
+        return _hold(decision_id, held, AUTHORIZED)
     if verdict.outcome == NEEDS_APPROVAL and not d["approved_by"]:
         # Auto-authorized earlier, but it no longer qualifies: ask a human.
         return _move(g, verdict, PENDING_APPROVAL)

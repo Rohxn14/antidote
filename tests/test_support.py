@@ -232,3 +232,15 @@ def test_ensure_schema_is_idempotent(g):
     rows = g.ro_query("CALL db.indexes() YIELD label, properties RETURN label, properties").result_set
     assert len({(label, p) for label, props in rows for p in props}) == len(INDEXES)
     assert g.ro_query("MATCH (m:Meta) RETURN count(m), m.revision").result_set == [[1, 0]]
+
+
+def test_a_premise_cited_twice_is_stored_once_and_still_holds(g):
+    """An agent may cite the same fact twice. The write keeps one premise, so the
+    reason needs one valid premise, not two."""
+    trusted(g, "s")
+    belief(g, "b")
+    justify(g, "j", "b", ["s", "s"])
+    edges, count = g.ro_query(
+        "MATCH (j:Justification {id: 'j'})-[e:PREMISE]->() RETURN count(e), j.premise_count").result_set[0]
+    assert (edges, count) == (1, 1)
+    assert flag(g, "j") and flag(g, "b")
