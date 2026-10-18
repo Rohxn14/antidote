@@ -277,7 +277,9 @@ export function useAntidote() {
       const label = d ? orderLabel(d.summary, orderId) : orderId;
       if (r.outcome === "held") {
         push({ who: "guard", tone: "blocked", title: `The approval check held ${label}`, body: r.message });
-        setAgent("guard", "done", `Held ${label}: it rests on a document flagged for hidden instructions.`);
+        setAgent("guard", "done", r.reasons.some((x) => x.includes("unverified"))
+          ? `Held ${label}: a trusted document must confirm what it rests on.`
+          : `Held ${label}: it rests on a document flagged for hidden instructions.`);
         return;
       }
       if (r.state === "blocked") {

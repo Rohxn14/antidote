@@ -317,6 +317,7 @@ class Decision(BaseModel):
     approved_by: str | None
     reasoning: str | None             # the deciding agent's own explanation
     held_by: list[str]                # flagged documents it rests on: approval waits for them
+    needs_verification: list[str]     # its conclusions that only unverified documents support
 
 
 class Edge(BaseModel):

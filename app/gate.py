@@ -22,7 +22,7 @@ from uuid import uuid4
 from app import memory, support
 from app.db import copy_graph
 from app.config import AUTO_MAX_AMOUNT, MIN_INDEPENDENT_TRUSTED_ROOTS
-from app.schema import (AUTHORIZED, BELIEF, BLOCKED, DECISION, DRAFT, EXECUTED,
+from app.schema import (AUTHORIZED, BELIEF, BLOCKED, DECISION, DRAFT, EXECUTED, INFERENCE,
                         JUSTIFICATION, PENDING_APPROVAL, PREMISE, PURCHASE_ORDER,
                         QUARANTINED, SOURCE, SUPPORTS, TRUSTED, VALID)
 
@@ -65,6 +65,18 @@ WHERE coalesce(b.{VALID}, false) = false
 RETURN DISTINCT b.id, b.claim
 ORDER BY b.id
 """
+
+# The conclusions an order rests on directly: facts an agent concluded from other facts
+# (e.g. "Vantor meets the ISO 13485 requirement"), as opposed to facts read in a document.
+CONCLUSIONS_OF = f"""
+MATCH (:{DECISION} {{id: $id}})<-[:{SUPPORTS}]-(:{JUSTIFICATION})-[:{PREMISE}]->(b:{BELIEF})
+      <-[:{SUPPORTS}]-(:{JUSTIFICATION} {{kind: $inference}})-[:{PREMISE}]->(:{BELIEF})
+RETURN DISTINCT b.id, b.claim
+ORDER BY b.id
+"""
+
+# Which of these beliefs are valid (on a what-if copy).
+VALID_AMONG = f"MATCH (b:{BELIEF}) WHERE b.id IN $ids AND b.{VALID} = true RETURN b.id"
 
 # Which of these ids are documents, with their trust.
 DOCUMENTS_AMONG = f"""
@@ -165,6 +177,36 @@ def held_by(g, decision_id: str, under_review) -> list[dict]:
             if trust != QUARANTINED]
 
 
+def unverified_conclusions(g, decision_id: str) -> list[dict]:
+    """The conclusions this order rests on that hold only because unverified documents
+    say so: on a throwaway copy where only trusted documents count, they fall."""
+    rows = g.ro_query(CONCLUSIONS_OF, {"id": decision_id, "inference": INFERENCE}).result_set
+    if not rows:
+        return []
+    copy = copy_graph(g, f"{g.name}_whatif_{uuid4().hex[:8]}")
+    try:
+        copy.query(REMEMBER_TRUST)
+        copy.query(SET_SCENARIO, {"trusted": TRUSTED, "quarantined": QUARANTINED, "removed": []})
+        support.recompute(copy)
+        still = {r[0] for r in copy.ro_query(VALID_AMONG, {"ids": [r[0] for r in rows]}).result_set}
+    finally:
+        copy.delete()
+    return [{"id": i, "claim": c} for i, c in rows if i not in still]
+
+
+def _unverified_hold(g, decision_id: str, amount, state: str) -> Verdict | None:
+    """Stakes policy: an order at or above AUTO_MAX_AMOUNT waits until a trusted document
+    confirms the conclusions it rests on (e.g. that the supplier qualifies)."""
+    if amount is None or amount < AUTO_MAX_AMOUNT:
+        return None
+    unverified = unverified_conclusions(g, decision_id)
+    if not unverified:
+        return None
+    return Verdict(decision_id, HELD, [f"“{u['claim']}” rests only on unverified documents: "
+                                       "a trusted document must confirm it" for u in unverified],
+                   state=state)
+
+
 def _hold(decision_id: str, held: list[dict], state: str) -> Verdict:
     titles = " and ".join(h["title"] for h in held)
     return Verdict(decision_id, HELD, [f"it rests on {titles}, which is under review"], state=state)
@@ -219,14 +261,18 @@ def approve(g, decision_id: str, approver: str, under_review=()) -> Verdict:
     separate from approving a memory repair and never implied by it.
 
     `under_review`: documents a person must deal with first (e.g. flagged by the
-    security scan). An order resting on one of them is held, not approved."""
-    _require_order(g, decision_id, (PENDING_APPROVAL,))
+    security scan). An order resting on one of them is held, not approved; so is a
+    large order whose conclusions only unverified documents support."""
+    d = _require_order(g, decision_id, (PENDING_APPROVAL,))
     verdict = evaluate(g, decision_id)
     if verdict.outcome == BLOCK:
         return _move(g, verdict, BLOCKED)
     held = held_by(g, decision_id, under_review)
     if held:
         return _hold(decision_id, held, PENDING_APPROVAL)
+    unverified = _unverified_hold(g, decision_id, d["amount"], PENDING_APPROVAL)
+    if unverified:
+        return unverified
     return _move(g, verdict, AUTHORIZED, approved_by=approver)
 
 
@@ -250,6 +296,9 @@ def execute(g, decision_id: str, under_review=()) -> Verdict:
     held = held_by(g, decision_id, under_review)
     if held:
         return _hold(decision_id, held, AUTHORIZED)
+    unverified = _unverified_hold(g, decision_id, d["amount"], AUTHORIZED)
+    if unverified:
+        return unverified
     if verdict.outcome == NEEDS_APPROVAL and not d["approved_by"]:
         # Auto-authorized earlier, but it no longer qualifies: ask a human.
         return _move(g, verdict, PENDING_APPROVAL)

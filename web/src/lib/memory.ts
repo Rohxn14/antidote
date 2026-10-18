@@ -45,6 +45,9 @@ const vendorNames = (state: StateResponse) =>
 
 export const edgeKey = (e: Edge) => `${e.from_id}>${e.to_id}`;
 
+/** Orders from this amount wait until a trusted document confirms their checks (app/config.py). */
+export const VERIFY_FROM = 5000;
+
 export function memoryReducer(m: Memory, action: MemoryAction): Memory {
   switch (action.type) {
     case "load": {
@@ -109,7 +112,7 @@ function applyEvent(m: Memory, e: AntidoteEvent): Memory {
       const decision: Decision = {
         id: d.decision_id, kind: d.kind, summary: d.summary, amount: d.amount, state: d.state,
         supported: true, evidence: null, vendor_id: d.vendor_id, note: null, approved_by: null,
-        reasoning: null, held_by: [],
+        reasoning: null, held_by: [], needs_verification: [],
       };
       return { ...m, decisions: { ...m.decisions, [decision.id]: decision }, latest: decision.id };
     }
@@ -117,7 +120,13 @@ function applyEvent(m: Memory, e: AntidoteEvent): Memory {
       const old = m.decisions[e.data.decision_id];
       if (!old) return m;
       const note = e.data.reasons.join("; ") || old.note;
-      return { ...m, decisions: { ...m.decisions, [old.id]: { ...old, state: e.data.state, note } } };
+      // The verification hold (gate.approve), shown at once: a large order whose checks
+      // nothing trusted confirms. The next state reload brings the server's own list.
+      const unconfirmed = (old.amount ?? 0) >= VERIFY_FROM
+        ? basisOf(m, old.id).filter((b) => b.kind === "check" && b.supported && !b.documents.some((d) => d.trust === "trusted")).map((b) => b.text)
+        : [];
+      const needs_verification = old.needs_verification.length ? old.needs_verification : unconfirmed;
+      return { ...m, decisions: { ...m.decisions, [old.id]: { ...old, state: e.data.state, note, needs_verification } } };
     }
     case "security_alert": {
       const doc = e.data.document_id;

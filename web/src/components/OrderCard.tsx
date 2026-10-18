@@ -174,6 +174,8 @@ export function OrderCard({ orders, memory, lastAction, pending, running, onWhy,
 
   const parts = orderParts(order.summary);
   const held = order.held_by.map((id) => memory.documents[id]).filter(Boolean);
+  const unverified = order.needs_verification;
+  const onHold = held.length > 0 || unverified.length > 0;
   const state = order.state ? ORDER_STATE[order.state] : null;
   const blocked = order.state === "blocked";
   const lost = !order.supported || blocked;
@@ -186,11 +188,11 @@ export function OrderCard({ orders, memory, lastAction, pending, running, onWhy,
   const approvalNotes = noteLines(order.note).filter(() => !blocked);
 
   return (
-    <Card className={cx("overflow-hidden", lost && "border-rose-200", held.length > 0 && !lost && "border-amber-200")}>
-      <div className={cx("px-4 pb-4 pt-4", lost ? "bg-gradient-to-b from-rose-50 to-white" : held.length ? "bg-gradient-to-b from-amber-50 to-white" : "bg-gradient-to-b from-indigo-50/80 to-white")}>
+    <Card className={cx("overflow-hidden", lost && "border-rose-200", onHold && !lost && "border-amber-200")}>
+      <div className={cx("px-4 pb-4 pt-4", lost ? "bg-gradient-to-b from-rose-50 to-white" : onHold ? "bg-gradient-to-b from-amber-50 to-white" : "bg-gradient-to-b from-indigo-50/80 to-white")}>
         <div className="flex items-center justify-between gap-2">
           <SectionLabel icon={<Package />}>{earlier.length ? "New recommendation" : "Recommended order"}</SectionLabel>
-          {held.length > 0 && !lost ? <Badge tone="amber">On hold</Badge> : state && <Badge tone={state.tone}>{state.label}</Badge>}
+          {onHold && !lost ? <Badge tone="amber">On hold</Badge> : state && <Badge tone={state.tone}>{state.label}</Badge>}
         </div>
         <div className="mt-3 flex items-end justify-between gap-3">
           <div className="min-w-0">
@@ -216,6 +218,18 @@ export function OrderCard({ orders, memory, lastAction, pending, running, onWhy,
             <span className="font-semibold">On hold.</span> It rests on {titles(held)}, which contains hidden
             instructions. Approval waits until you deal with the alert: stop trusting the page, and the Buyer can
             re-plan without it.
+          </p>
+        </div>
+      )}
+
+      {!held.length && unverified.length > 0 && !lost && (
+        <div className="mx-4 mb-3 flex gap-2.5 rounded-xl bg-amber-50 px-3 py-2.5 text-[12.5px] leading-5 text-amber-950 ring-1 ring-amber-200">
+          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-amber-600" />
+          <p>
+            <span className="font-semibold">On hold until verified.</span> Nothing trusted confirms{" "}
+            {listOf(unverified.map((u) => `“${u.replace(/\.$/, "")}”`))}: only the supplier's own word does. Orders of
+            $5,000 or more need a trusted document to confirm what they rest on. If you don't believe the page, stop
+            trusting it and the Buyer will re-plan.
           </p>
         </div>
       )}
@@ -260,7 +274,7 @@ export function OrderCard({ orders, memory, lastAction, pending, running, onWhy,
         </ul>
       </div>
 
-      {approvalNotes.length > 0 && !held.length && (
+      {approvalNotes.length > 0 && !onHold && (
         <dl className="border-t border-slate-100 px-4 py-3">
           <Row icon={<Lock />} label="Approval">{approvalNotes.join(" ")}</Row>
         </dl>
@@ -275,8 +289,8 @@ export function OrderCard({ orders, memory, lastAction, pending, running, onWhy,
             variant="brand"
             icon={<Check />}
             loading={pending === "approve"}
-            disabled={busy || held.length > 0}
-            title={held.length ? "On hold: deal with the security alert first" : undefined}
+            disabled={busy || onHold}
+            title={held.length ? "On hold: deal with the security alert first" : unverified.length ? "On hold: a trusted document must confirm it first" : undefined}
             onClick={() => onDecide(order.id, "approve")}
           >
             Approve
@@ -287,7 +301,7 @@ export function OrderCard({ orders, memory, lastAction, pending, running, onWhy,
             variant="brand"
             icon={<Send />}
             loading={pending === "execute"}
-            disabled={busy || held.length > 0}
+            disabled={busy || onHold}
             onClick={() => onDecide(order.id, "execute")}
           >
             Place the order

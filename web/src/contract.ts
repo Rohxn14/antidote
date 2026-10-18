@@ -257,6 +257,7 @@ export interface Decision {
   approved_by: string | null;
   reasoning: string | null;
   held_by: string[];
+  needs_verification: string[];
 }
 
 export interface Edge {

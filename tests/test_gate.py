@@ -227,3 +227,33 @@ def test_recheck_blocks_an_open_order_that_lost_its_support_and_leaves_the_rest(
     assert gate.recheck(g, "po1").state == BLOCKED
     assert gate.recheck(g, "po2").state == PENDING_APPROVAL
     assert (_state(g, "po1"), _state(g, "po2")) == (BLOCKED, PENDING_APPROVAL)
+
+
+def _qualification(g, order_amount):
+    """request (trusted) + page (unverified) -> cert -> qualifies (a conclusion) -> order."""
+    trusted(g, "request")
+    source(g, "page")
+    belief(g, "rule")
+    belief(g, "cert")
+    belief(g, "qualifies")
+    justify(g, "j_rule", "rule", ["request"])
+    justify(g, "j_cert", "cert", ["page"])
+    justify(g, "j_q", "qualifies", ["rule", "cert"])
+    _order(g, ["qualifies"], amount=order_amount)
+    gate.submit(g, "po")
+
+
+def test_a_large_order_waits_until_a_trusted_document_confirms_its_conclusion(g):
+    _qualification(g, 48_000)
+    v = gate.approve(g, "po", approver="manager")
+    assert (v.outcome, v.state) == (gate.HELD, PENDING_APPROVAL)
+    assert v.reasons == ["“claim qualifies” rests only on unverified documents: a trusted document must confirm it"]
+
+    trusted(g, "registry")                      # a trusted document confirms the certificate
+    justify(g, "j_cert_registry", "cert", ["registry"])
+    assert gate.approve(g, "po", approver="manager").state == AUTHORIZED
+
+
+def test_a_small_order_is_not_held_for_verification(g):
+    _qualification(g, 900)
+    assert gate.approve(g, "po", approver="manager").state != PENDING_APPROVAL

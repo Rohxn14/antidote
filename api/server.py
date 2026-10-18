@@ -35,8 +35,9 @@ from app import demo, evidence, gate, llm, memory, repair, runner, views
 from app.agents.buyer import order_label
 from app.casebuilder import CaseScript
 from app.db import ROOT, connection_settings, drop_graph, get_db
-from app.schema import (ABOUT, AGENT, AUTHORED, DECISION, HOLDS, JUSTIFICATION, SUPPORTS,
-                        VALID, VENDOR)
+from app.config import AUTO_MAX_AMOUNT
+from app.schema import (ABOUT, AGENT, AUTHORED, DECISION, HOLDS, INFERENCE, JUSTIFICATION,
+                        SUPPORTS, VALID, VENDOR)
 
 log = logging.getLogger("antidote")
 EVENTS = TypeAdapter(c.Event)
@@ -177,6 +178,15 @@ def under_review(session: Session) -> list[str]:
     return [a["document_id"] for a in session.alerts]
 
 
+def unverified(g, decision_id: str, amount, strength: dict) -> list[str]:
+    """What the verification hold (gate.approve) will wait for, from the cached evidence
+    levels: the order's conclusions that hold only because unverified documents say so."""
+    if amount is None or amount < AUTO_MAX_AMOUNT:
+        return []
+    rows = g.ro_query(gate.CONCLUSIONS_OF, {"id": decision_id, "inference": INFERENCE}).result_set
+    return [claim for i, claim in rows if (strength.get(i) or {}).get("level") == "unverified only"]
+
+
 def script_for(session: Session, mode: str, request_text: str | None = None):
     """Where this session's documents and agents' answers come from."""
     if session.case:
@@ -230,7 +240,8 @@ def build_state(g, session: Session) -> c.StateResponse:
                               evidence=level(i), vendor_id=v, note=note, approved_by=by,
                               reasoning=next((r for r in why if r), None),
                               held_by=[h["id"] for h in gate.held_by(g, i, under_review(session))]
-                              if st in OPEN_ORDER_STATES else [])
+                              if st in OPEN_ORDER_STATES else [],
+                              needs_verification=unverified(g, i, amt, strength) if st in OPEN_ORDER_STATES else [])
                    for i, k, s, amt, st, ok, v, note, by, why in g.ro_query(DECISIONS).result_set],
         edges=edges,
         alerts=[c.Alert(**a) for a in session.alerts],
@@ -282,11 +293,15 @@ def segments(raw: str, is_html: bool) -> list[c.Segment]:
 
 def order_message(v: gate.Verdict, action: str, held: list[dict] = ()) -> str:
     label = order_label(v.decision_id)
-    if v.outcome == gate.HELD:
-        titles = " and ".join(h["title"] for h in held) or "a flagged document"
+    if v.outcome == gate.HELD and held:
+        titles = " and ".join(h["title"] for h in held)
         return (f"{label} is on hold: it rests on {titles}, which the security scan flagged "
                 f"for hidden instructions. Deal with the alert first: if you stop trusting the "
                 f"document, the Buyer can re-plan without it.")
+    if v.outcome == gate.HELD:
+        return (f"{label} is on hold until a trusted document confirms what it rests on. "
+                f"{' '.join(r[0].upper() + r[1:] + '.' for r in v.reasons)} If you don't believe "
+                f"the supplier's own page, stop trusting it and the Buyer will re-plan.")
     if v.state == "blocked":
         return (f"Blocked: {label} has no supported reason left. An approval cannot "
                 "override missing support.")

@@ -33,7 +33,7 @@ export function chipsOf(m: Memory, running: Situation["running"]): Chip[] {
   const orders = ordersOf(m);
   const latest = orders[orders.length - 1];
   if (latest?.state) {
-    const held = latest.held_by.length > 0;
+    const held = latest.held_by.length > 0 || latest.needs_verification.length > 0;
     const state = ORDER_STATE[latest.state];
     chips.push({ tone: held ? "amber" : state.tone, text: `${label(latest)} · ${held ? "On hold" : state.label}` });
   }
@@ -60,6 +60,9 @@ export function suggestionOf(m: Memory, s: Situation): Suggestion {
   if (latest.held_by.length) {
     const doc = m.documents[latest.held_by[0]]?.title ?? "a flagged document";
     return attention(`${label(latest)} is on hold: it rests on ${doc}, which contains hidden instructions. Look at what the AI read, then decide whether to keep trusting it.`);
+  }
+  if (latest.needs_verification.length && ["pending_approval", "authorized"].includes(latest.state ?? "")) {
+    return attention(`${label(latest)} is on hold until verified: nothing trusted confirms that ${p?.vendor ?? "the supplier"} qualifies, only its own page. Open the page, then decide whether to keep trusting it.`);
   }
   if (latest.state === "blocked") {
     return attention(`${label(latest)} was blocked: facts it rested on no longer hold. Ask the Buyer to re-plan with what's still true.`);

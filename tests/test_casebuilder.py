@@ -121,3 +121,24 @@ def test_cases_over_http(g):
                 {**spec, "suppliers": spec["suppliers"][:3] + [spec["suppliers"][0]]},
                 case(vantor={"price": 10})):
         assert client.post("/api/case", headers=h, json={"case": bad}).status_code == 422
+
+
+def test_a_plain_lie_is_held_until_verified_then_the_honest_supplier_goes_through(g):
+    client = TestClient(create_app(SessionStore(prefix=PREFIX, cap=5)))
+    h = start(client)
+    client.post("/api/case", headers=h, json={"case": case(vantor={"hidden_instructions": False})})
+    with client.stream("POST", "/api/run", headers=h, json={"pace": 0}) as r:
+        events = [json.loads(line) for line in r.iter_lines() if line]
+    assert [e for e in events if e["type"] == "security_alert"] == []      # nothing to detect
+    order = next(d for d in client.get("/api/state", headers=h).json()["decisions"] if d["id"] == "d_po_1001")
+    assert order["held_by"] == [] and order["needs_verification"] == [
+        "Vantor Motion meets the ISO 13485 supplier requirement."]
+    held = client.post("/api/orders/d_po_1001/approve", headers=h).json()
+    assert (held["outcome"], held["state"]) == ("held", "pending_approval")
+    assert "trusted document" in held["message"]
+
+    client.post("/api/impact", headers=h, json={"document_id": "s_vantor_page"})
+    assert client.post("/api/quarantine", headers=h).json()["orders_blocked"] == ["d_po_1001"]
+    with client.stream("POST", "/api/replan", headers=h, json={"pace": 0}) as r:
+        list(r.iter_lines())
+    assert client.post("/api/orders/d_po_1002/approve", headers=h).json()["state"] == "authorized"
