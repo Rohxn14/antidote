@@ -24,6 +24,7 @@ IDLE_S = 2 * 3600
 CAP = int(os.getenv("ANTIDOTE_SESSION_CAP", "25"))
 MEMORY_LIMIT = int(os.getenv("ANTIDOTE_MEMORY_LIMIT_MB", "70")) * 1024 * 1024
 MEMORY_EVICTIONS = 3  # per new session: memory may be held by graphs that are not sessions
+PARKED_S = 1.0
 
 
 @dataclass
@@ -31,12 +32,23 @@ class Session:
     graph_name: str
     request: str
     last_used: float = field(default_factory=time.time)
-    busy: bool = False                 # a run is streaming
+    run: object | None = None          # the run streaming into this case, if any
+    parked: float | None = None        # since when that run has waited for the browser to read
     has_run: bool = False
     preview: object = None             # the open repair.Preview, if any
     alerts: list = field(default_factory=list)
     evidence: tuple | None = None      # (revision, strength) cache
     case: dict | None = None           # a case the visitor built (None: the demo story)
+
+    @property
+    def busy(self) -> bool:
+        """A run is streaming into this case. When its browser goes away (a reload, "Skip
+        to result"), the server stops reading the run but does not close it: it waits at
+        its last event until Python frees it. A live stream's event is read within
+        milliseconds, so a run left waiting for PARKED_S no longer counts."""
+        if self.run is None:
+            return False
+        return self.parked is None or time.monotonic() - self.parked < PARKED_S
 
 
 class SessionStore:

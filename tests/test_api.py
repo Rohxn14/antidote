@@ -2,6 +2,7 @@
 """The web API: the whole story over HTTP, the approval check enforced at the
 endpoints themselves, private sessions, and failing closed without FalkorDB."""
 import json
+import time
 
 import pytest
 import redis
@@ -9,6 +10,7 @@ from fastapi.testclient import TestClient
 from redis.backoff import NoBackoff
 from redis.retry import Retry
 
+from api import server
 from api.server import MemoryProbe, Walkthrough, create_app
 from api.session_store import SessionStore
 from app import memory
@@ -153,6 +155,22 @@ def test_document_view_marks_what_a_person_cannot_see(client):
     assert page["html"].lstrip().startswith("<!doctype html>")
     request = client.get("/api/documents/s_policy", headers=h).json()
     assert [s["hidden"] for s in request["segments"]] == [False] and request["html"] is None
+
+
+def test_a_run_whose_browser_left_does_not_block_the_next(client, monkeypatch):
+    """A reload or "Skip to result" leaves the old run waiting, unread, at its last
+    event. The next run waits for it to stop counting instead of being refused; a run
+    that is still being read keeps the case busy."""
+    h = start(client)
+    session = client.app.state.store.sessions[h["X-Antidote-Session"]]
+    session.run, session.parked = object(), time.monotonic()  # left waiting just now
+    assert stream(client, "/api/run", h)[-1]["type"] == "run_complete"
+    assert session.run is None
+
+    monkeypatch.setattr(server, "RUN_HANDOVER_S", 0.2)
+    session.run, session.parked = object(), None  # still being read
+    r = client.post("/api/run", headers=h, json={"pace": 0})
+    assert r.status_code == 409 and r.json()["error"] == "busy"
 
 
 def test_live_ai_is_refused_when_unavailable(client, monkeypatch):

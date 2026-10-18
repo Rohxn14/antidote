@@ -136,21 +136,30 @@ def _plain(e: Exception) -> str:
 
 def _session_stream(session: Session, events, on_complete=None) -> StreamingResponse:
     def produce():
-        seq = 0
-        session.busy = True
+        seq, mine = 0, object()
+        session.run, session.parked = mine, None
+
+        def sent(ev) -> str:
+            nonlocal seq
+            seq += 1
+            session.parked = time.monotonic()  # until the browser reads it (Session.busy)
+            return _line(seq, ev)
+
         try:
             for ev in events():
                 if ev["type"] == "security_alert":
                     session.alerts.append(ev["data"])
                 if ev["type"] == "run_complete" and on_complete:
                     on_complete()
-                seq += 1
-                yield _line(seq, ev)
+                yield sent(ev)
+                if session.run is not mine:
+                    return  # a newer run has taken over this case
+                session.parked = None
         except Exception as e:  # reported to the client as an `error` event
-            seq += 1
-            yield _line(seq, {"type": "error", "data": {"message": _plain(e), "recoverable": True}})
+            yield sent({"type": "error", "data": {"message": _plain(e), "recoverable": True}})
         finally:
-            session.busy = False
+            if session.run is mine:
+                session.run, session.parked = None, None
     return _stream(produce())
 
 
@@ -354,9 +363,21 @@ def document(document_id: str, session: Session = Depends(current)):
                               html=html)
 
 
+RUN_HANDOVER_S = 5.0
+
+
+def _free(session: Session, wait_s: float) -> bool:
+    """"Skip to result" cancels a run and starts another at once. The cancelled run stops
+    counting as busy about a second later (Session.busy), so wait for that, not refuse."""
+    deadline = time.monotonic() + wait_s
+    while session.busy and time.monotonic() < deadline:
+        time.sleep(0.05)
+    return not session.busy
+
+
 @router.post("/run")
 def run(body: c.RunRequest, session: Session = Depends(current)):
-    if session.busy:
+    if not _free(session, RUN_HANDOVER_S):
         raise ApiFailure(409, "busy", "the agents are already working")
     if body.mode == "live" and session.case:
         raise ApiFailure(400, "case_without_ai", "A case you build runs without AI: use the recorded agents")
