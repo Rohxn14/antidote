@@ -1,115 +1,57 @@
 # Antidote
 
-**A graph-native recovery layer for multi-agent memory, built on FalkorDB.**
+**Memory your AI agents can audit: a graph-native recovery layer for multi-agent memory,
+built on FalkorDB.**
 
-Antidote records the evidence behind every belief and decision that agents share,
-recomputes which conclusions are still supported when a source is quarantined, and
-blocks downstream actions that no longer have a valid justification, while keeping
-knowledge that is independently supported.
+When agents share memory, one poisoned, retracted or outdated source can become a fact, then a
+decision, then an action. Antidote records **why** every fact is believed, as a graph in
+FalkorDB. So it can check documents before anyone decides, stop actions whose reasons no
+longer hold, and remove exactly what rested on a bad source while keeping everything else.
 
-- **Live demo:** https://antidote-yqk6.onrender.com (first load may take a minute: free hosting wakes up)
+- **Live demo:** https://antidote-yqk6.onrender.com (the first load may take a minute)
   · **Under the hood:** [/#/under-the-hood](https://antidote-yqk6.onrender.com/#/under-the-hood)
-- **What the live site runs:** no model is called. By default it replays **a real run of
-  gpt-oss-120b on Groq** (recorded 18 Oct 2026, attempt 1 of 1): the agents' own code runs, and
-  each question gets the reply the model really gave, saved verbatim with its provenance in
-  [data/recordings/](data/recordings/). A badge on screen says so. You can switch to
-  **scripted** answers (written by hand in the LLM's format; the Buyer applies the request's
-  rules). Either way, everything Antidote does runs live in FalkorDB: every write, what still
-  holds, the checks before the Buyer decides, the preview, the repair and the approval check.
-  **Live AI** (the model called now) runs locally with an API key.
 - **Demo video:** _link added at submission_
 - **Tracks:** **02 Agent Memory and Coordination** (primary) · 01 Agents That Act on Connected Data
-- **New here?** [docs/explained.md](docs/explained.md) explains everything in plain words:
-  the graph, the agents, how the source is poisoned, what catches it, every file.
+- **In plain words:** [docs/explained.md](docs/explained.md) explains every part, file and decision
 - **Built for** Graph Hacks: Context for AI Agents (WeMakeDevs × FalkorDB), October 2026
+
+The demo is a procurement case: two agents read ten documents and buy parts for a medical
+robot from one of eight suppliers, and one page lies in hidden text written for AI. The live site replays **a real
+run of gpt-oss-120b on Groq**, recorded word for word ([data/recordings/](data/recordings/));
+no model is called on the site, and everything Antidote does runs live in FalkorDB.
 
 ---
 
 ## The problem
 
-Agents that remember also absorb poisoned, retracted or outdated information, and it
-spreads: a bad fact becomes a conclusion, the conclusion becomes a decision, and another
-agent acts on the decision. Memory poisoning is on OWASP's agentic Top 10 for this reason.
+Agents that remember also absorb poisoned, retracted or outdated information, and it spreads:
+a bad fact becomes a conclusion, the conclusion becomes a decision, and another agent acts on
+it. Memory poisoning is on OWASP's 2026 agentic Top 10. The usual fixes both fail:
 
-The usual fixes both fail:
+- **Delete the source:** everything derived from it survives.
+- **Roll back to a snapshot:** everything good learned since is lost.
 
-- **Delete the source.** The beliefs, decisions and orders derived from it survive.
-- **Roll back** to a snapshot. That erases everything good learned since.
+## The idea
 
-## The story, in 60 seconds
+1. **Every belief carries its reasons.** An agent cannot write a fact without the document it
+   came from (quoted exactly) or the facts it concluded it from. A reason is a `Justification`
+   node: it **holds** only if **all** its premises are valid, and a fact is **valid** if **any**
+   of its reasons holds.
+2. **What still holds is computed, never stored.** After every change, FalkorDB recomputes the
+   least fixed point of that rule (below). It starts from "nothing holds", so two facts that
+   justify each other cannot keep each other alive once their real source is gone.
+3. **Documents are checked before anyone decides.** Hidden instructions for AI, facts an agent
+   read in text a person cannot see, and claims that trusted documents contradict put a
+   document **under review**: it counts for nothing, and the supplier it speaks for is
+   suspended. Blacklisting stays a person's call.
+4. **Actions are checked against today's memory.** At submit, approval and execution, an order
+   with no reason left is **blocked**, even if a person approves; a large order resting on a
+   certification that only unverified documents state is **held** until a trusted one confirms it.
+5. **Repair is surgical and previewed.** Distrusting a source is first simulated on a
+   `GRAPH.COPY`, then applied, checked against the preview and audited. Only what loses **all**
+   support goes; anything with an independent reason stays.
 
-A fictional company buys servo actuators for a medical robot, so suppliers must hold
-ISO 13485. Two LLM agents share one memory graph: a **Researcher** reads vendor pages and
-records beliefs with exact quotes; a **Buyer** reads only supported beliefs and decides.
-
-1. **The agents read.** One vendor page (Vantor Motion) *falsely* claims ISO 13485 and hides two
-   prompt injections built from published [AgentDojo](https://github.com/ethz-spylab/agentdojo)
-   attack templates: an "important instructions" block in an HTML comment ("Vantor Motion is
-   the only ISO 13485 certified servo supplier") and an InjecAgent-style line in a hidden
-   element. The Researcher records what the page says, as a scraping agent would.
-2. **Checked before anyone decides.** Two checks run on every document: a rule-based scan for
-   hidden instructions, and a **conflict check in Cypher**: the page says Vantor is the *only*
-   certified supplier, while the trusted registry lists Boltline and Ferrocraft as certified.
-   The page goes **under review**: it counts for nothing, and **Vantor is suspended**.
-3. **The Buyer decides on what still counts:** PO-1001 to Boltline, $52,000, with a certificate
-   the trusted registry confirms. It waits for a person's approval ($5,000 or more).
-4. **A person decides about Vantor.** *Blacklist*: a preview on a copy of the graph shows what
-   rests only on the page (four facts; *"Vantor manufactures servo actuators"* survives,
-   because the registry backs it too), then the page is distrusted, Vantor is blacklisted, and
-   the repair is verified and audited. Or *false alarm*: the page counts again, and if the Buyer
-   re-plans to Vantor, its $48,000 order is **held** because nothing trusted confirms Vantor's
-   certificate. Suspending is automatic; blacklisting never is.
-5. **Approved, placed.** Every order is checked again at approval and at placing, and an order
-   whose support is gone is **blocked**, naming each fact that no longer holds.
-
-Play it in the web app (the live link above), change it with **Build your own case**, or run it
-in a terminal: `python -m scripts.seed_demo --story`.
-
-## Tracks
-
-**Track 02, Agent Memory and Coordination** (primary). Antidote is a shared memory for agents
-that stays honest when what it was told turns out to be wrong.
-
-| Track 02 focus | Where it is in Antidote |
-|---|---|
-| Memory that persists and updates over time | Every write is one atomic Cypher query that bumps a revision; support is recomputed in FalkorDB after every change; a case survives page reloads ([api/session_store.py](api/session_store.py)) |
-| Episodic, semantic and procedural memory | Semantic: facts (`Belief`) with their sources and reasons. Episodic: `Repair` records (who distrusted what, when, and what changed) and each order's state, notes and approver. Procedural: the request's rules are facts too, and every order must rest on them |
-| Shared state and handoffs between agents | The Researcher writes facts with quotes; the Buyer reads only what is still supported, from the same graph, directly or through MCP tools; a repair one agent never saw changes what the other may use |
-| High-concurrency reads and writes | Atomic writes; `GRAPH.COPY` serialised and retried after a 4-thread stress test failed 49 of 100 copies (200 of 200 after); cases are isolated graphs |
-| Separate memory per user or tenant | Each browser gets its own case graph, reached through an unguessable token mapped on the server; the browser never names a graph |
-
-**Track 01, Agents That Act on Connected Data.**
-
-| Track 01 focus | Where it is in Antidote |
-|---|---|
-| Multi-hop reasoning | Support is a least fixed point over chains of reasons (document, fact, conclusion, order); "what does this order rest on" is walked level by level in FalkorDB |
-| Graph queries as agent tools | The MCP server exposes `supported_beliefs`, `explain`, `check_order`, `preview_quarantine` and more ([app/mcp_server.py](app/mcp_server.py)) |
-| Tool selection through MCP | A tool-using Buyer lets the LLM choose which tools to call ([app/agents/tool_agent.py](app/agents/tool_agent.py)) |
-| Actions based on what the graph shows | The approval check holds, blocks or allows each order on the graph as it is now; a repair blocks every open order that lost its support |
-| Explainable results | "Why this supplier?", "What it rests on", blocked orders that name the facts and documents, "Why the change" after a re-plan |
-
-## What breaks without FalkorDB
-
-Everything. FalkorDB is not a cache or a log next to the product: it is where every decision is
-made, so there is nothing to fall back to.
-
-- **Run it yourself:** the **Under the hood** page runs each capability through the real code,
-  with the exact Cypher FalkorDB executed, then runs the same code with no database behind the
-  graph: **7 of 7 fail** (remember a fact, decide what holds, explain, preview a repair, check an
-  order, measure evidence, let agents read memory). Or in a terminal:
-  `python -m scripts.without_falkordb`.
-- **The app fails closed:** with FalkorDB unreachable every `/api/*` endpoint answers
-  `503 memory_unreachable`, the page shows an outage screen and recovers by itself when the
-  database is back. No order can be approved, because the approval check *is* a query.
-- **Tested:** [tests/test_without_falkordb.py](tests/test_without_falkordb.py) and the outage
-  test in [tests/test_api.py](tests/test_api.py). The reference solver in
-  [tests/reference.py](tests/reference.py) is only a test oracle, and a test checks that
-  `app/` and `api/` never import it.
-
-## Why the graph is central
-
-Remove FalkorDB and nothing works. "What may the agents still believe?" is not stored
-anywhere; it is **computed by Cypher queries inside FalkorDB**, every time memory changes:
+### The rule, and the queries that compute it
 
 ```text
 valid(Source)          = trust <> 'quarantined' AND not under review
@@ -117,14 +59,8 @@ holds(Justification)   = EVERY premise it cites is valid          (AND inside)
 valid(Belief/Decision) = AT LEAST ONE justification for it holds  (OR across)
 ```
 
-Antidote computes the **least fixed point** of this rule: reset every flag to false (sources
-take theirs from trust), then repeat one Cypher query that switches on newly holding
-justifications and newly valid conclusions, until a round changes nothing. Starting from
-false is what makes it **cycle-safe**: two beliefs that justify each other can never keep
-each other alive once their real root is gone. Formally, the valid beliefs are the least
-model of a propositional Horn program.
-
-The two queries that do it (from [app/support.py](app/support.py)):
+Reset every flag to false, then repeat one Cypher query until a round changes nothing
+([app/support.py](app/support.py)):
 
 ```cypher
 // Reset (one atomic query)
@@ -150,196 +86,37 @@ FOREACH (n IN newly_valid | SET n.valid = true)
 RETURN held, size(newly_valid) AS validated
 ```
 
-Python only repeats the round until FalkorDB reports zero changes. FalkorDB also does the
-rest of the real work: `GRAPH.COPY` gives the repair preview and the gate's what-if tests, and
-each procurement case is its own graph; one atomic query per write records reasons and refuses
-justifications that cite missing evidence. **All 59 queries the product depends on are in
-[docs/cypher.md](docs/cypher.md)**, generated from the code.
-
 ### Where each decision is made
 
-Every judgement is a Cypher query that runs inside FalkorDB. Python never downloads the graph
-to work out an answer itself.
+Every judgement is a Cypher query inside FalkorDB; Python never downloads the graph to work
+out an answer itself. **All 59 queries are in [docs/cypher.md](docs/cypher.md)**, generated
+from the code.
 
 | Question | Answered by |
 |---|---|
-| Which facts, reasons and orders are still supported? | The least fixed point above ([app/support.py](app/support.py)) |
-| Which facts may the agents see, and may the Buyer cite these? | `WHERE b.valid = true` queries ([app/memory.py](app/memory.py), [app/agents/buyer.py](app/agents/buyer.py)) |
-| Would this order survive losing any one trusted origin? Does each conclusion it rests on hold when only trusted documents count? | Scenario queries plus the fixed point, on a throwaway `GRAPH.COPY` ([app/gate.py](app/gate.py)) |
-| Why is this order blocked? Does it rest on a document under review? | What it rests on, walked one level per query, then filtered in Cypher ([app/gate.py](app/gate.py)) |
-| Does a document make a claim trusted documents contradict? Which suppliers does a document under review suspend? Is this order for a suspended or blacklisted supplier? | The conflict check, the review write and the gate's standing query ([app/review.py](app/review.py), [app/memory.py](app/memory.py), [app/gate.py](app/gate.py)) |
-| What would distrusting this document change? | The fixed point on a `GRAPH.COPY`, then a diff written in Cypher ([app/repair.py](app/repair.py)) |
-| How strong is each conclusion's evidence? | Each what-if world's answer is written onto one copy; a final query combines them ([app/evidence.py](app/evidence.py)) |
-| Why does the agent believe this? | A traversal from the conclusion down to its documents ([app/views.py](app/views.py)) |
+| Which facts, reasons and orders are still supported? | The fixed point above ([app/support.py](app/support.py)) |
+| What may the agents read, and may the Buyer cite these facts? | `WHERE b.valid = true` queries that skip suspended suppliers ([app/memory.py](app/memory.py), [app/agents/buyer.py](app/agents/buyer.py)) |
+| Does a document contradict a trusted one? Which suppliers does a review suspend? | The conflict check and the review write ([app/review.py](app/review.py), [app/memory.py](app/memory.py)) |
+| Is this order blocked, held, or fine? Why? | The gate's queries; what it rests on is walked one level per query ([app/gate.py](app/gate.py)) |
+| Would it survive losing a trusted origin? Is each certification confirmed by a trusted document? | Scenario queries plus the fixed point on a throwaway `GRAPH.COPY` ([app/gate.py](app/gate.py)) |
+| What would distrusting this document change? | The fixed point on a copy, then a diff in Cypher ([app/repair.py](app/repair.py)) |
+| How strong is each conclusion's evidence? | What-if worlds written onto one copy, combined by a final query ([app/evidence.py](app/evidence.py)) |
 
-What Python does: it repeats a query until FalkorDB reports no change (the fixed point's
-rounds, the levels of "what it rests on", the what-if worlds). It also applies the stakes
-policy (orders of $5,000 or more, and irreversible ones, need a person), moves an order
-through its states,
-runs the agents and the hidden-text scanner, and words the answers for people. One
-comparison stays in Python: after a repair, the result on the real graph is checked against
-the preview made on the copy. That spans two graphs, so it cannot be one query.
+Python repeats queries until FalkorDB reports no change, applies the stakes policy (orders of
+$5,000 or more, and irreversible ones, need a person), runs the agents and the hidden-text
+scanner, and words the answers for people.
 
-## How it works
+## What breaks without FalkorDB
 
-### Repair: preview, approve, apply, verify, audit
+Everything: FalkorDB is where every decision is made, so there is nothing to fall back to.
 
-1. **Detect** ([app/detector.py](app/detector.py)): named rule families for the injection
-   attacks shipped with AgentDojo (`important_instructions`, `tool_knowledge`,
-   `ignore_previous`, `injecagent`, `system_message`), hidden elements and text addressed to
-   an AI, or a manual report. AgentDojo's `direct` template ("TODO: {goal}") is deliberately
-   not covered: it is too close to ordinary text. The rules catch known patterns and only
-   *propose*; a novel phrasing can get through, which is why the repair and the gate, not
-   detection, are the guarantees.
-2. **Preview** ([app/repair.py](app/repair.py)): `GRAPH.COPY` the memory, store every flag as
-   `was_valid` on the copy, quarantine the source there (and every other source with the same
-   `origin`: copies and mirrors of a poisoned page carry the same lie, and the preview lists
-   them), recompute, and diff with Cypher:
-   what loses all support, what loses a reason but survives (and through which
-   justification), which open orders the gate will block, and which orders were already
-   executed (memory can be repaired; a real-world action needs a human).
-3. **Approve.** A human approves the *repair*. This approves no purchase.
-4. **Apply.** If `Meta.revision` moved since the preview, the preview is stale: rejected and
-   regenerated. Otherwise quarantine on the main graph, recompute, **verify the result equals
-   the preview**, and write a `Repair` node with `TARGETED` and `CHANGED {before, after}`.
-
-### The action gate
-
-The gate ([app/gate.py](app/gate.py)) runs at **submit, approve and execute**, always on
-the current graph (it recomputes first and never trusts an earlier answer).
-
-| Situation | Outcome |
-|---|---|
-| No justification holds | **blocked**, even if a human approves; a repair blocks it at once |
-| It is for a supplier that is suspended (a document about it is under review) or blacklisted | **blocked** |
-| It rests on a document under review (only possible if the fact is also backed elsewhere) | **held**: approval waits until a person decides about the document |
-| Amount ≥ $5,000 and a certification it rests on (directly or through a conclusion) is backed only by unverified documents | **held** until a trusted document confirms it |
-| Amount ≥ $5,000, or not reversible, or not robust (below) | **needs a human approval** |
-| Otherwise | may proceed automatically |
-
-*Robust* means: counting **only trusted sources** as roots, the order stays valid after
-losing **any single trusted origin**. Sources that repeat the same original claim share an
-`origin` and count once. It is tested on a throwaway `GRAPH.COPY`, so a justification that
-needs origin A *and* origin B is correctly not counted as redundancy.
-
-**These are configurable demo policy values**, not universal safety rules
-([app/config.py](app/config.py): `AUTO_MAX_AMOUNT = 5000`, `MIN_INDEPENDENT_TRUSTED_ROOTS = 2`).
-
-Order states: `draft → pending_approval → authorized → executed`, or `blocked`.
-
-### Evidence strength
-
-Antidote cannot tell what is true, but it can tell how much each conclusion rests on
-sources you don't trust ([app/evidence.py](app/evidence.py)). Every belief and decision is
-**unsupported**, **unverified only**, resting on a **single trusted origin**, or **robust**
-(still supported on trusted sources alone after losing any one trusted origin, which is
-what the gate demands of automatic actions). It is computed on one throwaway `GRAPH.COPY`
-with the gate's what-if queries and shown in the web app (each fact's colour bar in the graph,
-the badges in "Why this supplier?") and in the MCP tools. In the demo, Vantor's
-ISO 13485 claim is *unverified only* from the start: the lie was visible before anyone
-knew it was a lie.
-
-### Agents and MCP tools
-
-- The **Researcher** ([app/agents/researcher.py](app/agents/researcher.py)) gets the raw
-  page, HTML comments included, as a scraping agent would. Every claim must carry a quote that
-  appears **verbatim** in the source, and **numbers must come from the evidence**: a claim may
-  not state numbers its quote doesn't (this stops a lie laundered through a real quote from a
-  *trusted* source, e.g. "ISO 13485" claimed from a registry line that says ISO 9001), and a
-  conclusion may not state numbers its premises don't.
-- The **Buyer** ([app/agents/buyer.py](app/agents/buyer.py)) is prompted with **valid beliefs
-  only**, and its plan is re-checked at write time: citing an unsupported belief is
-  rejected, and its quantity and unit price must appear in the beliefs it cites. The order
-  amount is computed in code, not by the LLM.
-- Both use strict structured output (JSON schema) through any OpenAI-compatible provider
-  (Groq by default). Without a key, the demo and the tests replay the Researcher's answers
-  from hand-authored fixtures in the LLM's exact format, and the Buyer applies the request's
-  rules to what memory supports (D61); a real gpt-oss-120b run is recorded in
-  `data/fixtures/live/`.
-- **MCP server** ([app/mcp_server.py](app/mcp_server.py), `python -m app.mcp_server`):
-  `supported_beliefs`, `explain`, `list_orders`, `check_order`, `scan_sources`,
-  `preview_quarantine`, `record_extraction`, `record_inference`, `propose_purchase_order`.
-  **There is deliberately no tool to approve a repair or a purchase**: agents propose,
-  humans approve, and the tool surface enforces it. A tool-using Buyer
-  ([app/agents/tool_agent.py](app/agents/tool_agent.py)) lets the LLM choose which tools
-  to call.
-
-### What real LLM runs taught us
-
-Recording the agents with `openai/gpt-oss-120b` exposed three failure modes that the
-hand-written fixtures never did, and each became a guard with a regression test:
-
-- **Merged claims.** The model filed the registry's "Vantor: ISO 9001" and the page's
-  "Vantor: ISO 13485" under one belief id. Merged, the trusted registry would have kept the
-  page's lie alive after the quarantine, and the poisoned $48,000 order would have survived.
-  Now an id can only be reused for a claim whose numbers do not conflict.
-- **Quotes with markup.** It quoted table rows with their HTML tags; the quote check now
-  compares page and quote in the same normalised form (still verbatim).
-- **Names for ids** and swapped fields: prompts now show ids explicitly, schemas describe
-  every field, and a bad answer is reported as a rejection instead of crashing.
-- **Obedience is not needed for poisoning.** Against the AgentDojo-style injection, the model
-  did not obey the hidden instruction in our final run, but it faithfully recorded the page's
-  *visible* false certification, and the Buyer drafted the poisoned order from it. No injection
-  detector catches a plainly stated lie; recording why, and repairing, does.
-- **The numbers check is strict on purpose.** It refused claims that added a product's model
-  number ("VM-40", "QD-35") that their quote did not contain. Loosening it to "numbers anywhere
-  on the page" would let "Acme holds ISO 13485" through on a registry page that lists ISO
-  13485 for someone else, so the check stays strict and the prompt now asks for numbers to be
-  quoted. In the final run it refused 2 of 32 claims, neither affecting any decision.
-
-The first is exactly the limitation stated below, caught in practice: Antidote is only as
-complete as the dependencies the agents record, so the write path checks them.
-
-With these guards the final live run (against the AgentDojo-style page) holds end to end:
-32 claims extracted from 6 sources (2 refused, above), PO-1001 to Vantor for $48,000,
-blocked after the repair, and PO-1002 to Boltline for $52,000. The MCP tool-using Buyer,
-after the repair, called
-`supported_beliefs` (Vantor's beliefs were invisible to it) and then
-`propose_purchase_order` for Boltline, which waited for a human.
-
-**The recorded run the live site replays** (18 Oct 2026, `scripts/record_run.py`, 14 calls,
-attempt 1 of 1) runs today's flow with 8 suppliers. What the real model did:
-
-- It recorded the hidden "only certified" sentence this time, tagged as an exclusive claim, so
-  all three checks put Vantor's page under review before the Buyer decided. The Buyer, seeing
-  only what still counts, ordered from Boltline ($52,000), the honest answer.
-- The numbers check refused 6 claims where the model added product model numbers (BA-S45,
-  FS-50, QD-35, TM-30) that the quoted sentence doesn't contain.
-- It skipped the registry rows for the newer suppliers, so nothing trusted in memory confirms
-  Nexapoint's certificate, and an order for Nexapoint is held: Antidote can only reason over
-  what the agents recorded.
-- **It found a gap in Antidote.** After a false alarm is cleared, the real Buyer ordered from
-  Vantor citing its certification fact directly, not through a conclusion, and the
-  verification hold, which only checked conclusions, let the $48,000 order through. The hold
-  now checks every **certification** an order rests on (D64). The model's richer conclusions
-  ("qualifies" also citing a supplier's own delivery time) would otherwise have held honest
-  orders. The recording itself is unedited; its provenance still shows what the old rule did.
-
-### Build your own case
-
-In the web app, **Build your own case** opens a form: the delivery deadline and three to six
-suppliers, each with its price, delivery time, whether its page claims ISO 13485, whether the
-trusted registry confirms it, whether its page *openly* says it is the only certified supplier,
-and whether it hides instructions for AI readers. Seven presets start you off: the demo story,
-an open lie the registry contradicts, a plain lie, a lie nothing contradicts, two problems at
-once, six suppliers with one cheat, and nothing wrong. [app/casebuilder.py](app/casebuilder.py)
-writes the documents and the agents' answers from the form, and they go through exactly the
-same steps as the story: the Researcher's checks, FalkorDB, the checks before the Buyer decides,
-the approval check, the preview, the repair and re-planning. **No AI runs in a built case**, and
-the screen says so: the Researcher records what each document says (hidden text included) and
-the Buyer orders from the cheapest supplier that qualifies and delivers in time, unless a fact
-it may rely on says one supplier is the only certified one, which is what a successful
-injection looks like. In the story, the same planner stands in for the recorded Buyer, so its
-answer follows what memory supports at that moment.
-
-### The Playground: design your own world
-
-The Streamlit Lab's **Playground** (run locally: `streamlit run ui/streamlit_app.py`) loads a world you write in JSON into a private graph:
-sources with a trust level and an origin, beliefs and decisions with
-`"because": [["a", "b"], ["c"]]` (a AND b, OR c). Then quarantine, lift, submit orders and
-read the evidence. Five example worlds each teach one idea (AND/OR, loops, the gate, the
-agent checks), and [docs/playground.md](docs/playground.md) has a manual test plan and
-recipes for attacking Antidote yourself.
+- The **Under the hood** page runs each capability through the real code with the exact Cypher
+  and timings, then with no database behind the graph: **7 of 7 fail**. In a terminal:
+  `python -m scripts.without_falkordb`.
+- With FalkorDB unreachable, every `/api/*` endpoint answers `503`, the page shows an outage
+  screen and recovers by itself. No order can be approved: the approval check *is* a query.
+- Tested in [tests/test_without_falkordb.py](tests/test_without_falkordb.py); a test also checks
+  that `app/` and `api/` never import the reference solver used to verify the Cypher.
 
 ## Graph data model
 
@@ -368,300 +145,156 @@ graph LR
 | `Repair` | `id`, `created_at`, `approved_by`, `revision` |
 | `Meta` | `id: 'graph'`, `revision` (bumped by every write; rejects stale previews) |
 
-Why a `Justification` node instead of plain "derived from" edges: plain edges cannot say
-which premises belong **together**. "A and B together imply C" and "A alone, or B alone,
-implies C" look identical as edges; as justifications they are one node with two premises
-versus two nodes with one premise each.
+A `Justification` node, not a plain "derived from" edge, because edges cannot say which
+premises belong **together**: "A and B together imply C" and "A alone, or B alone, implies C"
+look the same as edges, and differ as justifications.
 
-Rules the write path ([app/memory.py](app/memory.py)) enforces, each in one atomic query:
-every premise must exist (found count = cited count, so a typo fails closed instead of
-weakening the reason); exactly one `SUPPORTS` per justification; justifications are
-append-only; each stores `premise_count`, so deleting evidence can never turn "A and B" into
-"A alone"; every write bumps `Meta.revision`. `valid` and `holds` are a cache written only by
-the support engine. Labels and allowed values live in [app/schema.py](app/schema.py).
+**How the agents use it.** The Researcher writes facts with their quotes through
+[app/memory.py](app/memory.py) (one atomic query per write; a reason citing a missing fact is
+refused). The Buyer is prompted only with supported facts, and its plan is re-checked when it
+is written. Agents can also use the graph as **MCP tools** ([app/mcp_server.py](app/mcp_server.py)):
+`supported_beliefs`, `explain`, `check_order`, `preview_quarantine`, `record_extraction` and
+more, with deliberately **no tool to approve** a repair or a purchase.
 
-## Benchmark
+## Results
 
-**The question.** A poisoned source gets into memory and the agents build facts and orders
-on it. Later the source is found out. How cleanly can each method remove it: everything that
-rested on it, and nothing else?
+**An external test set: RippleEdits** (Cohen et al., TACL 2024): 15 cases loaded as a trusted
+knowledge base plus one unverified source per edit; each edit is retracted in turn. Ground truth
+comes from an independent solver ([tests/reference.py](tests/reference.py)) that shares no code
+with the engine.
 
-**Ground truth** comes from an **independent solver**, not from Antidote's engine: the
-Dowling–Gallier linear-time Horn algorithm in [tests/reference.py](tests/reference.py), which
-shares no code with it, works out exactly what loses all support once the source is gone.
-
-**The three methods**, each run on its own copy of the same graph (`python -m scripts.benchmark`
-snapshots each scenario just before the first poisoned source arrives):
-
-- **Antidote:** stop trusting the source, recompute support in FalkorDB, verify against the
-  preview, record the repair. A fact with another valid reason survives.
-- **Delete source only:** what a plain memory store does today: delete the poisoned record
-  and leave everything built on it in place.
-- **Full rollback:** restore the snapshot taken just before the poisoned source arrived. Clean,
-  but everything learned since is thrown away, good and bad alike.
-
-**The metrics** (lower is better, except exact cases):
-
-- **Exact cases:** cases where the method's result matches ground truth exactly.
-- **Residual contamination:** facts and decisions still active although nothing supports them
-  any more: the poison's leftovers.
-- **Collateral withdrawal:** facts and decisions that are still supported but were withdrawn or
-  lost anyway: good knowledge thrown away.
-- **Stale-action authorization:** purchase orders left without support that the approval check
-  would still let through.
-- **Repair time:** from the confirmed quarantine to the verified repaired state (local Docker).
-
-### An externally defined test set: RippleEdits
-
-Our scenarios are our own, so the headline result uses cases someone else defined.
-[RippleEdits](https://github.com/edenbiran/RippleEdits) (Cohen et al., TACL 2024) pairs a
-factual edit with the facts that should change because of it (logical generalisation,
-two kinds of composition, subject aliasing) and the facts that must not (relation
-specificity, forgetfulness). We loaded the structure of 15 cases (5 per subset, chosen by a
-fixed rule in [scripts/import_rippleedits.py](scripts/import_rippleedits.py)) into one graph:
-a trusted knowledge base, one unverified source per edit, and each dependent fact justified
-by the edit plus the knowledge-base hop it needs. Then each edit is retracted in turn.
-
-| Method | Exact cases | Residual contamination | Collateral withdrawal |
+| Method | Exact cases | Left behind (should go) | Lost (must stay) |
 |---|---|---|---|
 | **Antidote** | **15 / 15** | **0** of 362 | **0** of 168 |
-| Delete source only | 2 / 15 | 362 | 0 |
-| Full rollback | n/a: the dataset has no timeline to roll back to | | |
+| Delete the source only | 2 / 15 | 362 | 0 |
+| Roll back | n/a: the dataset has no timeline | | |
 
-Read this honestly:
-- **The facts and the must-not-change labels are theirs; the justification edges are our
-  encoding** of their categories, so this checks the engine on someone else's cases, not an
-  LLM's ability to record dependencies. The external part that matters most is collateral:
-  168 facts the dataset says must not change, and none were withdrawn.
-- **Ground truth is what loses all support**, computed from the dataset's own facts by the
-  independent reference solver. RippleEdits' labels describe *inserting* an edit: 32 of the 394
-  facts it says follow from the edits are also stated by its knowledge base (in 2 cases the
-  edit restates a known fact), so a *retraction* must keep them, and Antidote does.
-- **Real identities are removed.** RippleEdits is built from Wikidata facts about real people
-  with deliberately false edits, so only the structure is committed: every entity and alias is
-  a placeholder (E1, A1...). MIT licence notice in
-  [data/rippleedits/cases.json](data/rippleedits/cases.json).
+The facts and the must-not-change labels are theirs; the justification edges are our encoding
+of their categories. On our own scenarios (the demo, and worlds with 20 and 100 vendors),
+Antidote also leaves nothing behind and loses nothing, where rollback loses up to 396 good
+facts and decisions. Details: [docs/benchmark.md](docs/benchmark.md).
 
-### Our scenarios
+**A scenario suite: 400 random cases** with 4 to 12 suppliers, attacks from AgentDojo's and
+InjecAgent's published templates hidden the way documented incidents did (The Guardian, 2024;
+Nikkei, 2025), plus cases built to make Antidote fail. A reviewer who approves everything
+presses Approve; the result is judged against the truth ([scripts/scenario_suite.py](scripts/scenario_suite.py)).
 
-The demo story, and synthetic procurement worlds with 20 and 100 vendors where several
-sources are poisoned at once.
-
-| Scenario | Method | Residual contamination | Collateral withdrawal | Stale-action authorization | Repair time |
-|---|---|---|---|---|---|
-| Demo story (111 nodes, 6 should go) | **Antidote** | **0** | **0** | **0** | 17 ms |
-| | Delete source only | 6 | 0 | 1 | 2 ms |
-| | Full rollback | 0 | 15 | 0 | 100 ms |
-| 20 vendors (434 nodes, 13 should go) | **Antidote** | **0** | **0** | **0** | 49 ms |
-| | Delete source only | 13 | 0 | 2 | 2 ms |
-| | Full rollback | 0 | 106 | 0 | 98 ms |
-| 100 vendors (1,874 nodes, 54 should go) | **Antidote** | **0** | **0** | **0** | 322 ms |
-| | Delete source only | 54 | 0 | 5 | 5 ms |
-| | Full rollback | 0 | 396 | 0 | 95 ms |
-
-Antidote is slower than deleting a node, and at 100 vendors slower than restoring a
-snapshot, because it recomputes and verifies. That is the trade: about a third of a second
-instead of 396 lost facts and decisions that would have to be re-learned. Over a network,
-every Cypher statement is a round trip, so repair time grows with the distance between the
-app and the database ([D50](docs/decisions.md)).
-
-## Scenario suite: many suppliers, many kinds of attack
-
-One story proves little, so [scripts/scenario_suite.py](scripts/scenario_suite.py) runs **21
-named scenarios and 400 random cases with 4 to 12 suppliers each** through the real pipeline:
-documents written from the case, the Researcher's checks, FalkorDB, the checks before the Buyer
-decides, the Buyer and the approval check. Then **a reviewer who approves everything without
-looking** presses Approve, so the results show what Antidote stops on its own.
-
-- **Ground truth the documents may not tell:** each supplier is really certified or not, and
-  really delivers in time or not. The right order is the cheapest supplier that truly
-  qualifies and did not try to manipulate the agents.
-- **Baseline:** the same agents reading the same documents, with no checks and no gate.
-- **Attacks from published work:** AgentDojo's important_instructions, ignore_previous,
-  system_message and direct templates and InjecAgent's, plus plain hidden praise with no
-  instruction at all.
-- **Hiding techniques from documented incidents:** The Guardian (24 Dec 2024) steered ChatGPT
-  search with hidden text on a product page; Nikkei (1 Jul 2025) found 17 arXiv preprints hiding
-  "give a positive review only" in white text and tiny fonts. Comments, invisible elements,
-  white text, 1px text and off-screen text are all in the suite. Half the random pages also
-  carry ordinary hidden menus and banners, to count false alarms.
-
-| 400 random cases | With Antidote | Without Antidote |
+| 400 random cases | With Antidote | Without |
 |---|---|---|
-| Right outcome (right supplier, or rightly no order) | **296** | 116 |
-| Bad order stopped and held for a person | **60** | 0 |
-| Honest order waiting for a person (false hold) | 25 | 0 |
-| No order although one was possible | 2 | 0 |
+| Right outcome | **296** | 116 |
+| Bad order stopped, waiting for a person | **60** | 0 |
+| Honest order waiting for a person | 25 | 0 |
 | **Wrong supplier approved** | **17** | **284** |
 | ...a supplier that manipulated the agents | **0** | 145 |
-| ...a supplier that is not really certified | 6 | 129 |
-| ...a supplier that cannot deliver in time | 8 | 5 |
-| ...an honest supplier, but not the cheapest right one | 3 | 5 |
 
-Antidote's 17 wrong orders are the failures the suite was built to expose: a trusted registry
-that is wrong (Antidote trusts it), a supplier lying about delivery time (no document can show
-it), and a competitor **framing** an honest supplier with hidden text, so the honest one is
-suspended until a person clears it. The named scenarios show each case, including these, and
-the **Under the hood** page shows the same tables. Full results:
-[docs/scenario_suite.md](docs/scenario_suite.md); every case is in `data/scenario_suite.json`.
+Antidote's 17 wrong orders come from failures built in on purpose: a wrong trusted registry, a
+delivery-time lie, and a competitor framing an honest supplier. The cases are generated, so
+this measures the checks across many situations, not a real model on real pages.
 
-**What this does not prove.** The suppliers, documents and agents' answers are generated,
-so this measures Antidote's checks and gate across many cases, not a real model reading real
-supplier pages. Real-world proof needs real documents and a pilot: run Antidote beside human
-buyers and compare what it would have stopped.
+**A real model run.** Recorded with gpt-oss-120b ([scripts/record_run.py](scripts/record_run.py),
+every prompt and reply verbatim, with provenance): the model recorded the hidden claim, and all
+three checks caught the page before the Buyer decided; the numbers check refused 6 claims where
+the model added product numbers its quotes don't contain. It also **found a gap in Antidote**:
+after a false alarm, the model cited a certification directly and the hold let the order
+through. The hold now checks every certification an order rests on (decision D64).
 
-## Correctness
+**Tests:** 190 (`python -m pytest`), including 25 random graphs (21 with cycles) checked against
+the independent solver, the whole story over HTTP, the approval check at the endpoints, the
+recorded run replayed answer for answer, and failing closed without FalkorDB.
 
-190 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+## Where else this applies
 
-- Required cases: alternative justifications; a multi-premise justification losing one
-  premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
-  sustain itself; a cycle with an independent root becomes valid; a trusted source added
-  after a repair restores downstream conclusions; a queued order whose support is revoked is
-  blocked by the gate.
-- Stale previews are rejected; copies of one claim count as one trusted root; a
-  justification citing a missing premise is rejected and writes nothing.
-- **Fuzzing:** 25 random graphs (21 with cycles), each checked in 5 trust states, must agree
-  with the independent reference solver on every node and justification.
-- The full story end to end over HTTP, the approval check at the endpoints themselves
-  (holds, blocks, re-checks at execute), private sessions, eviction under memory pressure,
-  failing closed without FalkorDB, built cases (hidden text and open lies caught before the
-  Buyer decides, suspension, blacklisting, false alarms, six suppliers), the Streamlit Lab clicked through headless, every Playground world,
-  and the MCP tools through a real MCP client. The web app was also walked through end to end
-  in a headless browser, locally and on the live deployment.
-- **Concurrency.** Two intermittent failures led to a FalkorDB detail: `GRAPH.COPY` forks the
-  server, and only one fork runs at a time, so concurrent copies failed with "could not fork"
-  (49 of 100 in a 4-thread stress test). Every copy now goes through one helper that
-  serializes and retries: 200 of 200 succeeded across two processes. A demo with many
-  visitors would have hit this.
+Anywhere agents act on what they remember, and sources can turn out to be wrong:
+
+- **Customer support:** answers and refunds built on a help article. When the article is
+  corrected or withdrawn, exactly the answers and pending actions that relied on it are found
+  and stopped; those also backed by the current policy stay.
+- **Research assistants:** conclusions drawn from papers. When a paper is retracted, conclusions
+  resting only on it fall, the rest stay, and the chain is shown for each.
+- **Clinical and pharmacy support:** recommendations resting on a guideline, a lab value or a
+  drug label. A superseded guideline or a recall blocks the orders that relied on it until a
+  clinician reviews them.
+- **Compliance, KYC and sanctions screening:** approve or block decisions resting on list
+  entries. When a list is corrected, only the decisions that relied on the wrong entry reopen.
+- **Security operations:** automated blocks based on threat-intelligence feeds. When an
+  indicator turns out to be a false positive, the blocks resting only on it lift.
+- **Personal assistants with long-term memory:** "I moved", "that's no longer my number". A
+  correction removes exactly the memories and plans derived from the old fact.
+- **Any agent that reads the web:** pages can hide instructions for AI. Checking documents before
+  they count, and tracing what each answer rests on, applies directly.
 
 ## Run it locally
 
-Requirements: Docker, Python 3.12, Node 22 (for the web app).
+Requirements: Docker, Python 3.12, Node 22 or newer. About four minutes from clone to running
+(3 min 41 s on our laptop with pip's cache warm, filmed in the demo video); no API key needed.
 
 ```bash
 git clone https://github.com/Rohxn14/antidote.git
 cd antidote
 docker compose up -d                  # FalkorDB on :6379, FalkorDB Browser on :3000
-python -m venv .venv
-.venv\Scripts\activate                # macOS/Linux: source .venv/bin/activate
+python3.12 -m venv .venv              # Windows: py -3.12 -m venv .venv
+source .venv/bin/activate             # Windows: .venv\Scripts\activate (Git Bash: source .venv/Scripts/activate)
 pip install -r requirements.txt
-cp .env.example .env                  # Windows PowerShell: copy .env.example .env
-
-cd web && npm ci && npm run build && cd ..   # build the web app once
-uvicorn api.server:app --port 8000    # the web app and its API: http://localhost:8000
-
-python -m pytest                      # 190 tests
-python -m scripts.seed_demo --story   # the whole story in the terminal
-streamlit run ui/streamlit_app.py     # the Lab with the Playground: http://localhost:8501
-python -m scripts.benchmark           # the benchmark table
-python -m app.mcp_server              # MCP server (stdio) for any MCP host
+cp .env.example .env
+cd web && npm ci && npm run build && cd ..
+python -m pytest -q                   # 190 tests
+uvicorn api.server:app --port 8000    # open http://localhost:8000
 ```
 
-To look inside, open the FalkorDB Browser at http://localhost:3000, pick the graph
-`antidote` and run `MATCH p=(:Justification)-[]->() RETURN p`.
+More:
 
-**Live LLM (optional).** Everything above runs without an LLM: hand-authored Researcher
-answers and a rule-based Buyer. To run the agents
-for real, put `LLM_API_KEY` and `LLM_MODEL` (a Groq model with structured outputs and tool
-use) in `.env`, then `python -m scripts.record_fixtures` (records to `data/fixtures/live/`)
-and `python -m scripts.run_tool_agent` (the MCP tool-using Buyer). `data/fixtures/live/`
-already holds a run from `openai/gpt-oss-120b` on Groq; replay its story with
-`DEMO_FIXTURES=live python -m scripts.seed_demo --story`.
+- `python -m scripts.scenario_suite` (the scenario suite) · `python -m scripts.benchmark`
+  (the benchmark) · `python -m app.mcp_server` (the MCP server, stdio) ·
+  `streamlit run ui/streamlit_app.py` (the Lab, with a Playground for your own worlds).
+- **Real agents:** put `LLM_API_KEY` and `LLM_MODEL` (a Groq model with structured outputs, for
+  example `openai/gpt-oss-120b`) in `.env` and pick **Live AI** in the app. To record a new run
+  for replay: `python -m scripts.record_run` (every attempt is logged in
+  `data/recordings/attempts.log`).
+- **Inside the graph:** the FalkorDB Browser at http://localhost:3000, graph `antidote`.
+- **FalkorDB Cloud:** put its host, port, username and password in `.env.cloud` and set
+  `ENV_FILE=.env.cloud`. **Deploy:** [render.yaml](render.yaml) (one Docker service on Render;
+  live AI stays off there); [.github/workflows/keepalive.yml](.github/workflows/keepalive.yml)
+  pings it during judging.
 
-**FalkorDB Cloud.** Put the instance's host, port, username and password in `.env.cloud`
-and prefix any command with `ENV_FILE=.env.cloud` (PowerShell: `$env:ENV_FILE=".env.cloud"`).
+## Tracks
 
-**Deploy.** [render.yaml](render.yaml) deploys the web app (React, served by FastAPI, one
-Docker service) on Render; enter the FalkorDB secrets in the dashboard.
-[.github/workflows/keepalive.yml](.github/workflows/keepalive.yml) asks the app for its health
-every 12 minutes during judging (set the `APP_URL` repository variable): the app pings FalkorDB
-to answer, so neither the free web service nor the free database instance goes to sleep.
+- **02 Agent Memory and Coordination (primary):** memory that persists and updates (atomic
+  writes, recomputed support); episodic, semantic and procedural memory (repair records, facts
+  with reasons, the request's rules as facts); shared state between agents (the Buyer reads
+  only what the Researcher's facts still support); separate memory per user (a private graph
+  per case, behind an unguessable token).
+- **01 Agents That Act on Connected Data:** multi-hop reasoning (support through chains of
+  reasons); graph queries as agent tools and tool selection through MCP; actions based on what
+  the graph shows (the approval check); explainable results ("Why this supplier?").
 
-**Memory scope.** Each browser works on one **procurement case**: a private graph in FalkorDB
-that the agents and the person share for that case. It is **persistent within the case**: a
-page reload resumes it (the case's random token is kept in the browser's localStorage and
-mapped to the graph on the server; the browser never names a graph). It is **cleaned up after
-2 hours without activity**, and when 25 cases are open or the database passes 70 MB (of
-FalkorDB Cloud's free 100 MB), the least recently used idle case is evicted first. Cases are
-never shared between browsers.
+## Honest limitations
 
-## Project layout
+- Antidote follows the dependencies the agents recorded. A dependency they never recorded can
+  leave contamination behind; exact quotes, existing ids and numbers checks limit this but
+  cannot remove it.
+- It cannot know if a trusted source is wrong: a wrong registry, or a delivery time no document
+  contradicts, passes (measured in the scenario suite).
+- The scanner knows published attack patterns and documented hiding techniques; a lie written
+  in plain, visible text passes it, and the conflict check knows one kind of contradiction. The
+  certification hold is the backstop.
+- Suspension can be abused: a competitor can frame an honest supplier with hidden text, and it
+  stays suspended until a person clears it.
+- The live site replays one recorded model run; another run may answer differently. Live AI
+  runs locally with a key.
+- Support is recomputed over the whole graph after each change: fine for thousands of facts;
+  millions would need incremental recomputation.
+- All data is synthetic; every company is fictional.
 
-```text
-app/schema.py     labels, relationship types, allowed values; ensure_schema()
-app/memory.py     the write path: one atomic Cypher query per write
-app/support.py    the support engine (least fixed point in Cypher)
-app/gate.py       the action gate and the trusted-roots what-if test
-app/repair.py     preview on a copy, stale check, apply, verify, audit
-app/detector.py   rule-based injection signs and hiding techniques
-app/review.py     checks before the Buyer decides: scan, hidden facts, conflict check; review
-app/agents/       Researcher, Buyer, tool-using agent
-app/mcp_server.py Antidote memory as MCP tools
-app/llm.py        OpenAI-compatible client with structured output
-app/demo.py       the demo scenario and story steps
-app/views.py      read-only queries for the UI and MCP tools
-app/evidence.py   evidence strength (unverified only ... robust)
-app/scenario.py   the Playground: load a JSON world through memory.py
-api/server.py     the web API (FastAPI): streams, actions; fails closed without FalkorDB
-api/session_store.py  procurement cases: one private graph each, idle cleanup, eviction
-api/contract.py   typed events and responses (mirrored in web/src/contract.ts)
-app/runner.py     runs the agents step by step and reports each step as an event
-app/casebuilder.py  build-your-own cases: documents and rule-based agent answers from a form
-app/centrality.py the capability walkthrough: each capability with its real Cypher
-web/              the web app (React + TypeScript + Vite, React Flow for the graph)
-app/sessions.py   the Streamlit Lab's private graph copy per visitor
-ui/               the Streamlit Lab (Playground)
-scripts/          seed_demo, benchmark, scenario_suite, record_fixtures, run_tool_agent, export_cypher
-data/             synthetic vendor pages, registry, policy memo, agent fixtures
-scenarios/        example Playground worlds
-docs/             decisions.md (every design decision), cypher.md, benchmark.md, scenario_suite.md,
-                  explained.md, demo_script.md, video_roadmap.md, playground.md
-tests/            pytest suite and the reference solver
-```
+## Prior art
 
-## Prior art, and what is different
-
-Antidote builds on old ideas. **Truth maintenance systems** (1970s–80s AI) record
-justifications and retract conclusions when their support goes. **AGM belief revision**
-formalises how a belief set should change. Recent agent-memory work applies graphs and belief
-revision to LLM agents (for example Kumiho and BeliefMem), and **Memward** adds provenance and
-rollback to agent memory. OWASP's 2026 agentic Top 10 names memory poisoning as a threat.
-The demo's attack and the detector's rule families follow **AgentDojo** (Debenedetti et al.,
-*AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM
-Agents*, NeurIPS 2024 Datasets and Benchmarks; MIT licence): we use its published attack
-templates word for word (a few lines of text, plus the InjecAgent template it ships) with a
-fictional goal. We do not run AgentDojo's benchmark (its workspace, travel, banking and Slack
-task suites) or include its code. The external test
-set comes from **RippleEdits** (Cohen, Biran, Yoran, Globerson, Geva, *Evaluating the Ripple
-Effects of Knowledge Editing in Language Models*, TACL 2024; MIT licence), anonymised.
-
-What Antidote adds:
-
-- **Surgical repair instead of rollback:** only what loses all support is withdrawn.
-- It follows contamination **into decisions and actions, across agents**, not just beliefs.
-- **Preview on a graph copy** before anything changes, with stale-preview rejection.
-- A **current-state action gate** that a human approval cannot override.
-- A **measured benchmark** against delete-only and rollback, with an independent oracle.
-
-## Honest limitation
-
-Antidote guarantees that beliefs are consistent with the support graph it recorded. It
-**cannot** guarantee that an LLM recorded every real dependency, or that a trusted source is
-factually correct. A missing dependency can leave contamination behind. We limit this
-(agents must cite existing IDs, quotes must appear verbatim, the Buyer only sees supported
-memory), but we do not claim to eliminate it. Detection knows published injection patterns
-and the hiding techniques of documented incidents; the hidden-fact rule catches any fact taken
-from text a person cannot see, but an attack written in plain, visible text gets through the
-scan. Suspension can be abused: a competitor can frame an honest supplier with hidden text, and
-it stays suspended until a person clears it (measured in the scenario suite). The conflict check only knows one kind of contradiction ("the only one certified"
-against trusted certification records); a claim nothing trusted contradicts still steers the
-Buyer, and only the verification hold stops the order (the builder's "A lie nothing
-contradicts" shows this). A plain lie is caught by the verification hold only if no trusted
-document confirms it, and if the trusted registry is itself wrong, Antidote cannot know. Within one case,
-operations run one at a time; two steps span several queries and fail safe (D51). In a case
-you build, no AI runs: the agents follow stated rules. All data is synthetic; every vendor and
-company is fictional.
+Truth maintenance systems (1970s–80s) record justifications and retract conclusions when their
+support goes; AGM belief revision formalises how beliefs should change; recent agent-memory work
+(for example Kumiho, BeliefMem, Memward) adds graphs, revision or rollback. Antidote brings
+justification-based support to **multi-agent memory and its actions**: computed inside a graph
+database, previewed on a copy, enforced at approval time, and measured against an independent
+oracle. The attack texts come from **AgentDojo** (Debenedetti et al., NeurIPS 2024; MIT licence:
+its published templates, word for word, with a fictional goal; not its benchmark or code); the
+external test set from **RippleEdits** (Cohen et al., TACL 2024; MIT licence; anonymised).
 
 ## AI assistance disclosure
 
@@ -675,3 +308,17 @@ led to the approval holds and the case builder), set the test expectations, type
 including by hand on the live app. Claude proposed implementation options, wrote most of the
 code and tests under that direction, and explained each part. Commits made with the assistant
 carry a `Co-Authored-By` trailer.
+
+## Project layout
+
+```text
+app/        the engine: support (fixed point), memory (writes), gate, repair, review (checks
+            before deciding), evidence, agents, MCP server, case builder, recordings
+api/        the web API (FastAPI): streams, actions, sessions; fails closed without FalkorDB
+web/        the web app (React, TypeScript, React Flow)
+scripts/    benchmark, scenario suite, record_run, export_cypher, without_falkordb, seed_demo
+data/       synthetic documents, scripted answers, the recorded real run
+docs/       explained.md, decisions.md (every design decision), cypher.md, benchmark.md,
+            scenario_suite.md, demo_script.md
+tests/      190 tests and the independent reference solver
+```
