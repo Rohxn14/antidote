@@ -843,9 +843,6 @@ false about it), and OpenSanctions needs a licence for business use.
 | `import_rippleedits.py` | One-off: turns 15 RippleEdits cases into anonymised structure |
 | `rippleedits.py` | Loads and evaluates the RippleEdits test set |
 | `export_cypher.py` | Writes every query into `docs/cypher.md` |
-| `keepalive.py` | Wakes the free Cloud database by hand (the GitHub Action asks the app for `/api/health` instead) |
-| `smoke_test.py` | Your first connection test |
-| `seed.py` | Empty leftover from the first setup; safe to delete |
 
 ### Data, tests, docs, config
 
@@ -857,7 +854,7 @@ false about it), and OpenSanctions needs a licence for business use.
 | `data/rippleedits/cases.json` | The anonymised external test set |
 | `scenarios/*.json` | Playground example worlds |
 | `tests/` | The 190 tests; `reference.py` is the independent solver |
-| `docs/` | This file, decisions, Cypher reference, benchmark, overview (with judge Q&A), Playground guide, video script |
+| `docs/` | This file, decisions, Cypher reference, benchmark, scenario suite, Playground guide |
 | `docker-compose.yml` | Local FalkorDB (port 6379) and its Browser (port 3000) |
 | `Dockerfile`, `render.yaml`, `.streamlit/config.toml` | Deployment and app settings |
 | `.github/workflows/keepalive.yml` | Asks the app for its health every 12 minutes (best effort) and emails if it fails |
@@ -991,6 +988,5 @@ Each of these was found by testing, and each shaped the code:
 | Prompt injection | Hidden text that tries to give an AI instructions |
 | GRAPH.COPY | FalkorDB's command for copying a whole graph |
 
-**Read next:** [overview.md](overview.md) for likely judge questions with short answers,
-[decisions.md](decisions.md) for every decision, [playground.md](playground.md) to try it
+**Read next:** [decisions.md](decisions.md) for every decision, [playground.md](playground.md) to try it
 by hand.

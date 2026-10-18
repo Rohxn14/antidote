@@ -7,3 +7,8 @@ __pycache__/
 web/node_modules/
 web/dist/
 *.tsbuildinfo
+
+# Local media and exports (not part of the project)
+*.mp4
+*.docx
+thumbnail.png

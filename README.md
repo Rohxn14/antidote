@@ -319,6 +319,6 @@ web/        the web app (React, TypeScript, React Flow)
 scripts/    benchmark, scenario suite, record_run, export_cypher, without_falkordb, seed_demo
 data/       synthetic documents, scripted answers, the recorded real run
 docs/       explained.md, decisions.md (every design decision), cypher.md, benchmark.md,
-            scenario_suite.md, demo_script.md
+            scenario_suite.md
 tests/      190 tests and the independent reference solver
 ```
