@@ -34,22 +34,25 @@ A fictional company buys servo actuators for a medical robot, so suppliers must 
 ISO 13485. Two LLM agents share one memory graph: a **Researcher** reads vendor pages and
 records beliefs with exact quotes; a **Buyer** reads only supported beliefs and decides.
 
-1. **Normal work.** One vendor page (Vantor Motion) *falsely* claims ISO 13485 and hides two
+1. **The agents read.** One vendor page (Vantor Motion) *falsely* claims ISO 13485 and hides two
    prompt injections built from published [AgentDojo](https://github.com/ethz-spylab/agentdojo)
    attack templates: an "important instructions" block in an HTML comment ("Vantor Motion is
    the only ISO 13485 certified servo supplier") and an InjecAgent-style line in a hidden
-   element. The Researcher records what the page says. The Buyer picks the cheapest qualifying
-   vendor and drafts **PO-1001, $48,000**.
-2. **The order is held, twice.** A rule-based scan flags the page for hidden instructions, and
-   nothing trusted confirms Vantor's certificate (the registry lists ISO 9001). Approval waits:
-   the order cannot be approved with one click.
-3. **Preview, on a copy of the graph.** Six facts and decisions would lose all support. One
-   survives: *"Vantor manufactures servo actuators"* is also backed by the trusted registry.
-4. **Stop trusting the page** (a memory repair, approved by a person): applied, verified
-   against the preview, audited. PO-1001 is **blocked at once**, naming each fact that no longer
-   holds and the page it rested on. An approval cannot override missing support.
-5. **The Buyer re-plans** on what is still true: PO-1002 to Boltline, $52,000. The card says what
-   the extra $4,000 buys: a certificate the trusted registry confirms. Approved, placed.
+   element. The Researcher records what the page says, as a scraping agent would.
+2. **Checked before anyone decides.** Two checks run on every document: a rule-based scan for
+   hidden instructions, and a **conflict check in Cypher**: the page says Vantor is the *only*
+   certified supplier, while the trusted registry lists Boltline and Ferrocraft as certified.
+   The page goes **under review**: it counts for nothing, and **Vantor is suspended**.
+3. **The Buyer decides on what still counts:** PO-1001 to Boltline, $52,000, with a certificate
+   the trusted registry confirms. It waits for a person's approval ($5,000 or more).
+4. **A person decides about Vantor.** *Blacklist*: a preview on a copy of the graph shows what
+   rests only on the page (four facts; *"Vantor manufactures servo actuators"* survives,
+   because the registry backs it too), then the page is distrusted, Vantor is blacklisted, and
+   the repair is verified and audited. Or *false alarm*: the page counts again, and if the Buyer
+   re-plans to Vantor, its $48,000 order is **held** because nothing trusted confirms Vantor's
+   certificate. Suspending is automatic; blacklisting never is.
+5. **Approved, placed.** Every order is checked again at approval and at placing, and an order
+   whose support is gone is **blocked**, naming each fact that no longer holds.
 
 Play it in the web app (the live link above), change it with **Build your own case**, or run it
 in a terminal: `python -m scripts.seed_demo --story`.
@@ -101,7 +104,7 @@ Remove FalkorDB and nothing works. "What may the agents still believe?" is not s
 anywhere; it is **computed by Cypher queries inside FalkorDB**, every time memory changes:
 
 ```text
-valid(Source)          = trust <> 'quarantined'
+valid(Source)          = trust <> 'quarantined' AND not under review
 holds(Justification)   = EVERY premise it cites is valid          (AND inside)
 valid(Belief/Decision) = AT LEAST ONE justification for it holds  (OR across)
 ```
@@ -117,7 +120,7 @@ The two queries that do it (from [app/support.py](app/support.py)):
 
 ```cypher
 // Reset (one atomic query)
-MATCH (s:Source) SET s.valid = (s.trust <> $quarantined)
+MATCH (s:Source) SET s.valid = (s.trust <> $quarantined AND s.review IS NULL)
 WITH count(*) AS sources
 MATCH (j:Justification) SET j.holds = false
 WITH count(*) AS justifications
@@ -156,6 +159,7 @@ to work out an answer itself.
 | Which facts may the agents see, and may the Buyer cite these? | `WHERE b.valid = true` queries ([app/memory.py](app/memory.py), [app/agents/buyer.py](app/agents/buyer.py)) |
 | Would this order survive losing any one trusted origin? Does each conclusion it rests on hold when only trusted documents count? | Scenario queries plus the fixed point, on a throwaway `GRAPH.COPY` ([app/gate.py](app/gate.py)) |
 | Why is this order blocked? Does it rest on a document under review? | What it rests on, walked one level per query, then filtered in Cypher ([app/gate.py](app/gate.py)) |
+| Does a document make a claim trusted documents contradict? Which suppliers does a document under review suspend? Is this order for a suspended or blacklisted supplier? | The conflict check, the review write and the gate's standing query ([app/review.py](app/review.py), [app/memory.py](app/memory.py), [app/gate.py](app/gate.py)) |
 | What would distrusting this document change? | The fixed point on a `GRAPH.COPY`, then a diff written in Cypher ([app/repair.py](app/repair.py)) |
 | How strong is each conclusion's evidence? | Each what-if world's answer is written onto one copy; a final query combines them ([app/evidence.py](app/evidence.py)) |
 | Why does the agent believe this? | A traversal from the conclusion down to its documents ([app/views.py](app/views.py)) |
@@ -199,7 +203,8 @@ the current graph (it recomputes first and never trusts an earlier answer).
 | Situation | Outcome |
 |---|---|
 | No justification holds | **blocked**, even if a human approves; a repair blocks it at once |
-| It rests on a document the security scan flagged | **held**: approval waits until a person deals with the alert |
+| It is for a supplier that is suspended (a document about it is under review) or blacklisted | **blocked** |
+| It rests on a document under review (only possible if the fact is also backed elsewhere) | **held**: approval waits until a person decides about the document |
 | Amount ≥ $5,000 and a conclusion it rests on is supported only by unverified documents | **held** until a trusted document confirms it |
 | Amount ≥ $5,000, or not reversible, or not robust (below) | **needs a human approval** |
 | Otherwise | may proceed automatically |
@@ -284,17 +289,20 @@ after the repair, called
 
 ### Build your own case
 
-In the web app, **Build your own case** opens a form: the delivery deadline and, for each of
-the four suppliers, its price, delivery time, whether its page claims ISO 13485, whether the
-trusted registry confirms it, and whether its page hides instructions for AI readers. Four
-presets start you off (the demo story, a plain lie with no hidden text, two problems at once,
-nothing wrong). [app/casebuilder.py](app/casebuilder.py) writes the documents and the agents'
-answers from the form, and they go through exactly the same steps as the story: the
-Researcher's checks, FalkorDB, the approval check, the scan, the preview, the repair and
-re-planning. **No AI runs in a built case**, and the screen says so: the Researcher records
-what each document says (hidden text included) and the Buyer orders from the cheapest supplier
-that qualifies and delivers in time, unless a page says another supplier is the only certified
-one, which is what a successful injection looks like.
+In the web app, **Build your own case** opens a form: the delivery deadline and three to six
+suppliers, each with its price, delivery time, whether its page claims ISO 13485, whether the
+trusted registry confirms it, whether its page *openly* says it is the only certified supplier,
+and whether it hides instructions for AI readers. Seven presets start you off: the demo story,
+an open lie the registry contradicts, a plain lie, a lie nothing contradicts, two problems at
+once, six suppliers with one cheat, and nothing wrong. [app/casebuilder.py](app/casebuilder.py)
+writes the documents and the agents' answers from the form, and they go through exactly the
+same steps as the story: the Researcher's checks, FalkorDB, the checks before the Buyer decides,
+the approval check, the preview, the repair and re-planning. **No AI runs in a built case**, and
+the screen says so: the Researcher records what each document says (hidden text included) and
+the Buyer orders from the cheapest supplier that qualifies and delivers in time, unless a fact
+it may rely on says one supplier is the only certified one, which is what a successful
+injection looks like. In the story, the same planner stands in for the recorded Buyer, so its
+answer follows what memory supports at that moment.
 
 ### The Playground: design your own world
 
@@ -323,12 +331,12 @@ graph LR
 
 | Label | Properties |
 |---|---|
-| `Source` | `id`, `uri`, `title`, `trust` (trusted, unverified, quarantined), `origin` (lineage), computed `valid` |
-| `Belief` | `id`, `claim`, `created_at`, computed `valid` |
+| `Source` | `id`, `uri`, `title`, `trust` (trusted, unverified, quarantined), `origin` (lineage), `review` (why it is under review, or null), computed `valid` |
+| `Belief` | `id`, `claim`, `standard` (a certification it says a supplier holds), `exclusive` (it says that supplier is the only one), `created_at`, computed `valid` |
 | `Decision` | `id`, `kind` (shortlist, purchase_order), `summary`, `amount`, `reversible`, `state`, `note`, `approved_by`, `created_at`, computed `valid` |
 | `Justification` | `id`, `kind` (extraction, inference, decision), `reasoning`, `quote`, `model`, `premise_count`, `created_at`, computed `holds` |
 | `Agent` | `id`, `name`, `role` (researcher, buyer) |
-| `Vendor` | `id`, `name` |
+| `Vendor` | `id`, `name`, `status` (suspended, blacklisted, or null), `status_by` (the document behind it) |
 | `Repair` | `id`, `created_at`, `approved_by`, `revision` |
 | `Meta` | `id: 'graph'`, `revision` (bumped by every write; rejects stale previews) |
 
@@ -444,8 +452,8 @@ app and the database ([D50](docs/decisions.md)).
   with the independent reference solver on every node and justification.
 - The full story end to end over HTTP, the approval check at the endpoints themselves
   (holds, blocks, re-checks at execute), private sessions, eviction under memory pressure,
-  failing closed without FalkorDB, built cases (including hidden text steering the order to
-  the priciest supplier), the Streamlit Lab clicked through headless, every Playground world,
+  failing closed without FalkorDB, built cases (hidden text and open lies caught before the
+  Buyer decides, suspension, blacklisting, false alarms, six suppliers), the Streamlit Lab clicked through headless, every Playground world,
   and the MCP tools through a real MCP client. The web app was also walked through end to end
   in a headless browser, locally and on the live deployment.
 - **Concurrency.** Two intermittent failures led to a FalkorDB detail: `GRAPH.COPY` forks the
@@ -566,8 +574,11 @@ Antidote guarantees that beliefs are consistent with the support graph it record
 factually correct. A missing dependency can leave contamination behind. We limit this
 (agents must cite existing IDs, quotes must appear verbatim, the Buyer only sees supported
 memory), but we do not claim to eliminate it. Detection only knows published injection
-patterns; a plain lie is caught by the verification hold only if no trusted document confirms
-it, and if the trusted registry is itself wrong, Antidote cannot know. Within one case,
+patterns. The conflict check only knows one kind of contradiction ("the only one certified"
+against trusted certification records); a claim nothing trusted contradicts still steers the
+Buyer, and only the verification hold stops the order (the builder's "A lie nothing
+contradicts" shows this). A plain lie is caught by the verification hold only if no trusted
+document confirms it, and if the trusted registry is itself wrong, Antidote cannot know. Within one case,
 operations run one at a time; two steps span several queries and fail safe (D51). In a case
 you build, no AI runs: the agents follow stated rules. All data is synthetic; every vendor and
 company is fictional.

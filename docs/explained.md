@@ -46,7 +46,10 @@ acts on it: in our demo, a **$48,000 purchase order**.
 
 Antidote makes every agent write down **why** it believes something, as a graph in
 **FalkorDB**. Each belief is linked to the reasons behind it, and each reason to the
-documents it came from. When a document turns out to be bad:
+documents it came from. **Before any agent decides**, every document is checked for hidden
+instructions and for claims trusted documents contradict; a flagged one goes **under
+review** (it counts for nothing, and its supplier is suspended) until a person blacklists the
+supplier or clears a false alarm. When a document turns out to be bad:
 
 1. FalkorDB **recomputes** what is still justified.
 2. Antidote **previews** the damage on a copy of the graph first.
@@ -348,14 +351,36 @@ It reads each document and reports:
 | `addressed_to_ai` | Text speaking to "the AI assistant", "language model" |
 | `steering` | "only certified", "do not consider", "always recommend" |
 
-**It only proposes.** A human confirms by clicking **Preview quarantine**. A person can also
-**report** any source by hand in the app.
+**The conflict check** ([app/review.py](../app/review.py)) is a Cypher query. Claims carry
+two tags the Researcher records: `standard` (the certification a claim says a supplier holds)
+and `exclusive` (it says that supplier is the only one). The query looks for an exclusive
+claim read in a document we don't trust, while a **trusted** document says another supplier
+holds the same standard. In the story: Vantor's page says "the only ISO 13485-certified
+supplier"; the registry lists Boltline and Ferrocraft as ISO 13485. That works with no hidden
+text at all (the builder's "An open lie").
+
+**When does it run, and what happens?** Right after the Researcher has read every document,
+**before** anyone concludes or decides (D59). A flagged document gets `review` set in FalkorDB.
+The support engine's reset then treats it like a distrusted source (`valid = trust <>
+'quarantined' AND review IS NULL`), so nothing resting only on it counts: not for the Buyer,
+not for the gate, not for the live LLM's prompt, not for the MCP tools. One rule, no special
+cases. The suppliers the document's facts are about are **suspended** (`Vendor.status`), and
+the gate blocks any order for a suspended or blacklisted supplier.
+
+**A person decides the rest.** *Blacklist*: the preview lets the page count again on a copy,
+then distrusts it, to show what rests only on it; applying it distrusts the page and turns the
+suspension into a blacklisting. *False alarm*: the page counts again and the supplier is back.
+**Why not blacklist automatically?** The scan matches patterns and can be wrong, and anyone who
+can put hidden text on a page about a supplier (a marketplace listing, a mirror) could
+otherwise get a competitor blacklisted. So suspending is automatic, blacklisting never is.
 
 **What it misses, on purpose or by nature:**
 - AgentDojo's "direct" attack (`TODO: {goal}`) looks like ordinary text; not covered.
 - A novel phrasing of an injection.
-- **A plainly stated lie**, like the visible ISO 13485 claim. No injection detector can
-  catch that.
+- **A plainly stated lie** with nothing trusted against it, like the visible ISO 13485 claim,
+  or an "only certified" claim when no trusted document lists another certified supplier (the
+  builder's "A lie nothing contradicts"). No detector can catch that; the verification hold
+  stops the order instead.
 
 **So detection is not the guarantee.** The second signal is the **evidence badge**
 (section 17): Vantor's ISO claim is marked "unverified only" from the start, because nothing
@@ -488,7 +513,8 @@ executed**, and every time it **recomputes first** on the current graph.
 | Situation | Result |
 |---|---|
 | No reason for the order holds | **blocked**, even if a human approves (stopping trust in a document blocks the open orders that lost their support at once, saying which facts went and why) |
-| It rests on a document the security scan flagged | **held**: approval waits until a person deals with the alert |
+| It is for a suspended or blacklisted supplier | **blocked** |
+| It rests on a document under review (only if the fact is also backed elsewhere) | **held**: approval waits until a person decides about the document |
 | $5,000 or more, and a conclusion it rests on (like "Vantor meets the ISO 13485 requirement") is backed only by unverified documents | **held** until a trusted document confirms it |
 | $5,000 or more, or not reversible, or not robust | **waits for a human** |
 | Otherwise | proceeds automatically |

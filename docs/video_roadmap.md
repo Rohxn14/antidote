@@ -46,25 +46,25 @@ Record each beat as its own clip. It is much easier to redo one beat than the wh
 |---|---|---|---|
 | 1 | Hook (0:00–0:15) | The empty case: request, documents, "No recommendation yet" | Title text: "Antidote: memory you can audit, for AI agents" |
 | 2 | The case (0:15–0:30) | Point at the request and the six documents | Zoom in on the trust badges |
-| 3 | Agents at work (0:30–1:00) | **Start the agents**, let the graph grow and the feed fill | Speed the middle up 2–3×; keep the first and last seconds at normal speed |
-| 4 | Why this supplier? (1:00–1:20) | The order card on hold; open **Why this supplier?**; scroll the chain | Zoom on "Only Vantor Motion product page says so" |
-| 5 | Hidden instruction (1:20–1:45) | Approve is disabled; **See what the AI read**, then **What a person sees** | Zoom on the red hidden text, then cut to the clean page |
-| 6 | Preview (1:45–2:05) | **What if we stop trusting it?** | Zoom on "4 facts lose their support" and the survivor |
-| 7 | Stop trusting (2:05–2:20) | **Stop trusting this document**: PO-1001 blocked with its reasons | Zoom on the "Blocked by Antidote" box |
-| 8 | Re-plan (2:20–2:35) | **Re-plan with what's still true**, then **Approve**, **Place the order** | Zoom on "Why the change" |
+| 3 | Agents at work (0:30–0:55) | **Start the agents**, let the graph grow and the feed fill | Speed the middle up 2–3×; keep the first and last seconds at normal speed |
+| 4 | Checked first (0:55–1:20) | The feed's "Put under review" entry, then the alert card: "Under review", Vantor suspended | Zoom on "before the Buyer decided" and on the contradicted claim |
+| 5 | Hidden instruction (1:20–1:35) | **See what the AI read**, then **What a person sees** | Zoom on the red hidden text, then cut to the clean page |
+| 6 | The honest order (1:35–1:55) | The Boltline order card; **Why this supplier?** | Zoom on "Confirmed by Medical Device Supplier Registry (trusted)" |
+| 7 | Blacklist preview (1:55–2:15) | **Blacklist Vantor Motion…** | Zoom on "4 facts rest only on it" and the survivor |
+| 8 | Blacklist, approve, place (2:15–2:35) | **Stop trusting it and blacklist Vantor Motion**, **Approve**, **Place the order** | Zoom on the "Supplier blacklisted" badge and "Order placed" |
 | 9 | Under the hood (2:35–2:50) | **Under the hood**: open one capability's Cypher, then **Run without FalkorDB** (7 of 7 fail). Optionally stop FalkorDB (`docker stop antidotegraph-hacks-falkordb-1`) and reload: the outage screen | Start FalkorDB again afterwards: `docker start antidotegraph-hacks-falkordb-1` |
 | 10 | Close (2:50–3:05) | The README benchmark table (RippleEdits first), then the live URL | End card: live URL, GitHub link, "Tracks 02 and 01" |
 
-Optional extra (only if there is time left): **Build your own case → Two problems at once**,
-showing hidden text steering the order to the priciest supplier. It is the best answer to "is
-this scripted?".
+Optional extra (only if there is time left): **Build your own case → An open lie** (no hidden
+text: the conflict check alone catches it) or **A lie nothing contradicts** (the honest limit:
+the verification hold stops the order). It is the best answer to "is this scripted?".
 
 ## 5. Editing checklist
 
 - Cut every pause and every mis-click; keep it under 3:30.
 - Speed up waiting (the agents' run, page loads); never speed up the moment that proves a point.
-- Zoom in on the text that matters: the hold banner, the hidden text, the blocked reasons,
-  "Why the change", "7 of 7 failed without FalkorDB".
+- Zoom in on the text that matters: "Under review", the hidden text, the contradicted claim,
+  "rest only on it", "Supplier blacklisted", "7 of 7 failed without FalkorDB".
 - Add auto-captions (Clipchamp: *Subtitles → Transcribe media*) and fix any wrong words.
 - No copyrighted music. Clipchamp's stock music is fine, or none.
 - Export MP4 (H.264), 1080p, 30 fps.
