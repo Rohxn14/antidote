@@ -403,8 +403,9 @@ and prefix any command with `ENV_FILE=.env.cloud` (PowerShell: `$env:ENV_FILE=".
 
 **Deploy.** [render.yaml](render.yaml) deploys the web app (React, served by FastAPI, one
 Docker service) on Render; enter the FalkorDB secrets in the dashboard.
-[.github/workflows/keepalive.yml](.github/workflows/keepalive.yml) touches the database so
-the free instance is not stopped for idling.
+[.github/workflows/keepalive.yml](.github/workflows/keepalive.yml) asks the app for its health
+every 12 minutes during judging (set the `APP_URL` repository variable): the app pings FalkorDB
+to answer, so neither the free web service nor the free database instance goes to sleep.
 
 **Memory scope.** Each browser works on one **procurement case**: a private graph in FalkorDB
 that the agents and the person share for that case. It is **persistent within the case**: a

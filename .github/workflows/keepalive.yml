@@ -1,27 +1,25 @@
-name: Keep FalkorDB Cloud awake
+name: Keep the demo awake
 
-# The free FalkorDB Cloud tier stops an instance after a day without use.
-# Twice a day, run one read query against it. Needs repository secrets:
-# FALKORDB_HOST, FALKORDB_PORT, FALKORDB_USERNAME, FALKORDB_PASSWORD.
+# During judging. Render's free web service sleeps after 15 idle minutes, and the free
+# FalkorDB Cloud tier stops after a day without use. Every 12 minutes, ask the app for
+# its health: the app pings FalkorDB to answer, so both stay up, and the job fails (and
+# GitHub emails you) if FalkorDB is unreachable.
+#
+# Needs one repository variable, no secrets: APP_URL, e.g. https://antidote-xxxx.onrender.com
+# (Settings > Secrets and variables > Actions > Variables).
 on:
   schedule:
-    - cron: "17 */12 * * *"
+    - cron: "*/12 * * * *"
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install falkordb==1.8.0 python-dotenv==1.2.4
-      - run: python -m scripts.keepalive
+      - name: Ask the app for its health
         env:
-          FALKORDB_HOST: ${{ secrets.FALKORDB_HOST }}
-          FALKORDB_PORT: ${{ secrets.FALKORDB_PORT }}
-          FALKORDB_USERNAME: ${{ secrets.FALKORDB_USERNAME }}
-          FALKORDB_PASSWORD: ${{ secrets.FALKORDB_PASSWORD }}
-          FALKORDB_GRAPH: antidote
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then echo "Set the APP_URL repository variable first."; exit 1; fi
+          curl -sS --fail-with-body --max-time 90 --retry 3 --retry-delay 20 "$APP_URL/api/health"

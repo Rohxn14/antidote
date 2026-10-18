@@ -700,7 +700,7 @@ false about it), and OpenSanctions needs a licence for business use.
 | `import_rippleedits.py` | One-off: turns 15 RippleEdits cases into anonymised structure |
 | `rippleedits.py` | Loads and evaluates the RippleEdits test set |
 | `export_cypher.py` | Writes every query into `docs/cypher.md` |
-| `keepalive.py` | Pinged by GitHub Actions to keep the free Cloud database awake |
+| `keepalive.py` | Wakes the free Cloud database by hand (the GitHub Action now asks the app for `/api/health` every 12 minutes, which keeps both awake) |
 | `smoke_test.py` | Your first connection test |
 | `seed.py` | Empty leftover from the first setup; safe to delete |
 
