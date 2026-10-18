@@ -18,7 +18,9 @@ the app locally (`uvicorn api.server:app`, FalkorDB in Docker) so you can stop t
 | 2:50 | The README benchmark table (RippleEdits row first) | "On RippleEdits, a test set someone else defined, Antidote removes all 362 facts that should go and keeps all 168 that must stay; deleting the source leaves all 362 behind. The honest limit: it can only follow the reasons the agents recorded. Antidote, for agent memory and agents acting on connected data, on FalkorDB." |
 
 Notes:
-- The **Under the hood** page is part of step 5. Until it exists, show [docs/cypher.md](cypher.md)
-  for the Cypher beat.
+- The **Under the hood** page has its own link: `<app URL>/#/under-the-hood`.
+- **Build your own case** is the strongest answer to "is this scripted?": pick *Two problems at
+  once* and show the hidden text steering the order to the priciest supplier, then two repairs
+  in a row leading the Buyer to the honest one.
 - Any other document can be distrusted from its panel. Distrusting the registry is a good
   off-script moment: nothing is lost, because the suppliers' pages repeat each claim.

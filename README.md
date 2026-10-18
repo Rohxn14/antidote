@@ -214,6 +214,20 @@ after the repair, called
 `supported_beliefs` (Vantor's beliefs were invisible to it) and then
 `propose_purchase_order` for Boltline, which waited for a human.
 
+### Build your own case
+
+In the web app, **Build your own case** opens a form: the delivery deadline and, for each of
+the four suppliers, its price, delivery time, whether its page claims ISO 13485, whether the
+trusted registry confirms it, and whether its page hides instructions for AI readers. Four
+presets start you off (the demo story, a plain lie with no hidden text, two problems at once,
+nothing wrong). [app/casebuilder.py](app/casebuilder.py) writes the documents and the agents'
+answers from the form, and they go through exactly the same steps as the story: the
+Researcher's checks, FalkorDB, the approval check, the scan, the preview, the repair and
+re-planning. **No AI runs in a built case**, and the screen says so: the Researcher records
+what each document says (hidden text included) and the Buyer orders from the cheapest supplier
+that qualifies and delivers in time, unless a page says another supplier is the only certified
+one, which is what a successful injection looks like.
+
 ### The Playground: design your own world
 
 The UI's **Playground** mode loads a world you write in JSON into a private graph:
@@ -349,7 +363,7 @@ app and the database ([D50](docs/decisions.md)).
 
 ## Correctness
 
-139 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+148 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
 
 - Required cases: alternative justifications; a multi-premise justification losing one
   premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
@@ -381,7 +395,7 @@ python -m venv .venv
 pip install -r requirements.txt
 cp .env.example .env                  # Windows PowerShell: copy .env.example .env
 
-python -m pytest                      # 139 tests
+python -m pytest                      # 148 tests
 python -m scripts.seed_demo --story   # the whole story in the terminal
 streamlit run ui/streamlit_app.py     # the UI: http://localhost:8501
 python -m scripts.benchmark           # the benchmark table
@@ -435,6 +449,7 @@ api/server.py     the web API (FastAPI): streams, actions; fails closed without 
 api/session_store.py  procurement cases: one private graph each, idle cleanup, eviction
 api/contract.py   typed events and responses (mirrored in web/src/contract.ts)
 app/runner.py     runs the agents step by step and reports each step as an event
+app/casebuilder.py  build-your-own cases: documents and rule-based agent answers from a form
 app/centrality.py the capability walkthrough: each capability with its real Cypher
 web/              the web app (React + TypeScript + Vite, React Flow for the graph)
 app/sessions.py   the Streamlit Lab's private graph copy per visitor
