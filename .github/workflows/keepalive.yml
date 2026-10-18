@@ -1,15 +1,18 @@
 name: Keep the demo awake
 
-# During judging. Render's free web service sleeps after 15 idle minutes, and the free
-# FalkorDB Cloud tier stops after a day without use. Every 12 minutes, ask the app for
-# its health: the app pings FalkorDB to answer, so both stay up, and the job fails (and
-# GitHub emails you) if FalkorDB is unreachable.
+# During judging. Render's free web service sleeps after 15 idle minutes, and a free
+# FalkorDB Cloud instance is stopped after a day without use (deleted after a week, with
+# no backups). Every 12 minutes, ask the app for its health: the app runs commands on
+# FalkorDB to answer, so both stay up, and the job fails (and GitHub emails you) if
+# either is unreachable. GitHub runs schedules on a best-effort basis and often skips
+# frequent ones, so an external pinger (cron-job.org, UptimeRobot) on the same URL is the
+# dependable way to keep Render awake; this job is the backup and the alarm.
 #
 # Needs one repository variable, no secrets: APP_URL, e.g. https://antidote-xxxx.onrender.com
 # (Settings > Secrets and variables > Actions > Variables).
 on:
   schedule:
-    - cron: "*/12 * * * *"
+    - cron: "7-59/12 * * * *"   # :07, :19, :31, :43, :55 (the top of the hour is GitHub's busiest)
   workflow_dispatch:
 
 jobs:
