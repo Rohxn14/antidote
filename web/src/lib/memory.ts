@@ -117,10 +117,18 @@ function applyEvent(m: Memory, e: AntidoteEvent): Memory {
       const note = e.data.reasons.join("; ") || old.note;
       return { ...m, decisions: { ...m.decisions, [old.id]: { ...old, state: e.data.state, note } } };
     }
-    case "security_alert":
-      return m.alerts.some((a) => a.document_id === e.data.document_id)
-        ? m
-        : { ...m, alerts: [...m.alerts, e.data] };
+    case "security_alert": {
+      const doc = e.data.document_id;
+      if (m.alerts.some((a) => a.document_id === doc)) return m;
+      // Open orders resting on the flagged document wait for a person. The gate enforces
+      // this on the server; showing it now spares a slow reload's worth of a live button.
+      const decisions = Object.fromEntries(Object.entries(m.decisions).map(([id, d]) => {
+        const open = d.kind === "purchase_order" && ["draft", "pending_approval", "authorized"].includes(d.state ?? "");
+        const holds = open && !d.held_by.includes(doc) && ancestors(m, id).has(doc);
+        return [id, holds ? { ...d, held_by: [...d.held_by, doc] } : d];
+      }));
+      return { ...m, alerts: [...m.alerts, e.data], decisions };
+    }
     case "run_complete":
       return { ...m, revision: e.data.revision, hasRun: true };
     default:
