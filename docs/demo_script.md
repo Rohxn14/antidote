@@ -15,8 +15,8 @@ repository set up on a laptop, sped up. Read it like you're showing a friend, no
 | 1:04 | **Blacklist Vantor Motion…**: preview, "6 facts rest only on it"; apply; Approve; Place | "Blocking that supplier is your call, not the AI's. Antidote first shows exactly what would be removed, using a copy of the graph. Then you approve, and the order is checked once more before it goes out." |
 | 1:19 | **It's a false alarm** → **Re-plan with it** → Vantor, $48,000, **On hold** | "Now the scary part. If someone calls it a false alarm, the AI goes straight back to the same supplier. But Antidote still holds the order, because nothing trusted backs up that claim. The AI was fooled. The memory wasn't." |
 | 1:34 | **Under the hood**: Cypher per capability; "7 of 7 failed without FalkorDB"; the outage screen; the scenario suite | "So is FalkorDB just decoration here? Unplug it, and seven out of seven capabilities fail, because every decision is a query inside the graph. Across four hundred generated cases, Antidote let through seventeen wrong orders. Without it? Two hundred and eighty-four." |
-| 1:50 | A fresh clone on a laptop: clone, Docker, install, build, "190 passed", the server running (sped up) | "Want to try it yourself? Clone the repo, start FalkorDB with Docker, install, build, and run. It takes about four minutes, needs no API key, and all hundred and ninety tests pass. Add a Groq key, and the agents run live." |
-| 2:07 | End card: live demo URL, GitHub, tracks | "That's Antidote: memory your agents can audit, built on FalkorDB. The links are in the description. Go on, try to fool it." |
+| 1:50 | A fresh clone on a laptop: clone, Docker, install, build, "190 passed", the server running (sped up) | "And it's easy to run on your own machine. Setup takes just a few minutes, and you can try it out yourself." |
+| 2:07 | End card: live demo URL, GitHub, tracks | "That's Antidote, built on FalkorDB. The link to the code is in the description below, so go ahead and give it a try." |
 
 Notes:
 - Everything said is on screen. If you film a Live AI run instead, the model may answer
