@@ -1,5 +1,7 @@
 # Demo video script (about 3 minutes)
 
+Tools, setup, shot list and editing: see [video_roadmap.md](video_roadmap.md).
+
 Before recording: open the app at 1920×1080 (or 1440×900 at 90% zoom), click **Start over**
 in the top bar, and wait for the case bar to read "Start the agents". For the outage beat, run
 the app locally (`uvicorn api.server:app`, FalkorDB in Docker) so you can stop the database.

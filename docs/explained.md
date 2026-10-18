@@ -32,7 +32,7 @@ bottom once; after that, use the table of contents.
 23. [Every file, and what it is for](#23-every-file-and-what-it-is-for)
 24. [How to run everything](#24-how-to-run-everything)
 25. [FalkorDB lessons learned the hard way](#25-falkordb-lessons-learned-the-hard-way)
-26. [Deployment (not live yet)](#26-deployment-not-live-yet)
+26. [Deployment](#26-deployment)
 27. [Honest limits](#27-honest-limits)
 28. [Glossary](#28-glossary)
 
@@ -53,7 +53,8 @@ documents it came from. When a document turns out to be bad:
 3. A human **approves**; only what depended on the bad document is withdrawn, and
    anything with independent support is **kept**.
 4. An **action gate** blocks any order whose reasons are gone, **even if a human tries to
-   approve it**.
+   approve it**, and holds a big order while it rests on a flagged document or on a claim
+   nothing trusted confirms.
 
 ---
 
@@ -198,9 +199,9 @@ FalkorDB holds several graphs side by side, all from this project:
 | Graph name | What it is |
 |---|---|
 | `antidote` | Used by the terminal story (`seed_demo`) |
-| `antidote_template` | The pristine demo, seeded when the web app starts |
-| `antidote_s_<time>_<id>` | **Your** private copy in the web app (one per visitor) |
-| `..._play` | Your private Playground world |
+| `antidote_u_<time>_<id>` | **Your** procurement case in the web app (one per browser) |
+| `antidote_centrality_<id>` | A scratch graph for the Under the hood walkthrough, deleted afterwards |
+| `antidote_template`, `antidote_s_<time>_<id>`, `..._play` | The Streamlit Lab's demo and your private copies there |
 | `..._preview_<n>` | A throwaway copy for a repair preview |
 | `..._whatif_...`, `..._evidence_...` | Throwaway copies for the gate's and the badges' what-if tests |
 | `antidote_test...` | Used by the tests, wiped before and after each test |
@@ -382,7 +383,7 @@ calls them:
 - `scripts/record_fixtures.py` runs the Researcher and Buyer for real (9 LLM calls) and saves
   their answers.
 - `scripts/run_tool_agent.py` runs the tool-using Buyer for real.
-- The web app can run the Buyer live (sidebar toggle) or the tool-using Buyer (Agents tab),
+- The Streamlit Lab can run the Buyer live (sidebar toggle) or the tool-using Buyer (Agents tab),
   if a key is configured.
 - Everything else **replays** recorded answers (section 13).
 
@@ -423,7 +424,7 @@ replayed later.
 | Folder | What | Used by |
 |---|---|---|
 | `data/fixtures/*.json` | **Hand-authored** answers in the LLM's format (`"model": "hand-authored"`) | The default demo and the tests |
-| `data/fixtures/live/*.json` | **Real** answers from gpt-oss-120b on Groq, plus the tool agent's transcript | `DEMO_FIXTURES=live`, the Agents tab |
+| `data/fixtures/live/*.json` | **Real** answers from gpt-oss-120b on Groq, plus the tool agent's transcript | `DEMO_FIXTURES=live`, the Lab's Agents tab |
 
 **Why:** the demo and tests give the same result every time, need no API key, and cost
 nothing. Replayed answers go through **the same checks** as live ones.
@@ -478,9 +479,16 @@ executed**, and every time it **recomputes first** on the current graph.
 
 | Situation | Result |
 |---|---|
-| No reason for the order holds | **blocked**, even if a human approves |
+| No reason for the order holds | **blocked**, even if a human approves (stopping trust in a document blocks the open orders that lost their support at once, saying which facts went and why) |
+| It rests on a document the security scan flagged | **held**: approval waits until a person deals with the alert |
+| $5,000 or more, and a conclusion it rests on (like "Vantor meets the ISO 13485 requirement") is backed only by unverified documents | **held** until a trusted document confirms it |
 | $5,000 or more, or not reversible, or not robust | **waits for a human** |
 | Otherwise | proceeds automatically |
+
+The holds came from reviewing the app: a $48,000 order resting on a page with hidden
+instructions, or on a supplier's own unconfirmed word, could otherwise be approved with one
+click. Prices only ever come from suppliers' own pages, so only *conclusions* must be
+confirmed, not every fact.
 
 **Robust** means: counting only *trusted* sources, the order stays valid even if any one
 trusted origin is lost. Tested by what-ifs on a throwaway copy. Two copies of the same
@@ -498,15 +506,15 @@ The numbers ($5,000; one origin) are **demo policy values** in
 Antidote can't know what is true, but it can show how much each conclusion rests on sources
 you don't trust ([app/evidence.py](../app/evidence.py)):
 
-| Level | Meaning | In the graph |
+| Level | Meaning | In the web app |
 |---|---|---|
-| unsupported | nothing holds it up | red fill |
-| unverified only | only untrusted sources support it | dashed outline |
-| single trusted origin | trusted sources alone hold it, but losing one would drop it | plain |
-| robust | survives on trusted sources even after losing any one | double outline |
+| unsupported | nothing holds it up | struck through, grey dashed box |
+| unverified only | only untrusted sources support it | amber bar on the fact |
+| single trusted origin | trusted sources alone hold it, but losing one would drop it | green bar |
+| robust | survives on trusted sources even after losing any one | green bar, "Robust" badge |
 
-Computed on one throwaway copy with the gate's what-ifs. Shown in the graph, the Why? tab,
-the Orders tab and the MCP tools. In the demo, Vantor's ISO 13485 claim is "unverified only"
+Computed on one throwaway copy with the gate's what-ifs. Shown in the graph, the "Why this
+supplier?" panel, the order card ("What it rests on") and the MCP tools. In the demo, Vantor's ISO 13485 claim is "unverified only"
 **before** anyone knows it is a lie.
 
 ---
@@ -540,30 +548,46 @@ Any MCP host can connect: `python -m app.mcp_server`.
 
 ## 19. The web app
 
-Code: [ui/streamlit_app.py](../ui/streamlit_app.py) (layout) and [ui/render.py](../ui/render.py)
-(drawing the graph). It only displays and calls the tested modules; it has no logic of its own.
+Code: [web/](../web/) (React, TypeScript, Vite; React Flow and dagre draw the graph) served by
+[api/server.py](../api/server.py) (FastAPI) from one Docker container. The web app has no
+logic of its own: it shows what the API returns and calls the tested modules.
 
-- **Sidebar → Mode.** *Guided demo* plays the procurement story; *Playground* is your own
-  world.
-- **Left: the graph.** Documents on the left, reasons as small circles (E extraction,
-  I inference, D decision), conclusions on the right. Green = supported, red = not, amber =
-  would fall (preview).
-- **Right: the story** (guided) or **your world** (Playground), with the preview and its
-  **Approve repair** button.
-- **Tabs:** Why? (reasons and evidence), Orders (submit/approve/execute), Agents (MCP tools
-  and a real run), Audit trail, Cypher (every query, plus a read-only console), Benchmark,
-  About.
-- **Private copies.** Every visitor gets their own copy of the demo graph, so two people
-  clicking at once never collide. Old copies are deleted after 3 hours.
-- **The Playground** loads a world you write in JSON (`because` lists reasons: each reason is
-  a list of ids that are all needed; any one reason is enough). Five examples teach one idea
-  each. See [playground.md](playground.md) for the format and a manual test plan.
+- **Top bar:** the FalkorDB status (it says "updating" while the screen reloads), the two
+  pages (**Purchase case** and **Under the hood**) and **Start over**.
+- **Case bar:** what the case is about, its status (open alerts, distrusted documents, the
+  order's state) and one suggestion for what to look at next, all worked out from the memory.
+- **1. Request and documents:** the request, **Start the agents** (it becomes **Skip to
+  result**), a **Live AI** switch (off on the public server), **Build your own case**, and the
+  documents with their trust. A document opens in a side panel: what the AI reads (hidden
+  parts in red), what a person sees (a sandboxed frame with scripts off), and **What if we stop
+  trusting it?** for any document.
+- **2. Agents and evidence:** the three agent cards, the graph (documents on the left, reasons
+  as dots, the order on the right; "This order" or "Everything", and a large view), and the
+  activity feed. While the agents work, the camera follows each new fact.
+- **3. Recommendation and action:** the order card (the Buyer's reasoning, "What it rests on",
+  holds, blocks, "Why the change" after a re-plan, Approve, Place the order, Re-plan), the
+  security alert, the impact preview with **Stop trusting this document**, and the repair log.
+- **Under the hood:** each capability run live with the exact Cypher FalkorDB executed, the
+  same code run with FalkorDB unplugged (every one fails), the graph model, the benchmark and
+  every query.
+- **Build your own case:** a form (delivery deadline; per supplier: price, delivery time,
+  certificate claimed, registry confirms it, hidden instructions) with four presets. The
+  documents and the agents' answers are generated from it ([app/casebuilder.py](../app/casebuilder.py));
+  no AI runs in a built case, and the screen says so. Everything after is the real engine.
+- **Your case is private and persistent:** an unguessable token in your browser maps to your
+  own graph on the server. A reload resumes it; it is deleted after 2 hours idle, or earlier
+  if the server runs short of memory (the least recently used goes first).
+- **If FalkorDB is unreachable,** every API call answers 503 and the page shows an outage
+  screen that recovers by itself.
+- **The Streamlit Lab** ([ui/streamlit_app.py](../ui/streamlit_app.py)) is the earlier
+  interface, kept for local use: the **Playground** loads a world you write in JSON. See
+  [playground.md](playground.md).
 
 ---
 
 ## 20. How we know it works: the tests
 
-**118 tests** (`python -m pytest`), on a separate `antidote_test` graph:
+**151 tests** (`python -m pytest`), on a separate `antidote_test` graph:
 
 - **The rule itself:** AND/OR, loops with and without a real source, a loop that loses its
   only source, recovery when a new trusted source arrives, deletion failing safe.
@@ -572,7 +596,10 @@ Code: [ui/streamlit_app.py](../ui/streamlit_app.py) (layout) and [ui/render.py](
   or method with the Cypher engine.
 - **The write path, the gate, repair, evidence, the detector, the agents' checks** (with a
   stub instead of an LLM), **the MCP tools** (through a real MCP client), **every Playground
-  example**, **the whole story**, and **the web app clicked through** without a browser.
+  example**, **the whole story over HTTP** (holds, blocks, re-checks at the endpoints, private
+  sessions, eviction, failing closed without FalkorDB), **built cases**, and **the Streamlit
+  Lab clicked through** without a browser. The web app itself was walked through in a
+  headless browser, locally and on the live site.
 - **The RippleEdits cases** (section 22) and a check that no real identities slipped in.
 
 **A bug the tests uncovered.** Two tests failed once each, at random. The cause: FalkorDB
@@ -682,12 +709,18 @@ false about it), and OpenSanctions needs a licence for business use.
 | `mcp_server.py` | Antidote's memory as MCP tools |
 | `agents/researcher.py`, `agents/buyer.py`, `agents/tool_agent.py` | The agents (section 11) |
 
-### The web app (`ui/`)
+### The web app (`api/`, `web/`) and the Lab (`ui/`)
 
 | File | Purpose |
 |---|---|
-| `streamlit_app.py` | The page: modes, story, Playground, tabs |
-| `render.py` | Draws the graph and the "why?" tree |
+| `api/server.py` | The web API: streams the agents' work, the actions, the holds; fails closed without FalkorDB |
+| `api/session_store.py` | Procurement cases: one private graph each, idle cleanup, eviction |
+| `api/contract.py`, `web/src/contract.ts` | The typed events and responses, kept identical by a test |
+| `app/runner.py` | Runs the agents step by step and reports each step as an event |
+| `app/casebuilder.py` | Build your own case: documents and rule-based answers from a form |
+| `app/centrality.py` | The Under the hood walkthrough (typed by Rohan) |
+| `web/src/` | The React app: `App.tsx`, `useAntidote.ts` (state and actions), `components/` |
+| `ui/streamlit_app.py`, `ui/render.py` | The Streamlit Lab, with the Playground |
 
 ### Scripts (`scripts/`)
 
@@ -712,11 +745,11 @@ false about it), and OpenSanctions needs a licence for business use.
 | `data/fixtures/` | Recorded agent answers (hand-authored and `live/`) |
 | `data/rippleedits/cases.json` | The anonymised external test set |
 | `scenarios/*.json` | Playground example worlds |
-| `tests/` | The 118 tests; `reference.py` is the independent solver |
+| `tests/` | The 151 tests; `reference.py` is the independent solver |
 | `docs/` | This file, decisions, Cypher reference, benchmark, overview (with judge Q&A), Playground guide, video script |
 | `docker-compose.yml` | Local FalkorDB (port 6379) and its Browser (port 3000) |
-| `render.yaml`, `.streamlit/config.toml` | Deployment and app settings |
-| `.github/workflows/keepalive.yml` | Twice-daily database ping |
+| `Dockerfile`, `render.yaml`, `.streamlit/config.toml` | Deployment and app settings |
+| `.github/workflows/keepalive.yml` | Asks the app for its health every 12 minutes during judging |
 | `.env.example` | Template for `.env` (local) and `.env.cloud` (Cloud); real ones are never committed |
 | `requirements.txt`, `pytest.ini` | Dependencies and test settings |
 
@@ -727,9 +760,11 @@ false about it), and OpenSanctions needs a licence for business use.
 ```bash
 docker compose up -d                       # FalkorDB + its Browser
 .venv\Scripts\activate                     # macOS/Linux: source .venv/bin/activate
-python -m pytest                           # 118 tests
+cd web && npm ci && npm run build && cd ..  # build the web app once (Node 22)
+uvicorn api.server:app --port 8000         # the web app: http://localhost:8000
+python -m pytest                           # 151 tests
 python -m scripts.seed_demo --story        # the whole story in the terminal
-streamlit run ui/streamlit_app.py          # the web app: http://localhost:8501
+streamlit run ui/streamlit_app.py          # the Streamlit Lab: http://localhost:8501
 python -m scripts.benchmark                # the benchmark tables
 python -m scripts.record_fixtures          # real agent run (needs the Groq key)
 python -m scripts.run_tool_agent           # real tool-using agent run
@@ -755,22 +790,29 @@ Each of these was found by testing, and each shaped the code:
 - An aggregate like `count(*)` always returns one row; with a grouping key it can return
   none. Both caused bugs that the tests caught.
 - `GRAPH.COPY` forks the server and only one fork runs at a time (section 20).
-- FalkorDB Cloud's free tier: about 34 ms per round trip from India, no TLS, no stored data
-  across restarts, and it stops after a day idle. That is why the app re-seeds on start, a
-  workflow pings it, and the engine was cut from 11 to 5 queries per recompute (preview went
-  from 1.2 s to 0.5 s).
+- FalkorDB Cloud's free tier: no TLS, no stored data across restarts, and it stops after a
+  day idle. Every Cypher statement is a network round trip: about 34 ms from India, and 62 ms
+  from the server in Singapore to the database in Mumbai, which made a full-speed run take
+  27 s instead of 1 to 2 s (decision D50: put the app and the database in the same area). That
+  is also why the engine was cut from 11 to 5 queries per recompute (preview went from 1.2 s
+  to 0.5 s), and why a workflow keeps the instance awake.
 
 ---
 
-## 26. Deployment (not live yet)
+## 26. Deployment
 
-- **App:** Render, from [render.yaml](../render.yaml): Singapore region (closest to the Cloud
-  database in Mumbai), Python 3.12.10. Secrets are typed into Render's dashboard, never
-  committed.
-- **Database:** your FalkorDB Cloud instance. The app seeds the demo itself on start.
-- **Keep-alive:** a GitHub Action queries the database twice a day.
-- **Still to do:** push to GitHub, connect Render, add the secrets, then make the repo public
-  after the secret scan (already clean).
+- **Live:** https://antidote-yqk6.onrender.com, one Docker service on Render's free plan: the
+  [Dockerfile](../Dockerfile) builds the web app with Node, then serves it and the API from one
+  Python image. Render's free plan sleeps when idle, so the first visit can take a minute.
+- **Region:** Render Singapore with the FalkorDB Cloud database in Mumbai, the closest pair to
+  India. Every statement crosses that distance (62 ms each), so the live site is slower than a
+  local run; moving both to Northern Virginia (decision D50) is prepared on the
+  `region-virginia` branch.
+- **Secrets:** typed into Render's dashboard, never committed. Live AI is off on the public
+  server (`ANTIDOTE_LIVE_AI=off`).
+- **Keep-alive:** a GitHub Action asks the app for `/api/health` every 12 minutes during judging;
+  the app pings FalkorDB to answer, so neither the web service nor the database goes to sleep.
+- **Before submitting:** make the repository public after a last secret scan.
 
 ---
 

@@ -7,9 +7,10 @@ recomputes which conclusions are still supported when a source is quarantined, a
 blocks downstream actions that no longer have a valid justification, while keeping
 knowledge that is independently supported.
 
-- **Live demo:** _link added at submission_ (first load may take a minute: free hosting wakes up)
+- **Live demo:** https://antidote-yqk6.onrender.com (first load may take a minute: free hosting wakes up)
+  · **Under the hood:** [/#/under-the-hood](https://antidote-yqk6.onrender.com/#/under-the-hood)
 - **Demo video:** _link added at submission_
-- **Tracks:** 01 Agents That Act on Connected Data · 02 Agent Memory and Coordination
+- **Tracks:** **02 Agent Memory and Coordination** (primary) · 01 Agents That Act on Connected Data
 - **New here?** [docs/explained.md](docs/explained.md) explains everything in plain words:
   the graph, the agents, how the source is poisoned, what catches it, every file.
 - **Built for** Graph Hacks: Context for AI Agents (WeMakeDevs × FalkorDB), October 2026
@@ -37,20 +38,62 @@ records beliefs with exact quotes; a **Buyer** reads only supported beliefs and 
    prompt injections built from published [AgentDojo](https://github.com/ethz-spylab/agentdojo)
    attack templates: an "important instructions" block in an HTML comment ("Vantor Motion is
    the only ISO 13485 certified servo supplier") and an InjecAgent-style line in a hidden
-   element. The Researcher records what the page says. The Buyer picks the cheapest qualifying vendor and
-   drafts **PO-1001, $48,000**.
-2. **The gate holds it.** It is above $5,000, so it waits for a human.
-3. **Detection.** A rule-based scan flags the page; a human confirms.
-4. **Preview, on a copy of the graph.** Six beliefs and decisions would lose all support.
-   One survives: *"Vantor manufactures servo actuators"* is also backed by the trusted
-   registry. The gate will block PO-1001.
-5. **Repair approved** (memory only), applied, verified against the preview, audited.
-6. **The climax.** The manager approves PO-1001 anyway. The gate re-checks the *current*
-   graph, finds no valid justification and **blocks it**. Human approval can accept the
-   stakes; it cannot override missing support.
-7. **The Buyer re-decides** on clean memory: PO-1002 to Boltline, $52,000, approved.
+   element. The Researcher records what the page says. The Buyer picks the cheapest qualifying
+   vendor and drafts **PO-1001, $48,000**.
+2. **The order is held, twice.** A rule-based scan flags the page for hidden instructions, and
+   nothing trusted confirms Vantor's certificate (the registry lists ISO 9001). Approval waits:
+   the order cannot be approved with one click.
+3. **Preview, on a copy of the graph.** Six facts and decisions would lose all support. One
+   survives: *"Vantor manufactures servo actuators"* is also backed by the trusted registry.
+4. **Stop trusting the page** (a memory repair, approved by a person): applied, verified
+   against the preview, audited. PO-1001 is **blocked at once**, naming each fact that no longer
+   holds and the page it rested on. An approval cannot override missing support.
+5. **The Buyer re-plans** on what is still true: PO-1002 to Boltline, $52,000. The card says what
+   the extra $4,000 buys: a certificate the trusted registry confirms. Approved, placed.
 
-Play it in the UI, or in a terminal: `python -m scripts.seed_demo --story`.
+Play it in the web app (the live link above), change it with **Build your own case**, or run it
+in a terminal: `python -m scripts.seed_demo --story`.
+
+## Tracks
+
+**Track 02, Agent Memory and Coordination** (primary). Antidote is a shared memory for agents
+that stays honest when what it was told turns out to be wrong.
+
+| Track 02 focus | Where it is in Antidote |
+|---|---|
+| Memory that persists and updates over time | Every write is one atomic Cypher query that bumps a revision; support is recomputed in FalkorDB after every change; a case survives page reloads ([api/session_store.py](api/session_store.py)) |
+| Episodic, semantic and procedural memory | Semantic: facts (`Belief`) with their sources and reasons. Episodic: `Repair` records (who distrusted what, when, and what changed) and each order's state, notes and approver. Procedural: the request's rules are facts too, and every order must rest on them |
+| Shared state and handoffs between agents | The Researcher writes facts with quotes; the Buyer reads only what is still supported, from the same graph, directly or through MCP tools; a repair one agent never saw changes what the other may use |
+| High-concurrency reads and writes | Atomic writes; `GRAPH.COPY` serialised and retried after a 4-thread stress test failed 49 of 100 copies (200 of 200 after); cases are isolated graphs |
+| Separate memory per user or tenant | Each browser gets its own case graph, reached through an unguessable token mapped on the server; the browser never names a graph |
+
+**Track 01, Agents That Act on Connected Data.**
+
+| Track 01 focus | Where it is in Antidote |
+|---|---|
+| Multi-hop reasoning | Support is a least fixed point over chains of reasons (document, fact, conclusion, order); "what does this order rest on" is walked level by level in FalkorDB |
+| Graph queries as agent tools | The MCP server exposes `supported_beliefs`, `explain`, `check_order`, `preview_quarantine` and more ([app/mcp_server.py](app/mcp_server.py)) |
+| Tool selection through MCP | A tool-using Buyer lets the LLM choose which tools to call ([app/agents/tool_agent.py](app/agents/tool_agent.py)) |
+| Actions based on what the graph shows | The approval check holds, blocks or allows each order on the graph as it is now; a repair blocks every open order that lost its support |
+| Explainable results | "Why this supplier?", "What it rests on", blocked orders that name the facts and documents, "Why the change" after a re-plan |
+
+## What breaks without FalkorDB
+
+Everything. FalkorDB is not a cache or a log next to the product: it is where every decision is
+made, so there is nothing to fall back to.
+
+- **Run it yourself:** the **Under the hood** page runs each capability through the real code,
+  with the exact Cypher FalkorDB executed, then runs the same code with no database behind the
+  graph: **7 of 7 fail** (remember a fact, decide what holds, explain, preview a repair, check an
+  order, measure evidence, let agents read memory). Or in a terminal:
+  `python -m scripts.without_falkordb`.
+- **The app fails closed:** with FalkorDB unreachable every `/api/*` endpoint answers
+  `503 memory_unreachable`, the page shows an outage screen and recovers by itself when the
+  database is back. No order can be approved, because the approval check *is* a query.
+- **Tested:** [tests/test_without_falkordb.py](tests/test_without_falkordb.py) and the outage
+  test in [tests/test_api.py](tests/test_api.py). The reference solver in
+  [tests/reference.py](tests/reference.py) is only a test oracle, and a test checks that
+  `app/` and `api/` never import it.
 
 ## Why the graph is central
 
@@ -132,7 +175,9 @@ the current graph (it recomputes first and never trusts an earlier answer).
 
 | Situation | Outcome |
 |---|---|
-| No justification holds | **blocked**, even if a human approves |
+| No justification holds | **blocked**, even if a human approves; a repair blocks it at once |
+| It rests on a document the security scan flagged | **held**: approval waits until a person deals with the alert |
+| Amount ≥ $5,000 and a conclusion it rests on is supported only by unverified documents | **held** until a trusted document confirms it |
 | Amount ≥ $5,000, or not reversible, or not robust (below) | **needs a human approval** |
 | Otherwise | may proceed automatically |
 
@@ -153,8 +198,8 @@ sources you don't trust ([app/evidence.py](app/evidence.py)). Every belief and d
 **unsupported**, **unverified only**, resting on a **single trusted origin**, or **robust**
 (still supported on trusted sources alone after losing any one trusted origin, which is
 what the gate demands of automatic actions). It is computed on one throwaway `GRAPH.COPY`
-with the gate's what-if queries and shown in the graph (dashed outline = unverified only,
-double outline = robust), in the "why?" tree and in the MCP tools. In the demo, Vantor's
+with the gate's what-if queries and shown in the web app (each fact's colour bar in the graph,
+the badges in "Why this supplier?") and in the MCP tools. In the demo, Vantor's
 ISO 13485 claim is *unverified only* from the start: the lie was visible before anyone
 knew it was a lie.
 
@@ -230,7 +275,7 @@ one, which is what a successful injection looks like.
 
 ### The Playground: design your own world
 
-The UI's **Playground** mode loads a world you write in JSON into a private graph:
+The Streamlit Lab's **Playground** (run locally: `streamlit run ui/streamlit_app.py`) loads a world you write in JSON into a private graph:
 sources with a trust level and an origin, beliefs and decisions with
 `"because": [["a", "b"], ["c"]]` (a AND b, OR c). Then quarantine, lift, submit orders and
 read the evidence. Five example worlds each teach one idea (AND/OR, loops, the gate, the
@@ -363,7 +408,7 @@ app and the database ([D50](docs/decisions.md)).
 
 ## Correctness
 
-148 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
+151 tests (`python -m pytest`, against a separate `antidote_test` graph). Highlights:
 
 - Required cases: alternative justifications; a multi-premise justification losing one
   premise; a cycle with no root stays invalid; a cycle **that loses its only root** does not
@@ -374,8 +419,12 @@ app and the database ([D50](docs/decisions.md)).
   justification citing a missing premise is rejected and writes nothing.
 - **Fuzzing:** 25 random graphs (21 with cycles), each checked in 5 trust states, must agree
   with the independent reference solver on every node and justification.
-- The full story end to end, the Streamlit UI (demo and Playground) clicked through
-  headless, every Playground example world, and the MCP tools through a real MCP client.
+- The full story end to end over HTTP, the approval check at the endpoints themselves
+  (holds, blocks, re-checks at execute), private sessions, eviction under memory pressure,
+  failing closed without FalkorDB, built cases (including hidden text steering the order to
+  the priciest supplier), the Streamlit Lab clicked through headless, every Playground world,
+  and the MCP tools through a real MCP client. The web app was also walked through end to end
+  in a headless browser, locally and on the live deployment.
 - **Concurrency.** Two intermittent failures led to a FalkorDB detail: `GRAPH.COPY` forks the
   server, and only one fork runs at a time, so concurrent copies failed with "could not fork"
   (49 of 100 in a 4-thread stress test). Every copy now goes through one helper that
@@ -384,7 +433,7 @@ app and the database ([D50](docs/decisions.md)).
 
 ## Run it locally
 
-Requirements: Docker, Python 3.12.
+Requirements: Docker, Python 3.12, Node 22 (for the web app).
 
 ```bash
 git clone https://github.com/Rohxn14/antidote.git
@@ -395,9 +444,12 @@ python -m venv .venv
 pip install -r requirements.txt
 cp .env.example .env                  # Windows PowerShell: copy .env.example .env
 
-python -m pytest                      # 148 tests
+cd web && npm ci && npm run build && cd ..   # build the web app once
+uvicorn api.server:app --port 8000    # the web app and its API: http://localhost:8000
+
+python -m pytest                      # 151 tests
 python -m scripts.seed_demo --story   # the whole story in the terminal
-streamlit run ui/streamlit_app.py     # the UI: http://localhost:8501
+streamlit run ui/streamlit_app.py     # the Lab with the Playground: http://localhost:8501
 python -m scripts.benchmark           # the benchmark table
 python -m app.mcp_server              # MCP server (stdio) for any MCP host
 ```
@@ -458,7 +510,7 @@ scripts/          seed_demo, benchmark, record_fixtures, run_tool_agent, export_
 data/             synthetic vendor pages, registry, policy memo, agent fixtures
 scenarios/        example Playground worlds
 docs/             decisions.md (every design decision), cypher.md, benchmark.md,
-                  overview.md, playground.md (hands-on guide and manual tests)
+                  explained.md, demo_script.md, video_roadmap.md, playground.md
 tests/            pytest suite and the reference solver
 ```
 
@@ -490,15 +542,22 @@ Antidote guarantees that beliefs are consistent with the support graph it record
 **cannot** guarantee that an LLM recorded every real dependency, or that a trusted source is
 factually correct. A missing dependency can leave contamination behind. We limit this
 (agents must cite existing IDs, quotes must appear verbatim, the Buyer only sees supported
-memory), but we do not claim to eliminate it. Operations are sequential; we make no claims
-about concurrent writers. All data is synthetic; every vendor and company is fictional.
+memory), but we do not claim to eliminate it. Detection only knows published injection
+patterns; a plain lie is caught by the verification hold only if no trusted document confirms
+it, and if the trusted registry is itself wrong, Antidote cannot know. Within one case,
+operations run one at a time; two steps span several queries and fail safe (D51). In a case
+you build, no AI runs: the agents follow stated rules. All data is synthetic; every vendor and
+company is fictional.
 
 ## AI assistance disclosure
 
 This project was built with an AI coding assistant, **Claude Code (Claude Opus 5.5 by
-Anthropic)**, as allowed by the hackathon rules. Rohan wrote the project brief (the problem,
-the data model, the support rule, the gate policy, the repair workflow, the required tests
-and the benchmark design), made the design decisions recorded in
-[docs/decisions.md](docs/decisions.md), and reviewed, ran and verified the results. Claude
-proposed implementation options, wrote most of the code and tests under that direction, and
-explained each part. Commits made with the assistant carry a `Co-Authored-By` trailer.
+Anthropic)**, as the hackathon rules allow, and its use is disclosed here. Rohan chose the
+problem and wrote the project brief (the data model, the support rule, the gate policy, the
+repair workflow, the required tests and the benchmark design), designed the scenario, made the
+design decisions recorded in [docs/decisions.md](docs/decisions.md) (including the reviews that
+led to the approval holds and the case builder), set the test expectations, typed
+[app/centrality.py](app/centrality.py) himself, and reviewed, ran and verified the results,
+including by hand on the live app. Claude proposed implementation options, wrote most of the
+code and tests under that direction, and explained each part. Commits made with the assistant
+carry a `Co-Authored-By` trailer.
