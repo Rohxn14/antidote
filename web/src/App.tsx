@@ -7,6 +7,7 @@ import { ActivityFeed } from "./components/ActivityFeed";
 import { AgentStrip } from "./components/AgentStrip";
 import { AlertCard } from "./components/AlertCard";
 import { CaseBar } from "./components/CaseBar";
+import { CaseBuilder } from "./components/CaseBuilder";
 import { DocumentDrawer } from "./components/DocumentDrawer";
 import { DocumentList } from "./components/DocumentList";
 import { GraphCard, type NodeKind } from "./components/EvidenceGraph";
@@ -82,6 +83,7 @@ export default function App() {
   const [page, setPage] = usePage();
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [whyId, setWhyId] = useState<string | null>(null);
+  const [building, setBuilding] = useState(false);
   const impactRef = useRef<HTMLDivElement>(null);
   const orderRef = useRef<HTMLDivElement>(null);
 
@@ -143,7 +145,7 @@ export default function App() {
   return (
     <div className="flex min-h-dvh flex-col lg:h-dvh">
       {header}
-      <CaseBar title={caseTitle(a.requestText)} chips={chipsOf(m, a.running)} suggestion={suggestionOf(m, situation)} />
+      <CaseBar title={m.builtCase ? `${m.builtCase.name} (built by you)` : caseTitle(a.requestText)} chips={chipsOf(m, a.running)} suggestion={suggestionOf(m, situation)} />
       {a.notice && <NoticeBar notice={a.notice} onClose={a.dismissNotice} />}
 
       <main className="mx-auto grid w-full max-w-[1680px] flex-1 gap-5 px-4 pb-5 pt-4 lg:min-h-0 lg:grid-cols-[minmax(290px,330px)_minmax(0,1fr)_minmax(340px,400px)]">
@@ -156,6 +158,8 @@ export default function App() {
             running={a.running}
             hasRun={m.hasRun}
             onStart={a.start}
+            builtCase={m.builtCase}
+            onBuild={() => setBuilding(true)}
           />
           <DocumentList memory={m} readingId={reading} onOpen={setDocumentId} />
         </Column>
@@ -208,6 +212,16 @@ export default function App() {
         </Column>
       </main>
 
+      <CaseBuilder
+        open={building}
+        current={m.builtCase}
+        busy={a.pending === "case" || a.running !== null}
+        onClose={() => setBuilding(false)}
+        onUse={(spec) => {
+          setBuilding(false);
+          void a.openCase(spec);
+        }}
+      />
       {/* The document panel comes last so it opens on top of a "Why?" panel. */}
       <WhyDrawer nodeId={whyId} revision={m.revision} onClose={closeWhy} onOpenDocument={setDocumentId} />
       <DocumentDrawer

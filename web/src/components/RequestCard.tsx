@@ -1,11 +1,11 @@
 // web/src/components/RequestCard.tsx
 // The buyer's instruction, and the button that sends the agents to work.
-import { ClipboardList, FastForward, LoaderCircle, Play, RotateCcw } from "lucide-react";
+import { ClipboardList, FastForward, FlaskConical, LoaderCircle, Play, RotateCcw } from "lucide-react";
 import { useState } from "react";
-import type { RunMode } from "../contract";
-import { Button, Card, Segmented, SectionLabel } from "./ui";
+import type { CaseSpec, RunMode } from "../contract";
+import { Badge, Button, Card, Segmented, SectionLabel } from "./ui";
 
-export function RequestCard({ text, onTextChange, liveAvailable, model, running, hasRun, onStart }: {
+export function RequestCard({ text, onTextChange, liveAvailable, model, running, hasRun, onStart, builtCase, onBuild }: {
   text: string;
   onTextChange: (text: string) => void;
   liveAvailable: boolean;
@@ -13,16 +13,18 @@ export function RequestCard({ text, onTextChange, liveAvailable, model, running,
   running: "run" | "replan" | null;
   hasRun: boolean;
   onStart: (mode: RunMode, pace: number) => void;
+  builtCase: CaseSpec | null;
+  onBuild: () => void;
 }) {
   const [mode, setMode] = useState<RunMode>("replay");
-  const live = mode === "live" && liveAvailable;
+  const live = mode === "live" && liveAvailable && !builtCase;
   const lines = text.split("\n").map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim()).filter(Boolean);
 
   return (
     <Card className="p-4">
       <div className="flex items-center justify-between gap-2">
         <SectionLabel icon={<ClipboardList />}>Your request</SectionLabel>
-        <span className="text-[11px] text-slate-500">Kestrel · purchasing</span>
+        {builtCase ? <Badge tone="indigo">Built by you</Badge> : <span className="text-[11px] text-slate-500">Kestrel · purchasing</span>}
       </div>
 
       {live ? (
@@ -54,8 +56,8 @@ export function RequestCard({ text, onTextChange, liveAvailable, model, running,
         options={[
           { value: "replay", label: "Recorded agents", title: "Replays the agents' recorded answers: no AI key needed" },
           {
-            value: "live", label: "Live AI", disabled: !liveAvailable || !!running,
-            title: liveAvailable ? `Calls ${model ?? "the model"} for real` : "Live AI is switched off on this server",
+            value: "live", label: "Live AI", disabled: !liveAvailable || !!running || !!builtCase,
+            title: builtCase ? "A case you build runs without AI" : liveAvailable ? `Calls ${model ?? "the model"} for real` : "Live AI is switched off on this server",
           },
         ]}
       />
@@ -83,11 +85,18 @@ export function RequestCard({ text, onTextChange, liveAvailable, model, running,
           {hasRun ? "Run the agents again" : "Start the agents"}
         </Button>
       )}
+      {!running && (
+        <Button className="mt-2 w-full" icon={<FlaskConical />} onClick={onBuild}>
+          {builtCase ? "Change this case" : "Build your own case"}
+        </Button>
+      )}
 
       <p className="mt-2.5 text-[11.5px] leading-[17px] text-slate-500">
-        {live
-          ? `Calls ${model ?? "the model"} for real: slower, and the answers vary. Antidote checks every one.`
-          : "Replays the agents' recorded answers in about 30 seconds. Every fact, reason and check runs live in FalkorDB."}
+        {builtCase
+          ? "Your case: the documents come from your form and the agents answer by simple rules (no AI). Every check, write and decision after that is real."
+          : live
+            ? `Calls ${model ?? "the model"} for real: slower, and the answers vary. Antidote checks every one.`
+            : "Replays the agents' recorded answers in about 30 seconds. Every fact, reason and check runs live in FalkorDB."}
       </p>
     </Card>
   );

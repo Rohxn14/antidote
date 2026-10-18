@@ -13,7 +13,7 @@ client rebuilds everything from GET /api/state.
 """
 from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # --- Vocabulary -----------------------------------------------------------------------
 
@@ -212,6 +212,36 @@ class ReplanRequest(BaseModel):
     pace: float = 1.0
 
 
+CaseSlot = Literal["vantor", "boltline", "ferrocraft", "quillon"]
+
+
+class CaseSupplier(BaseModel):
+    slot: CaseSlot
+    price: int = Field(ge=50, le=5000)         # per unit, in dollars
+    weeks: int = Field(ge=1, le=26)            # delivery time for 100 units
+    claims_certificate: bool                   # its own page claims ISO 13485
+    registry_confirms: bool                    # the trusted registry lists ISO 13485
+    hidden_instructions: bool                  # its page hides instructions for AI readers
+
+
+class CaseSpec(BaseModel):
+    """A procurement case built by the visitor (app/casebuilder.py)."""
+    name: str = Field(default="Your case", max_length=60)
+    max_weeks: int = Field(ge=1, le=12)        # your request: delivered within this many weeks
+    suppliers: list[CaseSupplier] = Field(min_length=4, max_length=4)
+
+    @field_validator("suppliers")
+    @classmethod
+    def one_per_slot(cls, suppliers):
+        if sorted(s.slot for s in suppliers) != ["boltline", "ferrocraft", "quillon", "vantor"]:
+            raise ValueError("give each of the four suppliers exactly once")
+        return suppliers
+
+
+class CaseRequest(BaseModel):
+    case: CaseSpec | None                      # None: back to the demo story
+
+
 # --- Responses --------------------------------------------------------------------------
 
 class ApiError(BaseModel):
@@ -326,6 +356,7 @@ class StateResponse(BaseModel):
     edges: list[Edge]
     alerts: list[Alert]
     repairs: list[RepairRecord]
+    case: CaseSpec | None             # a case the visitor built, or None for the demo story
 
 
 class Segment(BaseModel):

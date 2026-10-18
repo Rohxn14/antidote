@@ -4,7 +4,7 @@
 // GET /api/state, so the screen always matches what FalkorDB holds.
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type {
-  AntidoteEvent, HealthResponse, ImpactResponse, OrderActionResponse, RunMode, StateResponse,
+  AntidoteEvent, CaseSpec, HealthResponse, ImpactResponse, OrderActionResponse, RunMode, StateResponse,
 } from "./contract";
 import { api, ApiFailure } from "./lib/api";
 import { describe, WHO, type FeedEntry, type FeedItem, type Who } from "./lib/feed";
@@ -24,7 +24,7 @@ export interface Notice {
   text: string;
 }
 
-export type Pending = "impact" | "cancel" | "quarantine" | "approve" | "execute" | "restart";
+export type Pending = "impact" | "cancel" | "quarantine" | "approve" | "execute" | "restart" | "case";
 
 const IDLE: Record<AgentKey, AgentView> = {
   researcher: { state: "idle", message: "Ready to read the documents.", documentId: null },
@@ -291,6 +291,17 @@ export function useAntidote() {
       setAgent("buyer", r.state === "executed" ? "done" : "waiting", r.state === "executed" ? `${label} has been placed.` : `${label} is approved, ready to place.`);
     }), [act, push]);
 
+  /** Switch to a case the visitor built (and start the agents on it), or back to the story. */
+  const openCase = useCallback(async (spec: CaseSpec | null) => {
+    let switched = false;
+    await act("case", () => api.setCase(spec), () => {
+      switched = true;
+      clearRun();
+      dispatch({ type: "reset" });
+    });
+    if (switched && spec) await start("replay", 1);
+  }, [act, clearRun, start]);
+
   const startOver = useCallback(() => {
     current.current?.controller.abort();
     current.current = null;
@@ -360,7 +371,7 @@ export function useAntidote() {
     requestText, setRequestText,
     orders: ordersOf(memory),
     dismissNotice: () => setNotice(null),
-    start, replan, previewImpact, cancelImpact, quarantine, decide, startOver,
+    start, replan, previewImpact, cancelImpact, quarantine, decide, startOver, openCase,
   };
 }
 

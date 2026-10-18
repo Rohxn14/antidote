@@ -33,6 +33,7 @@ from api import contract as c
 from api.session_store import Session, SessionStore
 from app import demo, evidence, gate, llm, memory, repair, runner, views
 from app.agents.buyer import order_label
+from app.casebuilder import CaseScript
 from app.db import ROOT, connection_settings, drop_graph, get_db
 from app.schema import (ABOUT, AGENT, AUTHORED, DECISION, HOLDS, JUSTIFICATION, SUPPORTS,
                         VALID, VENDOR)
@@ -174,6 +175,14 @@ OPEN_ORDER_STATES = ("draft", "pending_approval", "authorized")
 def under_review(session: Session) -> list[str]:
     """Documents the security scan flagged: orders resting on them wait for a person."""
     return [a["document_id"] for a in session.alerts]
+
+
+def script_for(session: Session, mode: str, request_text: str | None = None):
+    """Where this session's documents and agents' answers come from."""
+    if session.case:
+        return CaseScript(session.case)
+    text = (request_text or "").strip()[:runner.MAX_REQUEST]
+    return runner.StoryScript(mode, text or runner.DEFAULT_REQUEST)
 VENDORS = f"MATCH (v:{VENDOR}) RETURN v.id, v.name ORDER BY v.name"
 DOC_KIND = {runner.REQUEST_ID: "request", "s_registry": "registry"}
 
@@ -227,7 +236,8 @@ def build_state(g, session: Session) -> c.StateResponse:
         alerts=[c.Alert(**a) for a in session.alerts],
         repairs=[c.RepairRecord(id=r["id"], approved_by=r["approved_by"], revision=r["revision"],
                                 documents=r["titles"], withdrawn=r["changed"])
-                 for r in views.repairs(g)])
+                 for r in views.repairs(g)],
+        case=c.CaseSpec(**session.case) if session.case else None)
 
 
 # --- Documents ---------------------------------------------------------------------------
@@ -322,6 +332,8 @@ def document(document_id: str, session: Session = Depends(current)):
         if path.is_relative_to(DATA) and path.is_file():
             text = path.read_text(encoding="utf-8")
             html = text if path.suffix == ".html" else None
+    elif text and text.lstrip().lower().startswith("<!doctype html"):
+        html = text  # a page written by the case builder
     return c.DocumentResponse(id=document_id, title=title, kind=_doc_kind(document_id),
                               trust=trust, segments=segments(text or "", html is not None),
                               html=html)
@@ -331,19 +343,20 @@ def document(document_id: str, session: Session = Depends(current)):
 def run(body: c.RunRequest, session: Session = Depends(current)):
     if session.busy:
         raise ApiFailure(409, "busy", "the agents are already working")
+    if body.mode == "live" and session.case:
+        raise ApiFailure(400, "case_without_ai", "A case you build runs without AI: use the recorded agents")
     if body.mode == "live" and not live_ai():
         raise ApiFailure(400, "live_ai_unavailable", "Live AI is switched off on this server")
-    request_text = (body.request or "").strip() if body.mode == "live" else ""
-    request_text = request_text[:runner.MAX_REQUEST] or runner.DEFAULT_REQUEST
+    script = script_for(session, body.mode, body.request if body.mode == "live" else None)
     g = graph_of(session)
 
     def events():
         if session.preview is not None:
             repair.discard(session.preview)
         session.preview, session.alerts, session.has_run = None, [], False
-        session.request = request_text
-        runner.prepare(g, request_text)
-        yield from runner.run(g, body.mode, body.pace)
+        session.request = script.request_text
+        runner.prepare(g, script)
+        yield from runner.run(g, body.mode, body.pace, script)
 
     return _session_stream(session, events, on_complete=lambda: setattr(session, "has_run", True))
 
@@ -355,7 +368,24 @@ def replan(body: c.ReplanRequest, session: Session = Depends(current)):
     if body.mode == "live" and not live_ai():
         raise ApiFailure(400, "live_ai_unavailable", "Live AI is switched off on this server")
     g = graph_of(session)
-    return _session_stream(session, lambda: runner.replan(g, body.mode, body.pace))
+    script = script_for(session, body.mode, session.request)
+    return _session_stream(session, lambda: runner.replan(g, body.mode, body.pace, script))
+
+
+@router.post("/case", response_model=c.Ack)
+def set_case(body: c.CaseRequest, session: Session = Depends(current)):
+    """Switch this session to a case the visitor built, or back to the demo story
+    (case = null). The memory starts afresh with the case's documents."""
+    if session.busy:
+        raise ApiFailure(409, "busy", "the agents are already working")
+    if session.preview is not None:
+        repair.discard(session.preview)
+    session.case = body.case.model_dump() if body.case else None
+    script = script_for(session, "replay")
+    session.preview, session.alerts, session.has_run = None, [], False
+    session.request = script.request_text
+    runner.prepare(graph_of(session), script)
+    return c.Ack(ok=True)
 
 
 @router.post("/impact", response_model=c.ImpactResponse)

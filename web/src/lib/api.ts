@@ -3,7 +3,7 @@
 // visitor's private session token; the server maps it to the visitor's own graph,
 // so the browser never names a graph. Streams are NDJSON: one event per line.
 import type {
-  Ack, AntidoteEvent, ApiError, BenchmarkResponse, CypherResponse, DocumentResponse, HealthResponse,
+  Ack, AntidoteEvent, ApiError, BenchmarkResponse, CaseSpec, CypherResponse, DocumentResponse, HealthResponse,
   ImpactResponse, OrderActionResponse, QuarantineResponse, ReplanRequest, RunRequest,
   SessionResponse, StateResponse, WhyResponse,
 } from "../contract";
@@ -115,6 +115,8 @@ export const api = {
   run: (body: RunRequest, onEvent: OnEvent, signal: AbortSignal) => stream("/run", body, onEvent, signal),
   replan: (body: ReplanRequest, onEvent: OnEvent, signal: AbortSignal) =>
     stream("/replan", body, onEvent, signal),
+  /** Switch to a case the visitor built, or back to the demo story (null). */
+  setCase: (spec: CaseSpec | null) => json<Ack>("POST", "/case", { case: spec }),
   cypher: () => json<CypherResponse>("GET", "/cypher"),
   benchmark: () => json<BenchmarkResponse>("GET", "/benchmark"),
   /** Each capability through the real code on a scratch graph, with the Cypher it ran. */

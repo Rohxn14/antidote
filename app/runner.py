@@ -56,16 +56,44 @@ def status(agent: str, message: str, state: str = "working", document_id: str | 
                  document_id=document_id)
 
 
-def prepare(g, request_text: str = DEFAULT_REQUEST) -> None:
+class StoryScript:
+    """Where a run's documents and the agents' answers come from: here, the demo
+    story, with the recorded agents (replay) or the real ones (live). A built case
+    (app/casebuilder.CaseScript) has the same shape."""
+
+    def __init__(self, mode: str = "replay", request_text: str = DEFAULT_REQUEST):
+        self.live = mode == "live"
+        self.request_text = request_text[:MAX_REQUEST] or DEFAULT_REQUEST
+
+    def sources(self) -> list[tuple]:
+        """(id, uri, title, trust, origin, text): text None means the file at uri."""
+        return [(sid, uri, "Your request" if sid == REQUEST_ID else title, trust, origin,
+                 self.request_text if sid == REQUEST_ID else None)
+                for sid, uri, title, trust, origin in demo.SOURCES]
+
+    def extraction(self, g, source_id: str) -> dict:
+        return researcher.extract(g, source_id) if self.live else demo.fixture(f"researcher_{source_id}")
+
+    def inference(self, g) -> dict:
+        return researcher.infer(g) if self.live else demo.fixture("researcher_inference")
+
+    def plan(self, g) -> dict:
+        return buyer.decide(g, demo.FIRST_ORDER) if self.live else demo.fixture("buyer_initial")
+
+    def replan(self, g) -> dict:
+        return buyer.decide(g) if self.live else demo.fixture("buyer_after_repair")
+
+
+def prepare(g, script=DEFAULT_REQUEST) -> None:
     """A fresh memory for one run: the agents, the vendors and the documents
-    (the user's request among them, trusted), but no facts yet."""
+    (the user's request among them, trusted), but no facts yet. `script` is a
+    StoryScript or a CaseScript (a plain string: the story with that request)."""
+    if isinstance(script, str):
+        script = StoryScript(request_text=script)
     demo.reset(g)
     demo.register(g)
-    for sid, uri, title, trust, origin in demo.SOURCES:
-        is_request = sid == REQUEST_ID
-        memory.add_source(g, sid, uri=uri, title="Your request" if is_request else title,
-                          trust=trust, origin=origin,
-                          text=request_text[:MAX_REQUEST] if is_request else None,
+    for sid, uri, title, trust, origin, text in script.sources():
+        memory.add_source(g, sid, uri=uri, title=title, trust=trust, origin=origin, text=text,
                           recompute=False)
     support.recompute(g)
 
@@ -170,40 +198,48 @@ def _scan(r: _Run):
                  state="done")
 
 
-def run(g, mode: str = "replay", pace: float = 1.0):
+def _after_plan(plan: dict):
+    if plan.get("purchase_order"):
+        yield status("buyer", "Waiting for your decision", state="waiting")
+    else:
+        yield status("buyer", "No supplier qualifies and delivers in time on what is supported", state="done")
+
+
+def run(g, mode: str = "replay", pace: float = 1.0, script=None):
     """The whole job, from reading the documents to an order awaiting approval."""
+    script = script or StoryScript(mode)
     r = _Run(g, pace)
-    live = mode == "live"
     yield status("system", "The agents start from a fresh memory for this request")
-    for sid, _uri, title, _trust, _origin in demo.SOURCES:
+    for sid, _uri, title, _trust, _origin, _text in script.sources():
         label = "your request" if sid == REQUEST_ID else title
         yield status("researcher", f"Reading {label}", document_id=sid)
         r.pause("document")
-        extraction = researcher.extract(g, sid) if live else demo.fixture(f"researcher_{sid}")
+        extraction = script.extraction(g, sid)
         for claim in extraction["claims"]:
             yield from _claim(r, sid, claim, extraction.get("model"))
             r.pause("claim")
     yield status("researcher", "Working out which suppliers meet your requirements")
-    inference = researcher.infer(g) if live else demo.fixture("researcher_inference")
+    inference = script.inference(g)
     for item in inference["inferences"]:
         yield from _conclusion(r, item, inference.get("model"))
         r.pause("conclusion")
     yield status("researcher", "Finished reading", state="done")
     yield status("buyer", "Comparing the suppliers that qualify")
     r.pause("decision")
-    plan = buyer.decide(g, demo.FIRST_ORDER) if live else demo.fixture("buyer_initial")
+    plan = script.plan(g)
     yield from _plan(r, plan)
-    yield status("buyer", "Waiting for your decision", state="waiting")
+    yield from _after_plan(plan)
     yield from _scan(r)
     yield event("run_complete", revision=memory.revision(g), summary=r.counts)
 
 
-def replan(g, mode: str = "replay", pace: float = 1.0):
+def replan(g, mode: str = "replay", pace: float = 1.0, script=None):
     """The Buyer decides again, from the facts that are still supported."""
+    script = script or StoryScript(mode)
     r = _Run(g, pace)
     yield status("buyer", "Re-planning with the facts that are still supported")
     r.pause("decision")
-    plan = buyer.decide(g) if mode == "live" else demo.fixture("buyer_after_repair")
+    plan = script.replan(g)
     yield from _plan(r, plan)
-    yield status("buyer", "Waiting for your decision", state="waiting")
+    yield from _after_plan(plan)
     yield event("run_complete", revision=memory.revision(g), summary=r.counts)

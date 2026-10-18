@@ -4,7 +4,8 @@
 // come from the same events. FalkorDB stays the source of truth: after every run
 // or action the app reloads the full state.
 import type {
-  Alert, AntidoteEvent, Decision, Document, Edge, Fact, OrderState, Reason, RepairRecord, StateResponse,
+  Alert, AntidoteEvent, CaseSpec, Decision, Document, Edge, Fact, OrderState, Reason, RepairRecord,
+  StateResponse,
 } from "../contract";
 
 export interface Memory {
@@ -19,11 +20,12 @@ export interface Memory {
   alerts: Alert[];
   repairs: RepairRecord[];
   latest: string | null; // the fact or decision recorded most recently in this run
+  builtCase: CaseSpec | null; // a case the visitor built, or null for the demo story
 }
 
 export const emptyMemory: Memory = {
   revision: 0, hasRun: false, documents: {}, facts: {}, reasons: {}, decisions: {}, edges: [],
-  vendors: {}, alerts: [], repairs: [], latest: null,
+  vendors: {}, alerts: [], repairs: [], latest: null, builtCase: null,
 };
 
 export type MemoryAction =
@@ -50,13 +52,13 @@ export function memoryReducer(m: Memory, action: MemoryAction): Memory {
       return {
         revision: s.revision, hasRun: s.has_run, documents: byId(s.documents), facts: byId(s.facts),
         reasons: byId(s.reasons), decisions: byId(s.decisions), edges: s.edges,
-        vendors: vendorNames(s), alerts: s.alerts, repairs: s.repairs, latest: null,
+        vendors: vendorNames(s), alerts: s.alerts, repairs: s.repairs, latest: null, builtCase: s.case,
       };
     }
     case "documents":
-      return { ...m, documents: byId(action.state.documents), vendors: vendorNames(action.state) };
+      return { ...m, documents: byId(action.state.documents), vendors: vendorNames(action.state), builtCase: action.state.case };
     case "reset":
-      return { ...emptyMemory, documents: m.documents, vendors: m.vendors };
+      return { ...emptyMemory, documents: m.documents, vendors: m.vendors, builtCase: m.builtCase };
     case "event":
       return applyEvent(m, action.event);
     case "distrusted": {

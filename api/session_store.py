@@ -36,6 +36,7 @@ class Session:
     preview: object = None             # the open repair.Preview, if any
     alerts: list = field(default_factory=list)
     evidence: tuple | None = None      # (revision, strength) cache
+    case: dict | None = None           # a case the visitor built (None: the demo story)
 
 
 class SessionStore:

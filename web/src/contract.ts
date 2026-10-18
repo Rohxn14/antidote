@@ -161,6 +161,27 @@ export interface ReplanRequest {
   pace: number;
 }
 
+export type CaseSlot = "vantor" | "boltline" | "ferrocraft" | "quillon";
+
+export interface CaseSupplier {
+  slot: CaseSlot;
+  price: number;
+  weeks: number;
+  claims_certificate: boolean;
+  registry_confirms: boolean;
+  hidden_instructions: boolean;
+}
+
+export interface CaseSpec {
+  name: string;
+  max_weeks: number;
+  suppliers: CaseSupplier[];
+}
+
+export interface CaseRequest {
+  case: CaseSpec | null;
+}
+
 // --- Responses --------------------------------------------------------------------------
 
 export interface ApiError {
@@ -275,6 +296,7 @@ export interface StateResponse {
   edges: Edge[];
   alerts: Alert[];
   repairs: RepairRecord[];
+  case: CaseSpec | null;
 }
 
 export interface Segment {
