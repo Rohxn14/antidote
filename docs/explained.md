@@ -81,6 +81,14 @@ believable, the gate, the repair workflow and the tests. The hackathon added one
 qualify). So the most important decision was that the *reasoning itself* runs as Cypher
 queries inside FalkorDB, not as Python code over downloaded data.
 
+**Checked again before submitting.** An audit against that rule found four places where
+FalkorDB computed the flags but Python finished the judgement: it downloaded every node's
+flag and filtered it. Those places were the Buyer's check of the facts it cites, the case
+builder's Buyer, the verification hold and the evidence levels. All four now ask FalkorDB
+the actual question (for example "which of these ids are valid beliefs?"), with the same
+answers and the same tests (D58). The README table "Where each decision is made" lists every
+judgement and the query that makes it.
+
 **Order of work, and why:**
 
 | Step | What | Why in this order |
@@ -513,7 +521,11 @@ you don't trust ([app/evidence.py](../app/evidence.py)):
 | single trusted origin | trusted sources alone hold it, but losing one would drop it | green bar |
 | robust | survives on trusted sources even after losing any one | green bar, "Robust" badge |
 
-Computed on one throwaway copy with the gate's what-ifs. Shown in the graph, the "Why this
+Computed on one throwaway copy with the gate's what-ifs, all in Cypher: the copy first
+remembers the real answer (`real_ok`), then the trusted-only world writes `trusted_ok`, then
+each world without one trusted origin writes that origin into `weak_origin` on whatever it
+brings down. One last query turns those three values into the level. Python only decides
+which world comes next. Shown in the graph, the "Why this
 supplier?" panel, the order card ("What it rests on") and the MCP tools. In the demo, Vantor's ISO 13485 claim is "unverified only"
 **before** anyone knows it is a lie.
 
