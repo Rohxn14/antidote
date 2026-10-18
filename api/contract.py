@@ -87,7 +87,9 @@ class Finding(BaseModel):
 class SecurityAlertData(BaseModel):
     document_id: str
     document_title: str
+    reason: str = ""                  # why it is under review, in plain words
     findings: list[Finding]
+    suspended: list[str] = []         # names of the suppliers suspended with it
 
 
 class ErrorData(BaseModel):
@@ -212,7 +214,7 @@ class ReplanRequest(BaseModel):
     pace: float = 1.0
 
 
-CaseSlot = Literal["vantor", "boltline", "ferrocraft", "quillon"]
+CaseSlot = Literal["vantor", "boltline", "ferrocraft", "quillon", "nexapoint", "corvane"]
 
 
 class CaseSupplier(BaseModel):
@@ -222,19 +224,20 @@ class CaseSupplier(BaseModel):
     claims_certificate: bool                   # its own page claims ISO 13485
     registry_confirms: bool                    # the trusted registry lists ISO 13485
     hidden_instructions: bool                  # its page hides instructions for AI readers
+    claims_exclusive: bool = False             # its page openly claims to be the only certified one
 
 
 class CaseSpec(BaseModel):
     """A procurement case built by the visitor (app/casebuilder.py)."""
     name: str = Field(default="Your case", max_length=60)
     max_weeks: int = Field(ge=1, le=12)        # your request: delivered within this many weeks
-    suppliers: list[CaseSupplier] = Field(min_length=4, max_length=4)
+    suppliers: list[CaseSupplier] = Field(min_length=3, max_length=6)
 
     @field_validator("suppliers")
     @classmethod
     def one_per_slot(cls, suppliers):
-        if sorted(s.slot for s in suppliers) != ["boltline", "ferrocraft", "quillon", "vantor"]:
-            raise ValueError("give each of the four suppliers exactly once")
+        if len({s.slot for s in suppliers}) != len(suppliers):
+            raise ValueError("each supplier may appear only once")
         return suppliers
 
 
@@ -329,7 +332,10 @@ class Edge(BaseModel):
 class Alert(BaseModel):
     document_id: str
     document_title: str
+    reason: str = ""
     findings: list[Finding]
+    suspended: list[str] = []
+    resolution: Literal["open", "cleared", "distrusted"] = "open"
 
 
 class RepairRecord(BaseModel):
@@ -343,6 +349,7 @@ class RepairRecord(BaseModel):
 class Vendor(BaseModel):
     id: str
     name: str
+    status: Literal["suspended", "blacklisted"] | None = None
 
 
 class StateResponse(BaseModel):
@@ -403,6 +410,12 @@ class QuarantineResponse(BaseModel):
     quarantined: list[str]
     withdrawn: list[str]
     orders_blocked: list[str]         # open orders that lost their support, blocked now
+    blacklisted: list[str] = []       # suppliers those documents had suspended
+
+
+class ClearResponse(BaseModel):
+    document_id: str
+    reinstated: list[str]             # suppliers no longer suspended
 
 
 class OrderActionResponse(BaseModel):

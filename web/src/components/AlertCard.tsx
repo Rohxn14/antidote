@@ -1,12 +1,21 @@
 // web/src/components/AlertCard.tsx
-// Antidote's security scan found instructions hidden in a document.
-import { Eye, Radar, ShieldAlert } from "lucide-react";
+// A document Antidote put under review before the Buyer decided: hidden instructions
+// aimed at AI, or a claim a trusted document contradicts. While it is under review it
+// counts for nothing and its supplier is suspended; a person blacklists or clears it.
+import { Ban, CheckCircle2, Eye, RefreshCw, ShieldAlert } from "lucide-react";
 import type { Alert, Document } from "../contract";
 import type { Pending } from "../useAntidote";
-import { ruleLabel } from "../lib/words";
+import { listOf, ruleLabel } from "../lib/words";
 import { Badge, Button, Card, cx } from "./ui";
 
-export function AlertCard({ alert, document, previewing, pending, busy, onShow, onPreview }: {
+function headline(alert: Alert): string {
+  const hidden = alert.findings.some((f) => f.rule !== "conflict");
+  const conflict = alert.findings.some((f) => f.rule === "conflict");
+  if (hidden && conflict) return "Hidden instructions and a contradicted claim";
+  return conflict ? "A claim trusted documents contradict" : "Hidden instructions found";
+}
+
+export function AlertCard({ alert, document, previewing, pending, busy, onShow, onPreview, onClear, onReplan }: {
   alert: Alert;
   document: Document | undefined;
   previewing: boolean;
@@ -14,70 +23,84 @@ export function AlertCard({ alert, document, previewing, pending, busy, onShow, 
   busy: boolean;
   onShow: () => void;
   onPreview: () => void;
+  onClear: () => void;
+  onReplan: () => void;
 }) {
-  const distrusted = document?.trust === "quarantined";
-  const steers = alert.findings.some((f) => f.rule === "steering");
-  const shown = alert.findings.slice(0, 4);
+  const distrusted = alert.resolution === "distrusted" || document?.trust === "quarantined";
+  const cleared = alert.resolution === "cleared" && !distrusted;
+  const open = !distrusted && !cleared;
+  const suppliers = alert.suspended.length ? listOf(alert.suspended) : null;
 
   return (
-    <Card className={cx("overflow-hidden", !distrusted && "border-rose-200 ring-1 ring-rose-100")}>
-      <div className="flex gap-3 bg-gradient-to-b from-rose-50 to-white px-4 pb-3 pt-4">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-rose-600 text-white shadow-sm shadow-rose-600/30">
+    <Card className={cx("overflow-hidden", open && "border-rose-200 ring-1 ring-rose-100")}>
+      <div className={cx("flex gap-3 bg-gradient-to-b to-white px-4 pb-3 pt-4", open ? "from-rose-50" : "from-slate-50")}>
+        <span className={cx("grid size-9 shrink-0 place-items-center rounded-xl text-white shadow-sm",
+          open ? "bg-rose-600 shadow-rose-600/30" : "bg-slate-500 shadow-slate-500/30")}>
           <ShieldAlert className="size-[18px]" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="text-[14px] font-semibold text-rose-900">Hidden instructions found</div>
-          <div className="truncate text-[12.5px] text-rose-800/80">
+          <div className={cx("text-[14px] font-semibold", open ? "text-rose-900" : "text-slate-800")}>{headline(alert)}</div>
+          <div className="truncate text-[12.5px] text-slate-600">
             in <span className="font-medium">{alert.document_title}</span>
           </div>
         </div>
-        {distrusted && <Badge tone="slate" className="self-start">No longer trusted</Badge>}
+        {open && <Badge tone="red" className="self-start">Under review</Badge>}
+        {distrusted && <Badge tone="slate" className="self-start">{suppliers ? "Blacklisted" : "Distrusted"}</Badge>}
+        {cleared && <Badge tone="green" className="self-start">False alarm</Badge>}
       </div>
-      {distrusted ? (
-        <>
-          <p className="px-4 text-[12.5px] leading-5 text-slate-700">
-            You stopped trusting this page. Everything that rested only on it was withdrawn from the agents' memory.
-          </p>
-          <div className="mt-3 flex border-t border-slate-100 px-4 py-3">
-            <Button size="sm" icon={<Eye />} onClick={onShow}>See what the AI read</Button>
-          </div>
-        </>
-      ) : (
-        <AlertDetails alert={alert} steers={steers} shown={shown} previewing={previewing} pending={pending} busy={busy} onShow={onShow} onPreview={onPreview} />
-      )}
-    </Card>
-  );
-}
 
-function AlertDetails({ alert, steers, shown, previewing, pending, busy, onShow, onPreview }: {
-  alert: Alert; steers: boolean; shown: Alert["findings"]; previewing: boolean; pending: Pending | null;
-  busy: boolean; onShow: () => void; onPreview: () => void;
-}) {
-  return (
-    <>
-      <p className="px-4 text-[12.5px] leading-5 text-slate-700">
-        This page hides text that people can't see but AI agents read as ordinary text.{" "}
-        {steers ? "It is written to steer the agents towards one supplier." : "It is written to change what the agents do."}
-      </p>
-      <ul className="mx-4 mt-2.5 space-y-1.5">
-        {shown.map((f, i) => (
-          <li key={i} className="rounded-lg bg-slate-50 px-2.5 py-1.5 ring-1 ring-inset ring-slate-100">
-            <div className="text-[11.5px] font-medium text-slate-700">{ruleLabel(f.rule)}</div>
-            <div className="line-clamp-2 font-mono text-[11px] leading-4 text-slate-500">{f.evidence}</div>
-          </li>
-        ))}
-      </ul>
-      {alert.findings.length > shown.length && (
-        <p className="mx-4 mt-1.5 text-[11.5px] text-slate-500">and {alert.findings.length - shown.length} more warning signs</p>
+      {open && (
+        <p className="px-4 text-[12.5px] leading-5 text-slate-700">
+          Antidote checked this page <span className="font-medium">before the Buyer decided</span>. While it is under
+          review, nothing on it counts as evidence{suppliers ? <>, and <span className="font-medium">{suppliers}</span> is suspended: no order can go to it</> : null}.
+          Blacklisting is your call: the check can be wrong, and anyone able to plant text on a page could otherwise get a supplier blacklisted.
+        </p>
       )}
+      {distrusted && (
+        <p className="px-4 text-[12.5px] leading-5 text-slate-700">
+          You stopped trusting this page{suppliers ? <> and <span className="font-medium">{suppliers}</span> is blacklisted</> : null}.
+          Everything that rested only on it is gone from the agents' memory for good.
+        </p>
+      )}
+      {cleared && (
+        <p className="px-4 text-[12.5px] leading-5 text-slate-700">
+          You marked this as a false alarm: the page counts as evidence again{suppliers ? <> and {suppliers} is no longer suspended</> : null}.
+          Re-plan if you want the Buyer to consider it.
+        </p>
+      )}
+
+      {open && (
+        <ul className="mx-4 mt-2.5 space-y-1.5">
+          {alert.findings.slice(0, 4).map((f, i) => (
+            <li key={i} className="rounded-lg bg-slate-50 px-2.5 py-1.5 ring-1 ring-inset ring-slate-100">
+              <div className="text-[11.5px] font-medium text-slate-700">{ruleLabel(f.rule)}</div>
+              <div className={cx("text-[11px] leading-4 text-slate-500", f.rule === "conflict" ? "" : "line-clamp-2 font-mono")}>{f.evidence}</div>
+            </li>
+          ))}
+          {alert.findings.length > 4 && (
+            <li className="text-[11.5px] text-slate-500">and {alert.findings.length - 4} more warning signs</li>
+          )}
+        </ul>
+      )}
+
       <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 px-4 py-3">
-        <Button icon={<Eye />} onClick={onShow}>See what the AI read</Button>
-        {!previewing && (
-          <Button variant="dangerOutline" icon={<Radar />} loading={pending === "impact"} disabled={busy} onClick={onPreview}>
-            What if we stop trusting it?
+        <Button size={open ? undefined : "sm"} icon={<Eye />} onClick={onShow}>See what the AI read</Button>
+        {open && !previewing && (
+          <Button variant="dangerOutline" icon={<Ban />} loading={pending === "impact"} disabled={busy} onClick={onPreview}>
+            {suppliers ? `Blacklist ${suppliers}…` : "Stop trusting it…"}
+          </Button>
+        )}
+        {open && (
+          <Button icon={<CheckCircle2 />} loading={pending === "clear"} disabled={busy} onClick={onClear}>
+            It's a false alarm
+          </Button>
+        )}
+        {cleared && (
+          <Button size="sm" variant="brand" icon={<RefreshCw />} disabled={busy} onClick={onReplan}>
+            Re-plan with it
           </Button>
         )}
       </div>
-    </>
+    </Card>
   );
 }

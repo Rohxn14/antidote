@@ -10,7 +10,7 @@
      "claim": "Ferrocraft Servo sells servo actuators at $560 per unit and can ship 100 units within 4 weeks.",
      "quote": "Price: $560 per unit; 100 units ship within 4 weeks.",
      "reasoning": "Price and lead time from the product section."},
-    {"belief": "b_ferrocraft_iso13485", "vendor": "v_ferrocraft",
+    {"belief": "b_ferrocraft_iso13485", "vendor": "v_ferrocraft", "standard": "ISO 13485",
      "claim": "Ferrocraft Servo holds ISO 13485 certification.",
      "quote": "Ferrocraft Servo is certified to ISO 13485:2016 (certificate MD-1187).",
      "reasoning": "The quality section states it."}

@@ -2,7 +2,7 @@
   "source_id": "s_registry",
   "model": "hand-authored",
   "claims": [
-    {"belief": "b_boltline_iso13485", "vendor": "v_boltline",
+    {"belief": "b_boltline_iso13485", "vendor": "v_boltline", "standard": "ISO 13485",
      "claim": "Boltline Automation holds ISO 13485 certification.",
      "quote": "Boltline Automation servo actuators ISO 13485:2016 MD-2231",
      "reasoning": "The registry lists ISO 13485:2016 on file for Boltline Automation."},
@@ -10,7 +10,7 @@
      "claim": "Boltline Automation manufactures servo actuators.",
      "quote": "Boltline Automation servo actuators ISO 13485:2016",
      "reasoning": "The registry lists servo actuators as a registered product."},
-    {"belief": "b_ferrocraft_iso13485", "vendor": "v_ferrocraft",
+    {"belief": "b_ferrocraft_iso13485", "vendor": "v_ferrocraft", "standard": "ISO 13485",
      "claim": "Ferrocraft Servo holds ISO 13485 certification.",
      "quote": "Ferrocraft Servo servo actuators, gearboxes ISO 13485:2016 MD-1187",
      "reasoning": "The registry lists ISO 13485:2016 on file for Ferrocraft Servo."},

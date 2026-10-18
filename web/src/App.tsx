@@ -203,6 +203,8 @@ export default function App() {
                 busy={busy}
                 onShow={() => setDocumentId(alert.document_id)}
                 onPreview={() => a.previewImpact(alert.document_id)}
+                onClear={() => a.clearReview(alert.document_id)}
+                onReplan={a.replan}
               />
               {impactFor === alert.document_id && impactPanel}
             </div>

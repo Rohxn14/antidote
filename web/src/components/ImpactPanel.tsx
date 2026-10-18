@@ -6,7 +6,7 @@ import { History, Radar, ShieldX } from "lucide-react";
 import type { ImpactResponse, RepairRecord } from "../contract";
 import type { Memory } from "../lib/memory";
 import type { Pending } from "../useAntidote";
-import { plural } from "../lib/words";
+import { plural, listOf } from "../lib/words";
 import { Button, Card, cx, SectionLabel } from "./ui";
 
 function Stat({ n, label, tone }: { n: number; label: string; tone: "red" | "green" }) {
@@ -48,6 +48,10 @@ export function ImpactPanel({ impact, memory, pending, onConfirm, onCancel }: {
   const title = (id: string) => memory.documents[id]?.title ?? id;
   const lost = impact.lost.filter((x) => !impact.orders_blocked.some((o) => o.id === x.id));
   const lostFacts = lost.filter((x) => x.kind === "fact");
+  // A document under review already counts for nothing: the preview let it count on the
+  // copy first, so these are what rest only on it, gone for good once you confirm.
+  const review = memory.alerts.find((a) => a.document_id === impact.document_id && a.resolution === "open");
+  const suppliers = review?.suspended.length ? listOf(review.suspended) : null;
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -55,20 +59,22 @@ export function ImpactPanel({ impact, memory, pending, onConfirm, onCancel }: {
         <div className="bg-gradient-to-b from-amber-50 to-white px-4 pb-3 pt-4">
           <SectionLabel icon={<Radar />} className="text-amber-700">Preview · nothing has changed yet</SectionLabel>
           <h3 className="mt-1.5 text-[15px] font-semibold leading-5 text-slate-900">
-            If you stop trusting {title(impact.document_id)}
+            If you stop trusting {title(impact.document_id)}{suppliers ? ` and blacklist ${suppliers}` : ""}
           </h3>
           <p className="mt-1.5 text-[12px] leading-[18px] text-slate-600">
-            Antidote copied the memory inside FalkorDB, stopped trusting the document on the copy, and recomputed what
-            still holds. Your real memory is untouched until you confirm.
+            {review
+              ? "It is under review, so nothing on it counts right now. On a copy of the memory inside FalkorDB, Antidote let it count again, then stopped trusting it, to show what rests only on it. "
+              : "Antidote copied the memory inside FalkorDB, stopped trusting the document on the copy, and recomputed what still holds. "}
+            Your real memory is untouched until you confirm.
           </p>
         </div>
         <div className="grid grid-cols-3 divide-x divide-slate-100 border-y border-slate-100">
-          <Stat n={lostFacts.length} label="facts lose their support" tone="red" />
+          <Stat n={lostFacts.length} label={review ? "facts rest only on it" : "facts lose their support"} tone="red" />
           <Stat n={impact.orders_blocked.length} label={impact.orders_blocked.length === 1 ? "order would be blocked" : "orders would be blocked"} tone="red" />
           <Stat n={impact.survived.length} label="kept by other evidence" tone="green" />
         </div>
         <div className="space-y-3.5 px-4 py-3.5">
-          <List title="These lose their support" tone="red" items={lost.map((x) => x.text)} />
+          <List title={review ? "These rest only on it: gone for good" : "These lose their support"} tone="red" items={lost.map((x) => x.text)} />
           <List title="Orders that would be blocked" tone="red" items={impact.orders_blocked.map((x) => x.text)} />
           <List
             title="Still supported, by another document"
@@ -88,7 +94,7 @@ export function ImpactPanel({ impact, memory, pending, onConfirm, onCancel }: {
         </div>
         <div className="flex flex-wrap gap-2 border-t border-slate-100 px-4 py-3">
           <Button variant="danger" icon={<ShieldX />} loading={pending === "quarantine"} disabled={pending !== null} onClick={onConfirm}>
-            Stop trusting this document
+            {suppliers ? `Stop trusting it and blacklist ${suppliers}` : "Stop trusting this document"}
           </Button>
           <Button variant="ghost" loading={pending === "cancel"} disabled={pending !== null} onClick={onCancel}>
             Cancel

@@ -15,11 +15,11 @@ always query parameters, never pasted into the query text. The queries are
 module-level constants so scripts/export_cypher.py can document all of them.
 """
 from app import support
-from app.schema import (ABOUT, AGENT, AGENT_ROLES, AUTHORED, BELIEF, CHANGED,
+from app.schema import (ABOUT, AGENT, AGENT_ROLES, AUTHORED, BELIEF, BLACKLISTED, CHANGED,
                         DECIDED, DECISION, DECISION_KINDS, DECISION_STATES,
                         DRAFT, EXTRACTION, JUSTIFICATION, JUSTIFICATION_KINDS,
                         META, META_ID, PREMISE, PURCHASE_ORDER, REPAIR, SOURCE,
-                        SUPPORTS, TARGETED, TRUST_LEVELS, VALID, VENDOR)
+                        SUPPORTS, SUSPENDED, TARGETED, TRUST_LEVELS, VALID, VENDOR)
 
 
 class WriteRejected(ValueError):
@@ -75,7 +75,8 @@ WHERE size(vendors) = size($about)"""
 
 ADD_BELIEF = _guard(BELIEF, "claim") + f"""
 MERGE (b:{BELIEF} {{id: $id}})
-ON CREATE SET b.claim = $claim, b.created_at = timestamp()
+ON CREATE SET b.claim = $claim, b.created_at = timestamp(),
+              b.standard = $standard, b.exclusive = $exclusive
 SET m.revision = m.revision + 1
 FOREACH (v IN vendors | MERGE (b)-[:{ABOUT}]->(v))
 RETURN b.id"""
@@ -131,6 +132,41 @@ RETURN j.id"""
 ADD_JUSTIFICATION = {BELIEF: _add_justification(BELIEF),
                      DECISION: _add_justification(DECISION)}
 
+# Under review: the source counts for nothing (support.RESET) and the suppliers its
+# facts are about are suspended, unless a person already blacklisted them.
+SET_REVIEW = f"""
+MATCH (m:{META} {{id: $meta}})
+MATCH (s:{SOURCE} {{id: $id}})
+SET s.review = $reason, m.revision = m.revision + 1
+WITH s
+OPTIONAL MATCH (s)<-[:{PREMISE}]-(:{JUSTIFICATION})-[:{SUPPORTS}]->(:{BELIEF})-[:{ABOUT}]->(v:{VENDOR})
+WITH s, collect(DISTINCT v) AS vendors
+FOREACH (v IN vendors | SET v.status = CASE WHEN v.status = $blacklisted THEN v.status
+                                            ELSE $suspended END,
+                            v.status_by = CASE WHEN v.status = $blacklisted THEN v.status_by
+                                               ELSE s.id END)
+RETURN [v IN vendors | v.name]"""
+
+# Cleared: the source counts again, and the suppliers it suspended are back.
+CLEAR_REVIEW = f"""
+MATCH (m:{META} {{id: $meta}})
+MATCH (s:{SOURCE} {{id: $id}}) WHERE s.review IS NOT NULL
+SET s.review = null, m.revision = m.revision + 1
+WITH s
+OPTIONAL MATCH (v:{VENDOR} {{status: $suspended, status_by: s.id}})
+WITH collect(v) AS vendors
+FOREACH (v IN vendors | SET v.status = null, v.status_by = null)
+RETURN [v IN vendors | v.name]"""
+
+# A person distrusted the source: the suppliers it suspended are blacklisted.
+BLACKLIST_BY = f"""
+MATCH (m:{META} {{id: $meta}})
+OPTIONAL MATCH (v:{VENDOR} {{status: $suspended}}) WHERE v.status_by IN $ids
+WITH m, collect(v) AS vendors
+FOREACH (v IN vendors | SET v.status = $blacklisted)
+SET m.revision = m.revision + 1
+RETURN [v IN vendors | v.name]"""
+
 RECORD_REPAIR = f"""
 MATCH (m:{META} {{id: $meta}})
 CREATE (r:{REPAIR} {{id: $id, created_at: timestamp(),
@@ -162,7 +198,8 @@ RETURN v.id ORDER BY v.id LIMIT 1"""
 
 QUERIES = {
     "add_agent": ADD_AGENT, "add_vendor": ADD_VENDOR, "add_source": ADD_SOURCE,
-    "set_trust": SET_TRUST, "add_belief": ADD_BELIEF, "add_decision": ADD_DECISION,
+    "set_trust": SET_TRUST, "set_review": SET_REVIEW, "clear_review": CLEAR_REVIEW,
+    "blacklist_by": BLACKLIST_BY, "add_belief": ADD_BELIEF, "add_decision": ADD_DECISION,
     "set_decision_state": SET_DECISION_STATE,
     "add_justification (for a belief)": ADD_JUSTIFICATION[BELIEF],
     "add_justification (for a decision)": ADD_JUSTIFICATION[DECISION],
@@ -240,6 +277,32 @@ def set_trust(g, source_id: str, trust: str, *, recompute: bool = True) -> str:
     return rows[0][0]
 
 
+def set_review(g, source_id: str, reason: str, *, recompute: bool = True) -> list[str]:
+    """Put a source under review. Returns the names of the suppliers suspended."""
+    rows = _write(g, SET_REVIEW, id=source_id, reason=reason,
+                  suspended=SUSPENDED, blacklisted=BLACKLISTED)
+    _require(bool(rows), f"source {source_id!r} not found")
+    if recompute:
+        support.recompute(g)
+    return rows[0][0]
+
+
+def clear_review(g, source_id: str, *, recompute: bool = True) -> list[str]:
+    """A false alarm: the source counts again. Returns the suppliers reinstated."""
+    rows = _write(g, CLEAR_REVIEW, id=source_id, suspended=SUSPENDED)
+    _require(bool(rows), f"source {source_id!r} is not under review")
+    if recompute:
+        support.recompute(g)
+    return rows[0][0]
+
+
+def blacklist_by(g, source_ids) -> list[str]:
+    """The suppliers these (now distrusted) sources suspended become blacklisted."""
+    rows = _write(g, BLACKLIST_BY, ids=list(source_ids), suspended=SUSPENDED,
+                  blacklisted=BLACKLISTED)
+    return rows[0][0] if rows else []
+
+
 # --- Beliefs and decisions ----------------------------------------------------------
 
 def _why_conclusion_rejected(g, label: str, node_id: str, about) -> str:
@@ -251,11 +314,14 @@ def _why_conclusion_rejected(g, label: str, node_id: str, about) -> str:
     return "graph has no Meta node; run ensure_schema() first"
 
 
-def add_belief(g, belief_id: str, *, claim: str, about=(),
-               recompute: bool = True) -> None:
-    """Record a claim. It stays invalid until a justification supports it."""
+def add_belief(g, belief_id: str, *, claim: str, about=(), standard: str | None = None,
+               exclusive: bool = False, recompute: bool = True) -> None:
+    """Record a claim. It stays invalid until a justification supports it.
+    `standard`: the certification it says a supplier holds (e.g. "ISO 13485");
+    `exclusive`: it says that supplier is the only one holding it."""
     about = _unique(about)
-    rows = _write(g, ADD_BELIEF, id=belief_id, claim=claim, about=about)
+    rows = _write(g, ADD_BELIEF, id=belief_id, claim=claim, about=about,
+                  standard=standard, exclusive=bool(exclusive))
     _require(bool(rows), _why_conclusion_rejected(g, BELIEF, belief_id, about))
     if recompute:
         support.recompute(g)

@@ -31,7 +31,7 @@ from redis.retry import Retry
 
 from api import contract as c
 from api.session_store import Session, SessionStore
-from app import demo, evidence, gate, llm, memory, repair, runner, views
+from app import demo, evidence, gate, llm, memory, repair, review, runner, views
 from app.agents.buyer import order_label
 from app.casebuilder import CaseScript
 from app.db import ROOT, connection_settings, drop_graph, get_db
@@ -182,9 +182,15 @@ ORDER BY d.id
 OPEN_ORDER_STATES = ("draft", "pending_approval", "authorized")
 
 
-def under_review(session: Session) -> list[str]:
-    """Documents the security scan flagged: orders resting on them wait for a person."""
-    return [a["document_id"] for a in session.alerts]
+def under_review(g) -> list[str]:
+    """Documents under review (app/review.py), as FalkorDB records them."""
+    return review.under_review(g)
+
+
+def _resolve_alerts(session: Session, document_ids, resolution: str) -> None:
+    for a in session.alerts:
+        if a["document_id"] in document_ids and a.get("resolution", "open") == "open":
+            a["resolution"] = resolution
 
 
 def unverified(g, decision_id: str, amount, strength: dict) -> list[str]:
@@ -202,7 +208,7 @@ def script_for(session: Session, mode: str, request_text: str | None = None):
         return CaseScript(session.case)
     text = (request_text or "").strip()[:runner.MAX_REQUEST]
     return runner.StoryScript(mode, text or runner.DEFAULT_REQUEST)
-VENDORS = f"MATCH (v:{VENDOR}) RETURN v.id, v.name ORDER BY v.name"
+VENDORS = f"MATCH (v:{VENDOR}) RETURN v.id, v.name, v.status ORDER BY v.name"
 DOC_KIND = {runner.REQUEST_ID: "request", "s_registry": "registry"}
 
 
@@ -234,11 +240,12 @@ def build_state(g, session: Session) -> c.StateResponse:
     edges = [c.Edge(from_id=x, to_id=j, kind="premise") if rel == "PREMISE"
              else c.Edge(from_id=j, to_id=x, kind="supports")
              for j, rel, x in views.edges(g)]
+    reviewed = under_review(g)
     return c.StateResponse(
         revision=memory.revision(g),
         has_run=session.has_run,
         request=c.RequestInfo(text=session.request, editable=live_ai()),
-        vendors=[c.Vendor(id=i, name=n) for i, n in g.ro_query(VENDORS).result_set],
+        vendors=[c.Vendor(id=i, name=n, status=st) for i, n, st in g.ro_query(VENDORS).result_set],
         documents=[c.Document(id=s["id"], title=s["title"], kind=_doc_kind(s["id"]),
                               trust=s["trust"], origin=s["origin"], supported=bool(s["valid"]),
                               vendor_id=_doc_vendor(s["id"])) for s in views.sources(g)],
@@ -248,7 +255,7 @@ def build_state(g, session: Session) -> c.StateResponse:
         decisions=[c.Decision(id=i, kind=k, summary=s, amount=amt, state=st, supported=bool(ok),
                               evidence=level(i), vendor_id=v, note=note, approved_by=by,
                               reasoning=next((r for r in why if r), None),
-                              held_by=[h["id"] for h in gate.held_by(g, i, under_review(session))]
+                              held_by=[h["id"] for h in gate.held_by(g, i, reviewed)]
                               if st in OPEN_ORDER_STATES else [],
                               needs_verification=unverified(g, i, amt, strength) if st in OPEN_ORDER_STATES else [])
                    for i, k, s, amt, st, ok, v, note, by, why in g.ro_query(DECISIONS).result_set],
@@ -311,6 +318,8 @@ def order_message(v: gate.Verdict, action: str, held: list[dict] = ()) -> str:
         return (f"{label} is on hold until a trusted document confirms what it rests on. "
                 f"{' '.join(r[0].upper() + r[1:] + '.' for r in v.reasons)} If you don't believe "
                 f"the supplier's own page, stop trusting it and the Buyer will re-plan.")
+    if v.state == "blocked" and any(r.endswith(("blacklisted", "under review")) for r in v.reasons):
+        return f"Blocked: {'; '.join(v.reasons)}. No order can go to it until a person decides."
     if v.state == "blocked":
         return (f"Blocked: {label} has no supported reason left. An approval cannot "
                 "override missing support.")
@@ -472,21 +481,43 @@ def quarantine(session: Session = Depends(current)):
     # The preview listed the open orders that lose their support: block them now, with
     # the reason, rather than waiting for someone to try to approve or place them.
     blocked = [o["id"] for o in p.orders_blocked if gate.recheck(g, o["id"]).state == "blocked"]
+    _resolve_alerts(session, p.sources, "distrusted")
+    blacklisted = [n for (n,) in g.ro_query(BLACKLISTED_BY, {"ids": p.sources}).result_set]
     return c.QuarantineResponse(repair_id=repair_id, quarantined=p.sources,
-                                withdrawn=[n["id"] for n in p.lost], orders_blocked=blocked)
+                                withdrawn=[n["id"] for n in p.lost], orders_blocked=blocked,
+                                blacklisted=blacklisted)
+
+
+BLACKLISTED_BY = f"""
+MATCH (v:{VENDOR} {{status: 'blacklisted'}}) WHERE v.status_by IN $ids
+RETURN v.name ORDER BY v.name
+"""
+
+
+@router.post("/review/clear", response_model=c.ClearResponse)
+def clear_review(body: c.ImpactRequest, session: Session = Depends(current)):
+    """A false alarm: the document counts again and its suppliers are reinstated."""
+    if session.busy:
+        raise ApiFailure(409, "busy", "wait until the agents finish")
+    g = graph_of(session)
+    if body.document_id not in under_review(g):
+        raise ApiFailure(400, "not_under_review", "that document is not under review")
+    reinstated = review.clear(g, body.document_id)
+    _resolve_alerts(session, [body.document_id], "cleared")
+    return c.ClearResponse(document_id=body.document_id, reinstated=reinstated)
 
 
 @router.post("/orders/{order_id}/{action}", response_model=c.OrderActionResponse)
 def order_action(order_id: str, action: Literal["approve", "execute"],
                  session: Session = Depends(current)):
     g = graph_of(session)
-    review = under_review(session)
+    reviewed = under_review(g)
     try:
-        v = (gate.approve(g, order_id, approver=demo.MANAGER, under_review=review)
-             if action == "approve" else gate.execute(g, order_id, under_review=review))
+        v = (gate.approve(g, order_id, approver=demo.MANAGER, under_review=reviewed)
+             if action == "approve" else gate.execute(g, order_id, under_review=reviewed))
     except gate.GateError as e:
         raise ApiFailure(409, "wrong_state", str(e))
-    held = gate.held_by(g, order_id, review) if v.outcome == gate.HELD else []
+    held = gate.held_by(g, order_id, reviewed) if v.outcome == gate.HELD else []
     return c.OrderActionResponse(decision_id=order_id, action=action, outcome=v.outcome,
                                  state=v.state, reasons=v.reasons,
                                  message=order_message(v, action, held))

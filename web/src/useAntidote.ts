@@ -24,7 +24,7 @@ export interface Notice {
   text: string;
 }
 
-export type Pending = "impact" | "cancel" | "quarantine" | "approve" | "execute" | "restart" | "case";
+export type Pending = "impact" | "cancel" | "quarantine" | "clear" | "approve" | "execute" | "restart" | "case";
 
 const IDLE: Record<AgentKey, AgentView> = {
   researcher: { state: "idle", message: "Ready to read the documents.", documentId: null },
@@ -43,7 +43,7 @@ function restoredAgents(s: StateResponse): Record<AgentKey, AgentView> {
   return {
     researcher: { state: "done", message: "Finished reading.", documentId: null },
     buyer: { state: waiting ? "waiting" : "done", message: waiting ? "Waiting for your decision." : "Done.", documentId: null },
-    guard: { state: "done", message: `Scan finished: ${plural(s.alerts.length, "document")} flagged.`, documentId: null },
+    guard: { state: "done", message: `Check finished: ${plural(s.alerts.length, "document")} put under review.`, documentId: null },
   };
 }
 
@@ -266,8 +266,23 @@ export function useAntidote() {
       });
       setAgent("buyer", "waiting", `${blocked.join(", ")} was blocked. Ask me to re-plan.`);
     }
+    if (r.blacklisted.length) {
+      push({
+        who: "guard", tone: "blocked", title: `Blacklisted ${r.blacklisted.join(", ")}`,
+        body: "You distrusted the document that was under review, so the supplier it suspended is now blacklisted: no order can go to it.",
+      });
+    }
     setAgent("guard", "done", `Withdrew ${plural(r.withdrawn.length, "fact or decision", "facts and decisions")} that rested on ${titles}${blocked.length ? `; blocked ${blocked.join(", ")}` : ""}.`);
   }, () => setImpact(null)), [act, push]);
+
+  const clearReview = useCallback((documentId: string) => act("clear", () => api.clearReview(documentId), (r) => {
+    const back = r.reinstated.length ? ` ${r.reinstated.join(", ")} is no longer suspended.` : "";
+    push({
+      who: "you", tone: "action", title: `You marked ${title(documentId)} as a false alarm`,
+      body: `It counts as evidence again.${back} Ask the Buyer to re-plan if you want it considered.`,
+    });
+    setAgent("guard", "done", `Cleared ${title(documentId)}: it counts again.`);
+  }), [act, push]);
 
   const decide = useCallback((orderId: string, action: "approve" | "execute") =>
     act(action, () => api.order(orderId, action), (r) => {
@@ -373,7 +388,7 @@ export function useAntidote() {
     requestText, setRequestText,
     orders: ordersOf(memory),
     dismissNotice: () => setNotice(null),
-    start, replan, previewImpact, cancelImpact, quarantine, decide, startOver, openCase,
+    start, replan, previewImpact, cancelImpact, quarantine, clearReview, decide, startOver, openCase,
   };
 }
 

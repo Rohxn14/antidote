@@ -7,32 +7,61 @@ import { useEffect, useState } from "react";
 import type { CaseSlot, CaseSpec, CaseSupplier } from "../contract";
 import { Button, cx, Drawer } from "./ui";
 
+const SLOTS: CaseSlot[] = ["vantor", "boltline", "ferrocraft", "quillon", "nexapoint", "corvane"];
 const NAMES: Record<CaseSlot, string> = {
-  vantor: "Vantor Motion", boltline: "Boltline Automation", ferrocraft: "Ferrocraft Servo", quillon: "Quillon Drives",
+  vantor: "Vantor Motion", boltline: "Boltline Automation", ferrocraft: "Ferrocraft Servo",
+  quillon: "Quillon Drives", nexapoint: "Nexapoint Actuation", corvane: "Corvane Robotics",
+};
+const MIN_SUPPLIERS = 3;
+
+const honest = { claims_exclusive: false, hidden_instructions: false };
+// What a supplier looks like when it is added to a case.
+const DEFAULTS: Record<CaseSlot, CaseSupplier> = {
+  vantor: { slot: "vantor", price: 480, weeks: 2, claims_certificate: true, registry_confirms: false, ...honest, hidden_instructions: true },
+  boltline: { slot: "boltline", price: 520, weeks: 3, claims_certificate: true, registry_confirms: true, ...honest },
+  ferrocraft: { slot: "ferrocraft", price: 560, weeks: 4, claims_certificate: true, registry_confirms: true, ...honest },
+  quillon: { slot: "quillon", price: 390, weeks: 2, claims_certificate: false, registry_confirms: false, ...honest },
+  nexapoint: { slot: "nexapoint", price: 455, weeks: 3, claims_certificate: true, registry_confirms: true, ...honest },
+  corvane: { slot: "corvane", price: 300, weeks: 3, claims_certificate: true, registry_confirms: false, ...honest },
 };
 
 const STORY: CaseSpec = {
-  name: "The demo story", max_weeks: 4, suppliers: [
-    { slot: "vantor", price: 480, weeks: 2, claims_certificate: true, registry_confirms: false, hidden_instructions: true },
-    { slot: "boltline", price: 520, weeks: 3, claims_certificate: true, registry_confirms: true, hidden_instructions: false },
-    { slot: "ferrocraft", price: 560, weeks: 4, claims_certificate: true, registry_confirms: true, hidden_instructions: false },
-    { slot: "quillon", price: 390, weeks: 2, claims_certificate: false, registry_confirms: false, hidden_instructions: false },
-  ],
+  name: "The demo story", max_weeks: 4,
+  suppliers: (["vantor", "boltline", "ferrocraft", "quillon"] as CaseSlot[]).map((s) => DEFAULTS[s]),
 };
 
-function variant(name: string, changes: Partial<Record<CaseSlot, Partial<CaseSupplier>>>): CaseSpec {
-  return { ...STORY, name, suppliers: STORY.suppliers.map((s) => ({ ...s, ...changes[s.slot] })) };
+function variant(name: string, changes: Partial<Record<CaseSlot, Partial<CaseSupplier>>>, extra: CaseSlot[] = []): CaseSpec {
+  const slots = SLOTS.filter((s) => STORY.suppliers.some((x) => x.slot === s) || extra.includes(s));
+  return { ...STORY, name, suppliers: slots.map((s) => ({ ...DEFAULTS[s], ...changes[s] })) };
 }
 
 const PRESETS: { spec: CaseSpec; about: string }[] = [
-  { spec: STORY, about: "Vantor's page hides instructions for AI and claims a certificate the registry doesn't list." },
+  { spec: STORY, about: "Vantor's page hides instructions for AI. Antidote catches them before the Buyer decides." },
+  {
+    spec: variant("An open lie", { vantor: { hidden_instructions: false, claims_exclusive: true } }),
+    about: "No hidden text: Vantor openly says it is the only certified supplier. The registry says otherwise.",
+  },
   {
     spec: variant("A plain lie", { vantor: { hidden_instructions: false } }),
-    about: "Vantor claims ISO 13485 with no hidden text: no alert fires. Only the evidence gives it away.",
+    about: "Vantor claims ISO 13485 and nothing flags it. Only the evidence gives it away.",
+  },
+  {
+    spec: variant("A lie nothing contradicts", {
+      vantor: { hidden_instructions: false, claims_exclusive: true },
+      boltline: { registry_confirms: false }, ferrocraft: { registry_confirms: false },
+    }),
+    about: "Vantor says it is the only certified one and no trusted document disagrees. Where Antidote's checks stop.",
   },
   {
     spec: variant("Two problems at once", { vantor: { hidden_instructions: false }, ferrocraft: { hidden_instructions: true } }),
-    about: "Hidden text pushes the priciest supplier, and Vantor still lies about its certificate.",
+    about: "Ferrocraft's page hides instructions, and Vantor lies about its certificate.",
+  },
+  {
+    spec: variant("Six suppliers, one cheat", {
+      vantor: { hidden_instructions: false, claims_certificate: false },
+      corvane: { hidden_instructions: true, claims_exclusive: true },
+    }, ["nexapoint", "corvane"]),
+    about: "The cheapest supplier hides instructions and claims to be the only certified one.",
   },
   {
     spec: variant("Nothing wrong", { vantor: { claims_certificate: false, hidden_instructions: false } }),
@@ -43,8 +72,8 @@ const PRESETS: { spec: CaseSpec; about: string }[] = [
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round(Number.isFinite(n) ? n : lo)));
 const same = (a: CaseSpec, b: CaseSpec) => JSON.stringify({ ...a, name: "" }) === JSON.stringify({ ...b, name: "" });
 
-function NumberBox({ value, min, max, onChange, prefix, label }: {
-  value: number; min: number; max: number; onChange: (n: number) => void; prefix?: string; label: string;
+function NumberBox({ value, min, max, onChange, prefix, label, disabled }: {
+  value: number; min: number; max: number; onChange: (n: number) => void; prefix?: string; label: string; disabled?: boolean;
 }) {
   return (
     <label className="flex items-center gap-1 rounded-lg bg-white px-2 ring-1 ring-inset ring-slate-200 focus-within:ring-2 focus-within:ring-indigo-300">
@@ -55,23 +84,27 @@ function NumberBox({ value, min, max, onChange, prefix, label }: {
         value={value}
         min={min}
         max={max}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
         onBlur={(e) => onChange(clamp(Number(e.target.value), min, max))}
-        className="h-8 w-full min-w-0 bg-transparent text-[13px] tabular-nums text-slate-800 outline-none"
+        className="h-8 w-full min-w-0 bg-transparent text-[13px] tabular-nums text-slate-800 outline-none disabled:text-slate-400"
       />
     </label>
   );
 }
 
-function Check({ checked, onChange, label, danger }: { checked: boolean; onChange: (v: boolean) => void; label: string; danger?: boolean }) {
+function Check({ checked, onChange, label, danger, disabled }: {
+  checked: boolean; onChange: (v: boolean) => void; label: string; danger?: boolean; disabled?: boolean;
+}) {
   return (
     <label className="flex justify-center">
       <input
         type="checkbox"
         aria-label={label}
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className={cx("size-4 cursor-pointer", danger ? "accent-rose-600" : "accent-indigo-600")}
+        className={cx("size-4 cursor-pointer disabled:cursor-not-allowed", danger ? "accent-rose-600" : "accent-indigo-600")}
       />
     </label>
   );
@@ -85,13 +118,29 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
   onUse: (spec: CaseSpec | null) => void;
 }) {
   const [spec, setSpec] = useState<CaseSpec>(current ?? STORY);
+  // Suppliers left out keep their last settings, in case they are added back.
+  const [shelf, setShelf] = useState<Record<CaseSlot, CaseSupplier>>(DEFAULTS);
   useEffect(() => {
     if (open) setSpec(current ?? STORY);
   }, [open, current]);
 
   const preset = PRESETS.find((p) => same(p.spec, spec));
+  const included = (slot: CaseSlot) => spec.suppliers.find((x) => x.slot === slot);
+  const row = (slot: CaseSlot) => included(slot) ?? shelf[slot];
   const setSupplier = (slot: CaseSlot, changes: Partial<CaseSupplier>) =>
     setSpec((s) => ({ ...s, suppliers: s.suppliers.map((x) => (x.slot === slot ? { ...x, ...changes } : x)) }));
+  const include = (slot: CaseSlot, on: boolean) => {
+    if (!on) {
+      const leaving = included(slot);
+      if (leaving) setShelf((sh) => ({ ...sh, [slot]: leaving }));
+    }
+    setSpec((s) => ({
+      ...s,
+      suppliers: on
+        ? SLOTS.filter((x) => x === slot || s.suppliers.some((y) => y.slot === x)).map((x) => s.suppliers.find((y) => y.slot === x) ?? shelf[x])
+        : s.suppliers.filter((x) => x.slot !== slot),
+    }));
+  };
   const ready = (): CaseSpec => ({
     name: preset?.spec.name ?? "Your own case",
     max_weeks: clamp(spec.max_weeks, 1, 12),
@@ -102,7 +151,7 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
     <Drawer
       open={open}
       onClose={onClose}
-      width="min(820px, 100vw)"
+      width="min(920px, 100vw)"
       title="Build your own case"
       subtitle="Change what the documents say, then watch what the agents and Antidote do with it."
       icon={
@@ -144,34 +193,53 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
         </div>
 
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-slate-400">The suppliers' documents</div>
+          <div className="flex items-baseline justify-between gap-2">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-slate-400">The suppliers' documents</div>
+            <div className="text-[11.5px] text-slate-500">{spec.suppliers.length} of {SLOTS.length} suppliers in this case (at least {MIN_SUPPLIERS})</div>
+          </div>
           <div className="scroll-thin mt-2 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-[12.5px]">
+            <table className="w-full min-w-[760px] text-[12.5px]">
               <thead className="text-[11px] text-slate-500">
                 <tr className="border-b border-slate-200">
+                  <th className="w-12 py-2 pr-1 text-center font-medium">In case</th>
                   <th className="py-2 pr-2 text-left font-medium">Supplier</th>
                   <th className="w-24 px-1 py-2 text-left font-medium">Price per unit</th>
                   <th className="w-20 px-1 py-2 text-left font-medium">Ships in (weeks)</th>
-                  <th className="w-24 px-1 py-2 text-center font-medium">Its page claims ISO 13485</th>
-                  <th className="w-24 px-1 py-2 text-center font-medium">Registry confirms it</th>
-                  <th className="w-24 px-1 py-2 text-center font-medium text-rose-700">Hidden text for AI on its page</th>
+                  <th className="w-20 px-1 py-2 text-center font-medium">Its page claims ISO 13485</th>
+                  <th className="w-20 px-1 py-2 text-center font-medium">Registry confirms it</th>
+                  <th className="w-24 px-1 py-2 text-center font-medium text-rose-700">Page says it's the only certified one</th>
+                  <th className="w-20 px-1 py-2 text-center font-medium text-rose-700">Hidden text for AI on its page</th>
                 </tr>
               </thead>
               <tbody>
-                {spec.suppliers.map((s) => (
-                  <tr key={s.slot} className="border-b border-slate-100">
-                    <td className="py-2 pr-2 font-medium text-slate-800">{NAMES[s.slot]}</td>
-                    <td className="px-1 py-2">
-                      <NumberBox label={`${NAMES[s.slot]} price`} prefix="$" value={s.price} min={50} max={5000} onChange={(n) => setSupplier(s.slot, { price: n })} />
-                    </td>
-                    <td className="px-1 py-2">
-                      <NumberBox label={`${NAMES[s.slot]} weeks`} value={s.weeks} min={1} max={26} onChange={(n) => setSupplier(s.slot, { weeks: n })} />
-                    </td>
-                    <td className="px-1 py-2"><Check label={`${NAMES[s.slot]} claims ISO 13485`} checked={s.claims_certificate} onChange={(v) => setSupplier(s.slot, { claims_certificate: v })} /></td>
-                    <td className="px-1 py-2"><Check label={`Registry confirms ${NAMES[s.slot]}`} checked={s.registry_confirms} onChange={(v) => setSupplier(s.slot, { registry_confirms: v })} /></td>
-                    <td className="px-1 py-2"><Check danger label={`Hidden text on ${NAMES[s.slot]}'s page`} checked={s.hidden_instructions} onChange={(v) => setSupplier(s.slot, { hidden_instructions: v })} /></td>
-                  </tr>
-                ))}
+                {SLOTS.map((slot) => {
+                  const s = row(slot);
+                  const on = !!included(slot);
+                  const name = NAMES[slot];
+                  return (
+                    <tr key={slot} className={cx("border-b border-slate-100", !on && "opacity-45")}>
+                      <td className="py-2 pr-1">
+                        <Check
+                          label={`Include ${name}`}
+                          checked={on}
+                          disabled={busy || (on && spec.suppliers.length <= MIN_SUPPLIERS)}
+                          onChange={(v) => include(slot, v)}
+                        />
+                      </td>
+                      <td className="py-2 pr-2 font-medium text-slate-800">{name}</td>
+                      <td className="px-1 py-2">
+                        <NumberBox label={`${name} price`} prefix="$" value={s.price} min={50} max={5000} disabled={!on} onChange={(n) => setSupplier(slot, { price: n })} />
+                      </td>
+                      <td className="px-1 py-2">
+                        <NumberBox label={`${name} weeks`} value={s.weeks} min={1} max={26} disabled={!on} onChange={(n) => setSupplier(slot, { weeks: n })} />
+                      </td>
+                      <td className="px-1 py-2"><Check label={`${name} claims ISO 13485`} disabled={!on} checked={s.claims_certificate} onChange={(v) => setSupplier(slot, { claims_certificate: v })} /></td>
+                      <td className="px-1 py-2"><Check label={`Registry confirms ${name}`} disabled={!on} checked={s.registry_confirms} onChange={(v) => setSupplier(slot, { registry_confirms: v })} /></td>
+                      <td className="px-1 py-2"><Check danger label={`${name}'s page says it is the only certified supplier`} disabled={!on} checked={s.claims_exclusive} onChange={(v) => setSupplier(slot, { claims_exclusive: v })} /></td>
+                      <td className="px-1 py-2"><Check danger label={`Hidden text on ${name}'s page`} disabled={!on} checked={s.hidden_instructions} onChange={(v) => setSupplier(slot, { hidden_instructions: v })} /></td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -183,8 +251,9 @@ export function CaseBuilder({ open, current, busy, onClose, onUse }: {
             <span className="font-semibold">No AI runs in a case you build.</span> Antidote writes the documents from
             this form, and the agents answer by two rules: the Researcher records what each document says, with exact
             quotes and hidden text included; the Buyer orders from the cheapest supplier that qualifies and delivers in
-            time, unless a page tells it another supplier is the only certified one. Everything after that is real: the
-            checks on every claim, the memory in FalkorDB, the approval check, the security scan, the preview and the repair.
+            time, unless a fact it may rely on says one supplier is the only certified one. Before the Buyer decides,
+            Antidote checks every document for hidden instructions and for claims trusted documents contradict. Everything
+            is real from there: the checks on every claim, the memory in FalkorDB, the approval check, the preview and the repair.
           </p>
         </div>
 

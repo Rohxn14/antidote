@@ -10,7 +10,7 @@ The least fixed point: one reset, then one query per round until nothing changes
 
 ```cypher
 MATCH (s:Source)
-SET s.valid = (s.trust <> $quarantined)
+SET s.valid = (s.trust <> $quarantined AND s.review IS NULL)
 WITH count(*) AS sources
 MATCH (j:Justification)
 SET j.holds = false
@@ -90,6 +90,46 @@ SET s.trust = $trust, m.revision = m.revision + 1
 RETURN before
 ```
 
+### set_review
+
+```cypher
+MATCH (m:Meta {id: $meta})
+MATCH (s:Source {id: $id})
+SET s.review = $reason, m.revision = m.revision + 1
+WITH s
+OPTIONAL MATCH (s)<-[:PREMISE]-(:Justification)-[:SUPPORTS]->(:Belief)-[:ABOUT]->(v:Vendor)
+WITH s, collect(DISTINCT v) AS vendors
+FOREACH (v IN vendors | SET v.status = CASE WHEN v.status = $blacklisted THEN v.status
+                                            ELSE $suspended END,
+                            v.status_by = CASE WHEN v.status = $blacklisted THEN v.status_by
+                                               ELSE s.id END)
+RETURN [v IN vendors | v.name]
+```
+
+### clear_review
+
+```cypher
+MATCH (m:Meta {id: $meta})
+MATCH (s:Source {id: $id}) WHERE s.review IS NOT NULL
+SET s.review = null, m.revision = m.revision + 1
+WITH s
+OPTIONAL MATCH (v:Vendor {status: $suspended, status_by: s.id})
+WITH collect(v) AS vendors
+FOREACH (v IN vendors | SET v.status = null, v.status_by = null)
+RETURN [v IN vendors | v.name]
+```
+
+### blacklist_by
+
+```cypher
+MATCH (m:Meta {id: $meta})
+OPTIONAL MATCH (v:Vendor {status: $suspended}) WHERE v.status_by IN $ids
+WITH m, collect(v) AS vendors
+FOREACH (v IN vendors | SET v.status = $blacklisted)
+SET m.revision = m.revision + 1
+RETURN [v IN vendors | v.name]
+```
+
 ### add_belief
 
 ```cypher
@@ -100,7 +140,8 @@ OPTIONAL MATCH (v:Vendor) WHERE v.id IN $about
 WITH m, collect(v) AS vendors
 WHERE size(vendors) = size($about)
 MERGE (b:Belief {id: $id})
-ON CREATE SET b.claim = $claim, b.created_at = timestamp()
+ON CREATE SET b.claim = $claim, b.created_at = timestamp(),
+              b.standard = $standard, b.exclusive = $exclusive
 SET m.revision = m.revision + 1
 FOREACH (v IN vendors | MERGE (b)-[:ABOUT]->(v))
 RETURN b.id
@@ -235,6 +276,31 @@ MATCH (v:Vendor) WHERE v.id = $value OR toLower(v.name) = toLower($value)
 RETURN v.id ORDER BY v.id LIMIT 1
 ```
 
+## Under review (app/review.py)
+
+Before any agent concludes or decides: the conflict check compares an exclusive claim with trusted certification claims for other suppliers. A flagged document is put under review (memory: set_review), so the support engine counts it for nothing and its suppliers are suspended.
+
+### conflict check
+
+```cypher
+MATCH (x:Belief {exclusive: true})-[:ABOUT]->(v:Vendor)
+MATCH (x)<-[:SUPPORTS]-(:Justification {kind: $extraction})-[:PREMISE]->(s:Source)
+WHERE s.trust <> $trusted AND s.trust <> $quarantined
+MATCH (y:Belief)-[:ABOUT]->(w:Vendor)
+WHERE y.standard = x.standard AND coalesce(y.exclusive, false) = false AND w <> v
+MATCH (y)<-[:SUPPORTS]-(:Justification {kind: $extraction})-[:PREMISE]->(t:Source)
+WHERE t.trust = $trusted AND t.review IS NULL
+RETURN s.id, x.claim, x.standard, collect(DISTINCT w.name), collect(DISTINCT t.title)
+ORDER BY s.id
+```
+
+### under review
+
+```cypher
+MATCH (s:Source) WHERE s.review IS NOT NULL AND s.trust <> $quarantined
+RETURN s.id ORDER BY s.id
+```
+
 ## Buyer (app/agents/buyer.py, app/casebuilder.py)
 
 Before a plan is recorded, FalkorDB says which of the facts it cites are supported now; a plan citing anything else is rejected.
@@ -254,6 +320,14 @@ Reads the order on the current graph; the what-if queries run on a throwaway GRA
 ```cypher
 MATCH (d:Decision {id: $id})
 RETURN d.kind, d.amount, d.reversible, d.state, d.valid = true, d.approved_by
+```
+
+### suppliers suspended or blacklisted
+
+```cypher
+MATCH (:Decision {id: $id})-[:ABOUT]->(v:Vendor) WHERE v.status IS NOT NULL
+RETURN v.name, v.status
+ORDER BY v.name
 ```
 
 ### trusted origins
@@ -412,6 +486,12 @@ ORDER BY n.id, kept.id
 MATCH (s:Source {id: $id}) RETURN s.trust
 ```
 
+### let a document under review count (on the copy)
+
+```cypher
+MATCH (s:Source) WHERE s.id IN $ids SET s.review = null
+```
+
 ### same origin
 
 ```cypher
@@ -509,7 +589,7 @@ MATCH (s:Source {id: $id}) RETURN s.title
 ### state: vendors
 
 ```cypher
-MATCH (v:Vendor) RETURN v.id, v.name ORDER BY v.name
+MATCH (v:Vendor) RETURN v.id, v.name, v.status ORDER BY v.name
 ```
 
 ### state: reasons

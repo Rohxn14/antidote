@@ -4,8 +4,9 @@
 The web app streams these events: its activity feed and its graph are built
 from them. Two modes:
 
-    replay  the agents' recorded answers (data/fixtures/), paced so a person
-            can follow along; needs no LLM key
+    replay  the Researcher's recorded answers (data/fixtures/) and a Buyer that
+            follows the request's rules on what memory supports right now,
+            paced so a person can follow along; needs no LLM key
     live    the real agents (an LLM through app/llm.py), on the request the
             user typed
 
@@ -15,7 +16,7 @@ write path (app/memory.py) as everywhere else. Events are plain dicts
 """
 import time
 
-from app import demo, detector, memory, support, views
+from app import casebuilder, demo, memory, review, support, views
 from app.agents import buyer, researcher
 from app.schema import (ABOUT, AGENT, AUTHORED, BELIEF, DECISION, HOLDS, JUSTIFICATION,
                         PREMISE, SOURCE, SUPPORTS, VENDOR)
@@ -56,6 +57,12 @@ def status(agent: str, message: str, state: str = "working", document_id: str | 
                  document_id=document_id)
 
 
+# The story's suppliers as the planner sees them (prices and delivery from their pages).
+STORY_CASE = {"max_weeks": 4, "suppliers": [
+    {"slot": "vantor", "price": 480, "weeks": 2}, {"slot": "boltline", "price": 520, "weeks": 3},
+    {"slot": "ferrocraft", "price": 560, "weeks": 4}, {"slot": "quillon", "price": 390, "weeks": 2}]}
+
+
 class StoryScript:
     """Where a run's documents and the agents' answers come from: here, the demo
     story, with the recorded agents (replay) or the real ones (live). A built case
@@ -77,11 +84,17 @@ class StoryScript:
     def inference(self, g) -> dict:
         return researcher.infer(g) if self.live else demo.fixture("researcher_inference")
 
+    def vendors(self) -> list[tuple]:
+        return demo.VENDORS
+
+    # The recorded Buyer follows the request's rules on what memory supports right now
+    # (the same planner as a built case): which documents are under review or distrusted
+    # changes its answer, so one fixed recorded answer could not.
     def plan(self, g) -> dict:
-        return buyer.decide(g, demo.FIRST_ORDER) if self.live else demo.fixture("buyer_initial")
+        return buyer.decide(g, demo.FIRST_ORDER) if self.live else             casebuilder.CaseScript(STORY_CASE).plan(g)
 
     def replan(self, g) -> dict:
-        return buyer.decide(g) if self.live else demo.fixture("buyer_after_repair")
+        return buyer.decide(g) if self.live else casebuilder.CaseScript(STORY_CASE).replan(g)
 
 
 def prepare(g, script=DEFAULT_REQUEST) -> None:
@@ -91,7 +104,10 @@ def prepare(g, script=DEFAULT_REQUEST) -> None:
     if isinstance(script, str):
         script = StoryScript(request_text=script)
     demo.reset(g)
-    demo.register(g)
+    for agent_id, name, role in demo.AGENTS:
+        memory.add_agent(g, agent_id, name=name, role=role)
+    for vendor_id, name in script.vendors():
+        memory.add_vendor(g, vendor_id, name=name)
     for sid, uri, title, trust, origin, text in script.sources():
         memory.add_source(g, sid, uri=uri, title=title, trust=trust, origin=origin, text=text,
                           recompute=False)
@@ -182,19 +198,18 @@ def _plan(r: _Run, plan: dict):
                     state=verdict.state, reasons=verdict.reasons)
 
 
-def _scan(r: _Run):
-    """The security scan of every trusted-or-not document, grouped per document."""
-    yield status("security", "Scanning every document for hidden instructions aimed at AI")
+def _review(r: _Run):
+    """Before anyone concludes or decides: the security scan and the conflict check.
+    A flagged document goes under review and counts for nothing; its suppliers are
+    suspended until a person clears or distrusts it (app/review.py)."""
+    yield status("security", "Checking every document: hidden instructions aimed at AI, "
+                             "and claims that trusted documents contradict")
     r.pause("scan")
-    grouped: dict[str, list] = {}
-    for f in detector.scan_sources(r.g):
-        grouped.setdefault(f.source_id, []).append({"rule": f.rule, "evidence": f.evidence})
-    for document_id, findings in grouped.items():
+    alerts = review.check(r.g)
+    for alert in alerts:
         r.counts["alerts"] += 1
-        title = r.g.ro_query(TITLE, {"id": document_id}).result_set[0][0]
-        yield event("security_alert", document_id=document_id, document_title=title,
-                    findings=findings)
-    yield status("security", f"Scan finished: {len(grouped)} document(s) flagged",
+        yield event("security_alert", **alert)
+    yield status("security", f"Check finished: {len(alerts)} document(s) under review",
                  state="done")
 
 
@@ -218,6 +233,7 @@ def run(g, mode: str = "replay", pace: float = 1.0, script=None):
         for claim in extraction["claims"]:
             yield from _claim(r, sid, claim, extraction.get("model"))
             r.pause("claim")
+    yield from _review(r)
     yield status("researcher", "Working out which suppliers meet your requirements")
     inference = script.inference(g)
     for item in inference["inferences"]:
@@ -229,7 +245,6 @@ def run(g, mode: str = "replay", pace: float = 1.0, script=None):
     plan = script.plan(g)
     yield from _plan(r, plan)
     yield from _after_plan(plan)
-    yield from _scan(r)
     yield event("run_complete", revision=memory.revision(g), summary=r.counts)
 
 

@@ -50,26 +50,59 @@ def replan(g, script) -> list[dict]:
 def test_the_story_built_as_a_case_ends_the_same_way(g):
     events, script = run(g, STORY)
     assert of(events, "claim_refused") == []  # every generated quote passes the Researcher's checks
+    kinds = [e["type"] for e in events]
+    assert kinds.index("security_alert") < kinds.index("decision_recorded")  # checked first
+    alert = of(events, "security_alert")[0]
+    assert (alert["document_id"], alert["suspended"]) == ("s_vantor_page", ["Vantor Motion"])
     order = of(events, "decision_recorded")[-1]
-    assert order["summary"] == "PO-1001: 100 servo actuators from Vantor Motion at $480 = $48,000"
-    assert [a["document_id"] for a in of(events, "security_alert")] == ["s_vantor_page"]
-    assert gate.held_by(g, "d_po_1001", ["s_vantor_page"])
+    assert order["summary"] == "PO-1001: 100 servo actuators from Boltline Automation at $520 = $52,000"
+    assert distrust(g, "s_vantor_page") == []  # blacklisting Vantor costs the order nothing
+
+
+def test_hidden_text_is_caught_before_it_can_steer_the_buyer(g):
+    spec = case(vantor={"hidden_instructions": False}, ferrocraft={"hidden_instructions": True})
+    events, script = run(g, spec)
+    alert = of(events, "security_alert")[0]
+    assert (alert["document_id"], alert["suspended"]) == ("s_ferrocraft_page", ["Ferrocraft Servo"])
+    # Not steered to Ferrocraft: the cheapest supplier that qualifies on what still counts
+    # is Vantor, on its own word alone, so the verification hold waits for a trusted source.
+    assert "Vantor Motion at $480" in of(events, "decision_recorded")[-1]["summary"]
+    assert gate.approve(g, "d_po_1001", approver="test").outcome == gate.HELD
     assert distrust(g, "s_vantor_page") == ["d_po_1001"]
     assert "Boltline Automation at $520" in replan(g, script)[-1]["summary"]
 
 
-def test_hidden_text_steers_the_buyer_to_the_priciest_supplier(g):
-    spec = case(vantor={"hidden_instructions": False}, ferrocraft={"hidden_instructions": True})
+def test_an_open_claim_that_trusted_documents_contradict_is_caught(g):
+    events, _ = run(g, case(vantor={"hidden_instructions": False, "claims_exclusive": True}))
+    alert = of(events, "security_alert")[0]
+    assert alert["document_id"] == "s_vantor_page" and alert["reason"] == "contradicts a trusted document"
+    assert [f["rule"] for f in alert["findings"]] == ["conflict"]
+    assert "Boltline Automation and Ferrocraft Servo" in alert["findings"][0]["evidence"]
+    assert "Boltline Automation at $520" in of(events, "decision_recorded")[-1]["summary"]
+
+
+def test_an_exclusive_claim_nothing_trusted_contradicts_still_steers(g):
+    """The honest limit: with no trusted evidence against it, the claim stands, the Buyer
+    follows it, and only the verification hold stops the order."""
+    unconfirmed = {"registry_confirms": False}
+    events, _ = run(g, case(vantor={"hidden_instructions": False, "claims_exclusive": True},
+                            boltline=unconfirmed, ferrocraft=unconfirmed))
+    assert of(events, "security_alert") == []
+    assert "Vantor Motion at $480" in of(events, "decision_recorded")[-1]["summary"]
+    assert gate.approve(g, "d_po_1001", approver="test").outcome == gate.HELD
+
+
+def test_six_suppliers(g):
+    spec = case()
+    spec["suppliers"] += [
+        {"slot": "nexapoint", "price": 455, "weeks": 3, "claims_certificate": True,
+         "registry_confirms": True, "hidden_instructions": False},
+        {"slot": "corvane", "price": 300, "weeks": 5, "claims_certificate": True,
+         "registry_confirms": True, "hidden_instructions": False}]  # cheapest, but too slow
     events, script = run(g, spec)
-    order = of(events, "decision_recorded")[-1]
-    assert "Ferrocraft Servo at $560" in order["summary"]  # not the cheapest: steered
-    assert [a["document_id"] for a in of(events, "security_alert")] == ["s_ferrocraft_page"]
-    assert distrust(g, "s_ferrocraft_page") == ["d_po_1001"]
-    # Next cheapest that qualifies on what is still supported: Vantor, on its own word alone.
-    assert "Vantor Motion at $480" in replan(g, script)[-1]["summary"]
-    assert support.status(g)["b_vantor_qualifies"]
-    assert distrust(g, "s_vantor_page") == ["d_po_1002"]
-    assert "Boltline Automation at $520" in replan(g, script)[-1]["summary"]
+    assert of(events, "claim_refused") == []
+    assert [v for v, _ in script.vendors()][-2:] == ["v_nexapoint", "v_corvane"]
+    assert "Nexapoint Actuation at $455" in of(events, "decision_recorded")[-1]["summary"]
 
 
 def test_a_supplier_too_slow_or_without_a_certificate_is_not_chosen(g):
@@ -112,12 +145,14 @@ def test_cases_over_http(g):
     with client.stream("POST", "/api/run", headers=h, json={"pace": 0}) as r:
         events = [json.loads(line) for line in r.iter_lines() if line]
     order = [e["data"] for e in events if e["type"] == "decision_recorded"][-1]
-    assert "Ferrocraft" in order["summary"]
+    assert "Vantor" in order["summary"]
+    vendors = {v["id"]: v["status"] for v in client.get("/api/state", headers=h).json()["vendors"]}
+    assert vendors["v_ferrocraft"] == "suspended"
     assert client.post("/api/run", headers=h, json={"mode": "live", "pace": 0}).status_code == 400
 
     assert client.post("/api/case", headers=h, json={"case": None}).json() == {"ok": True}
     assert client.get("/api/state", headers=h).json()["case"] is None
-    for bad in ({**spec, "suppliers": spec["suppliers"][:3]},
+    for bad in ({**spec, "suppliers": spec["suppliers"][:2]},
                 {**spec, "suppliers": spec["suppliers"][:3] + [spec["suppliers"][0]]},
                 case(vantor={"price": 10})):
         assert client.post("/api/case", headers=h, json={"case": bad}).status_code == 422

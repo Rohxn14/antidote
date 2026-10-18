@@ -5,7 +5,7 @@ from the code itself (labels substituted), so the docs cannot drift.
     python -m scripts.export_cypher
 """
 from api import server
-from app import evidence, gate, memory, repair, runner, schema, support, views
+from app import evidence, gate, memory, repair, review, runner, schema, support, views
 from app.agents import buyer
 from app.db import ROOT
 
@@ -18,6 +18,12 @@ SECTIONS = [
      "One atomic query per logical write; each starts with MATCH on the Meta node "
      "and bumps its revision.",
      memory.QUERIES),
+    ("Under review (app/review.py)",
+     "Before any agent concludes or decides: the conflict check compares an exclusive "
+     "claim with trusted certification claims for other suppliers. A flagged document is "
+     "put under review (memory: set_review), so the support engine counts it for nothing "
+     "and its suppliers are suspended.",
+     review.QUERIES),
     ("Buyer (app/agents/buyer.py, app/casebuilder.py)",
      "Before a plan is recorded, FalkorDB says which of the facts it cites are "
      "supported now; a plan citing anything else is rejected.",
@@ -29,7 +35,8 @@ SECTIONS = [
      "one level per query (a reason points at both its premises and its "
      "conclusion), to hold orders on flagged documents and to say why a blocked "
      "order lost its support.",
-     {"read decision": gate.READ_DECISION, "trusted origins": gate.TRUSTED_ORIGINS,
+     {"read decision": gate.READ_DECISION,
+      "suppliers suspended or blacklisted": gate.STANDING_OF, "trusted origins": gate.TRUSTED_ORIGINS,
       "what-if: remember trust": gate.REMEMBER_TRUST, "what-if: scenario": gate.SET_SCENARIO,
       "rests on: one level down": gate.ONE_LEVEL_DOWN,
       "why blocked: invalid premises": gate.INVALID_PREMISES,
@@ -52,6 +59,7 @@ SECTIONS = [
      {"snapshot conclusions": repair.SNAPSHOT_CONCLUSIONS,
       "snapshot justifications": repair.SNAPSHOT_JUSTIFICATIONS,
       "lost": repair.LOST, "survived": repair.SURVIVED, "source trust": repair.SOURCE_TRUST,
+      "let a document under review count (on the copy)": repair.LIFT_REVIEW,
       "same origin": repair.SAME_ORIGIN}),
     ("Read-only views (app/views.py)", "Used by the UI and the MCP tools.", views.QUERIES),
     ("Agent activity and page state (app/runner.py, api/server.py)",

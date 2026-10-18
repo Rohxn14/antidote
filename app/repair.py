@@ -74,6 +74,7 @@ ORDER BY n.id, kept.id
 """
 
 SOURCE_TRUST = f"MATCH (s:{SOURCE} {{id: $id}}) RETURN s.trust"
+LIFT_REVIEW = f"MATCH (s:{SOURCE}) WHERE s.id IN $ids SET s.review = null"
 
 # Copies and mirrors repeat the same original claim, so they share an origin:
 # quarantining one source also quarantines the others with its origin.
@@ -103,6 +104,10 @@ def preview(g, source_id: str, include_origin: bool = True) -> Preview:
     drop_graph(name)
     copy = copy_graph(g, name)
 
+    # A document under review already counts for nothing; let it count on the copy, so
+    # the preview shows what it holds up (what distrusting it removes for good).
+    copy.query(LIFT_REVIEW, {"ids": targets})
+    support.recompute(copy)
     copy.query(SNAPSHOT_CONCLUSIONS)
     copy.query(SNAPSHOT_JUSTIFICATIONS)
     for sid in targets:  # on the copy
@@ -136,6 +141,7 @@ def apply(g, p: Preview, approved_by: str) -> str:
     for sid in p.sources:  # each write bumps the revision
         memory.set_trust(g, sid, QUARANTINED, recompute=False)
     support.recompute(g)
+    memory.blacklist_by(g, p.sources)  # suppliers these documents had suspended
     actual = support.status(g)
     if actual != p.expected:
         diff = sorted(k for k in actual.keys() | p.expected.keys()

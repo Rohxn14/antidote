@@ -3,6 +3,7 @@
 // visitor's private session token; the server maps it to the visitor's own graph,
 // so the browser never names a graph. Streams are NDJSON: one event per line.
 import type {
+  ClearResponse,
   Ack, AntidoteEvent, ApiError, BenchmarkResponse, CaseSpec, CypherResponse, DocumentResponse, HealthResponse,
   ImpactResponse, OrderActionResponse, QuarantineResponse, ReplanRequest, RunRequest,
   SessionResponse, StateResponse, WhyResponse,
@@ -110,6 +111,8 @@ export const api = {
   impact: (documentId: string) => json<ImpactResponse>("POST", "/impact", { document_id: documentId }),
   cancelImpact: () => json<Ack>("POST", "/impact/cancel"),
   quarantine: () => json<QuarantineResponse>("POST", "/quarantine"),
+  /** A false alarm: the document under review counts again, its suppliers are back. */
+  clearReview: (documentId: string) => json<ClearResponse>("POST", "/review/clear", { document_id: documentId }),
   order: (id: string, action: "approve" | "execute") =>
     json<OrderActionResponse>("POST", `/orders/${encodeURIComponent(id)}/${action}`),
   run: (body: RunRequest, onEvent: OnEvent, signal: AbortSignal) => stream("/run", body, onEvent, signal),

@@ -22,9 +22,9 @@ from uuid import uuid4
 from app import memory, support
 from app.db import copy_graph
 from app.config import AUTO_MAX_AMOUNT, MIN_INDEPENDENT_TRUSTED_ROOTS
-from app.schema import (AUTHORIZED, BELIEF, BLOCKED, DECISION, DRAFT, EXECUTED, INFERENCE,
+from app.schema import (ABOUT, AUTHORIZED, BELIEF, BLACKLISTED, BLOCKED, DECISION, DRAFT, EXECUTED, INFERENCE,
                         JUSTIFICATION, PENDING_APPROVAL, PREMISE, PURCHASE_ORDER,
-                        QUARANTINED, SOURCE, SUPPORTS, TRUSTED, VALID)
+                        QUARANTINED, SOURCE, SUPPORTS, TRUSTED, VALID, VENDOR)
 
 BLOCK = "blocked"
 NEEDS_APPROVAL = "needs_approval"
@@ -96,6 +96,14 @@ REVIEWED_AMONG = f"""
 MATCH (s:{SOURCE}) WHERE s.id IN $ids AND s.id IN $review AND s.trust <> $quarantined
 RETURN s.id, s.title
 ORDER BY s.id
+"""
+
+# Suppliers an order is for that are suspended (a document about them is under review)
+# or blacklisted (a person distrusted it).
+STANDING_OF = f"""
+MATCH (:{DECISION} {{id: $id}})-[:{ABOUT}]->(v:{VENDOR}) WHERE v.status IS NOT NULL
+RETURN v.name, v.status
+ORDER BY v.name
 """
 
 TRUSTED_ORIGINS = f"""
@@ -228,6 +236,12 @@ def evaluate(g, decision_id: str) -> Verdict:
     d = _read(g, decision_id)
     if not d["valid"]:
         return Verdict(decision_id, BLOCK, lost_support(g, decision_id))
+    standing = g.ro_query(STANDING_OF, {"id": decision_id}).result_set
+    if standing:
+        return Verdict(decision_id, BLOCK, [
+            f"{name} is blacklisted" if status == BLACKLISTED else
+            f"{name} is suspended while a document about it is under review"
+            for name, status in standing])
     reasons = []
     if d["amount"] is not None and d["amount"] >= AUTO_MAX_AMOUNT:
         reasons.append(f"amount ${d['amount']:,.0f} is at or above ${AUTO_MAX_AMOUNT:,}")

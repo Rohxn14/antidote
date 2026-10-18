@@ -62,8 +62,8 @@ export function describe(e: AntidoteEvent, m: Memory): FeedEntry | null {
       };
     case "security_alert":
       return {
-        who: "guard", tone: "alert", title: `Hidden instructions found in ${e.data.document_title}`,
-        body: `${plural(e.data.findings.length, "warning sign")}: text a person can't see, written for AI agents.`,
+        who: "guard", tone: "alert", title: `Put under review: ${e.data.document_title}`,
+        body: `Before the Buyer decides: ${e.data.reason}.${e.data.suspended.length ? ` ${e.data.suspended.join(", ")} suspended: nothing on this page counts and no order can go to it until you decide.` : ""}`,
         documentId: e.data.document_id,
       };
     case "error":

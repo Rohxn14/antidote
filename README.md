@@ -142,7 +142,7 @@ RETURN held, size(newly_valid) AS validated
 Python only repeats the round until FalkorDB reports zero changes. FalkorDB also does the
 rest of the real work: `GRAPH.COPY` gives the repair preview and the gate's what-if tests, and
 each procurement case is its own graph; one atomic query per write records reasons and refuses
-justifications that cite missing evidence. **All 50 queries the product depends on are in
+justifications that cite missing evidence. **All 57 queries the product depends on are in
 [docs/cypher.md](docs/cypher.md)**, generated from the code.
 
 ### Where each decision is made

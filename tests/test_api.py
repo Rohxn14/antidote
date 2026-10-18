@@ -45,60 +45,95 @@ def test_full_story_over_http(client):
     events = stream(client, "/api/run", h)
     kinds = [e["type"] for e in events]
     assert kinds[-1] == "run_complete" and "error" not in kinds
+
+    # The check runs before the Buyer decides: the page goes under review, Vantor is
+    # suspended, and the Buyer orders from the cheapest supplier on what still counts.
+    alert = next(e["data"] for e in events if e["type"] == "security_alert")
+    assert alert["document_id"] == "s_vantor_page" and alert["suspended"] == ["Vantor Motion"]
+    assert "hidden instructions" in alert["reason"] and "contradicts a trusted document" in alert["reason"]
+    assert {f["rule"] for f in alert["findings"]} >= {"conflict"}
+    assert kinds.index("security_alert") < kinds.index("decision_recorded")
     verdict = next(e["data"] for e in events if e["type"] == "gate_verdict")
     assert (verdict["decision_id"], verdict["state"]) == ("d_po_1001", "pending_approval")
-    alert = next(e["data"] for e in events if e["type"] == "security_alert")
-    assert alert["document_id"] == "s_vantor_page"
 
     state = client.get("/api/state", headers=h).json()
-    assert state["has_run"] and state["alerts"][0]["document_id"] == "s_vantor_page"
+    assert state["has_run"] and state["alerts"][0]["resolution"] == "open"
+    assert {v["id"]: v["status"] for v in state["vendors"]}["v_vantor"] == "suspended"
+    assert not next(d for d in state["documents"] if d["id"] == "s_vantor_page")["supported"]
     order = next(d for d in state["decisions"] if d["id"] == "d_po_1001")
-    assert (order["state"], order["evidence"]) == ("pending_approval", "unverified only")
-    assert order["held_by"] == ["s_vantor_page"] and order["reasoning"]
+    assert "Boltline" in order["summary"] and order["state"] == "pending_approval"
+    assert order["held_by"] == [] and order["reasoning"]
+    assert "d_shortlist_vantor" not in {d["id"] for d in state["decisions"]}
 
-    # The order rests on the flagged page, so approving it is held, and nothing moves.
-    held = client.post("/api/orders/d_po_1001/approve", headers=h).json()
-    assert (held["outcome"], held["state"]) == ("held", "pending_approval")
-    assert "Vantor Motion product page" in held["message"]
-
+    # The preview shows what the page holds up: what blacklisting removes for good.
     impact = client.post("/api/impact", headers=h, json={"document_id": "s_vantor_page"}).json()
-    assert "d_po_1001" in {i["id"] for i in impact["orders_blocked"]}
+    assert {"b_vantor_offer", "b_vantor_qualifies"} <= {i["id"] for i in impact["lost"]}
     assert [s["id"] for s in impact["survived"]] == ["b_vantor_makes_servos"]
+    assert impact["orders_blocked"] == []
 
-    # Stopping trust blocks the order at once, saying which facts went and why.
+    # Distrusting it blacklists Vantor; the Boltline order was never at risk.
     repaired = client.post("/api/quarantine", headers=h).json()
-    assert repaired["quarantined"] == ["s_vantor_page"] and "d_po_1001" in repaired["withdrawn"]
-    assert repaired["orders_blocked"] == ["d_po_1001"]
-    order = next(d for d in client.get("/api/state", headers=h).json()["decisions"] if d["id"] == "d_po_1001")
-    assert order["state"] == "blocked" and order["held_by"] == []
-    assert "“Vantor Motion meets the ISO 13485 supplier requirement.” no longer holds" in order["note"]
-    assert "Vantor Motion product page, which is no longer trusted" in order["note"]
+    assert repaired["quarantined"] == ["s_vantor_page"] and repaired["blacklisted"] == ["Vantor Motion"]
+    state = client.get("/api/state", headers=h).json()
+    assert {v["id"]: v["status"] for v in state["vendors"]}["v_vantor"] == "blacklisted"
+    assert state["alerts"][0]["resolution"] == "distrusted"
+    assert client.post("/api/orders/d_po_1001/approve", headers=h).json()["state"] == "authorized"
+    assert client.post("/api/orders/d_po_1001/execute", headers=h).json()["state"] == "executed"
 
+
+def test_a_false_alarm_can_be_cleared_and_the_verification_hold_still_applies(client):
+    h = start(client)
+    stream(client, "/api/run", h)
+    cleared = client.post("/api/review/clear", headers=h, json={"document_id": "s_vantor_page"}).json()
+    assert cleared["reinstated"] == ["Vantor Motion"]
+    state = client.get("/api/state", headers=h).json()
+    assert {v["id"]: v["status"] for v in state["vendors"]}["v_vantor"] is None
+    assert state["alerts"][0]["resolution"] == "cleared"
+
+    # Its page counts again, so a re-plan follows it to Vantor; but nothing trusted
+    # confirms Vantor's certificate, so the $48,000 order waits for verification.
     replan = stream(client, "/api/replan", h)
     new = next(e["data"] for e in replan if e["type"] == "decision_recorded")
-    assert new["decision_id"] == "d_po_1002" and "Boltline" in new["summary"]
-    assert client.post("/api/orders/d_po_1002/approve", headers=h).json()["state"] == "authorized"
-    assert client.post("/api/orders/d_po_1002/execute", headers=h).json()["state"] == "executed"
+    assert new["decision_id"] == "d_po_1002" and "Vantor" in new["summary"]
+    held = client.post("/api/orders/d_po_1002/approve", headers=h).json()
+    assert (held["outcome"], held["state"]) == ("held", "pending_approval")
+    r = client.post("/api/review/clear", headers=h, json={"document_id": "s_vantor_page"})
+    assert r.status_code == 400 and r.json()["error"] == "not_under_review"
 
 
 def test_approve_and_execute_endpoints_reject_an_unsupported_order(client):
     h = start(client)
     stream(client, "/api/run", h)
     # A blocked order cannot be approved through the endpoint.
-    client.post("/api/impact", headers=h, json={"document_id": "s_vantor_page"})
-    client.post("/api/quarantine", headers=h)
+    client.post("/api/impact", headers=h, json={"document_id": "s_boltline_page"})
+    assert client.post("/api/quarantine", headers=h).json()["orders_blocked"] == ["d_po_1001"]
     r = client.post("/api/orders/d_po_1001/approve", headers=h)
     assert r.status_code == 409 and r.json()["error"] == "wrong_state"
     # An approved order whose support disappears afterwards (here: changed directly in
     # the graph, with no repair to block it) is refused when someone tries to place it.
-    stream(client, "/api/replan", h)
+    new = next(e["data"] for e in stream(client, "/api/replan", h) if e["type"] == "decision_recorded")
+    assert new["decision_id"] == "d_po_1002" and "Ferrocraft" in new["summary"]
     assert client.post("/api/orders/d_po_1002/approve", headers=h).json()["state"] == "authorized"
     token = h["X-Antidote-Session"]
     graph = get_db().select_graph(client.app.state.store.sessions[token].graph_name)
-    memory.set_trust(graph, "s_boltline_page", QUARANTINED)
+    memory.set_trust(graph, "s_ferrocraft_page", QUARANTINED)
     executed = client.post("/api/orders/d_po_1002/execute", headers=h).json()
     assert (executed["outcome"], executed["state"]) == ("blocked", "blocked")
-    assert "Boltline Automation product page" in " ".join(executed["reasons"])
+    assert "Ferrocraft Servo product page" in " ".join(executed["reasons"])
+
+
+def test_an_order_for_a_suspended_supplier_is_blocked(client):
+    """Suspension is checked by the gate itself, not only through support: put the
+    trusted registry under review and Boltline is suspended, though its order still
+    has support from Boltline's own page."""
+    h = start(client)
+    stream(client, "/api/run", h)
+    token = h["X-Antidote-Session"]
+    graph = get_db().select_graph(client.app.state.store.sessions[token].graph_name)
+    assert "Boltline Automation" in memory.set_review(graph, "s_registry", "reported by hand")
+    r = client.post("/api/orders/d_po_1001/approve", headers=h).json()
+    assert r["state"] == "blocked"
+    assert "Boltline Automation is suspended while a document about it is under review" in r["reasons"]
 
 
 def test_sessions_are_private_and_never_take_a_graph_name(client):

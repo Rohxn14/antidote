@@ -23,11 +23,16 @@ interface Situation {
 
 const label = (d: Decision) => orderParts(d.summary)?.label ?? d.id;
 
+const openAlerts = (m: Memory) =>
+  m.alerts.filter((a) => a.resolution === "open" && m.documents[a.document_id]?.trust !== "quarantined");
+
 export function chipsOf(m: Memory, running: Situation["running"]): Chip[] {
   const chips: Chip[] = [];
   if (running) chips.push({ tone: "indigo", text: running === "run" ? "Agents working" : "Re-planning" });
-  const open = m.alerts.filter((a) => m.documents[a.document_id]?.trust !== "quarantined");
-  if (open.length) chips.push({ tone: "red", text: plural(open.length, "security alert") });
+  const open = openAlerts(m);
+  if (open.length) chips.push({ tone: "red", text: `${plural(open.length, "document")} under review` });
+  const blacklisted = Object.values(m.standing).filter((x) => x === "blacklisted").length;
+  if (blacklisted) chips.push({ tone: "slate", text: `${plural(blacklisted, "supplier")} blacklisted` });
   const distrusted = Object.values(m.documents).filter((d) => d.trust === "quarantined").length;
   if (distrusted) chips.push({ tone: "slate", text: `${plural(distrusted, "document")} distrusted` });
   const orders = ordersOf(m);
@@ -57,6 +62,11 @@ export function suggestionOf(m: Memory, s: Situation): Suggestion {
     return attention("This is a preview on a copy of the memory: nothing has changed yet. Stop trusting the document to apply it, or cancel.");
   }
   const p = orderParts(latest.summary);
+  const review = openAlerts(m)[0];
+  if (review && ["pending_approval", "authorized", "draft"].includes(latest.state ?? "")) {
+    const who = review.suspended.length ? `${review.suspended.join(", ")} is suspended and ` : "";
+    return attention(`Antidote put ${review.document_title} under review before the Buyer decided (${review.reason}): ${who}nothing on it counts. ${label(latest)} went to ${p?.vendor ?? "another supplier"}. Blacklist the supplier or mark a false alarm.`);
+  }
   if (latest.held_by.length) {
     const doc = m.documents[latest.held_by[0]]?.title ?? "a flagged document";
     return attention(`${label(latest)} is on hold: it rests on ${doc}, which contains hidden instructions. Look at what the AI read, then decide whether to keep trusting it.`);

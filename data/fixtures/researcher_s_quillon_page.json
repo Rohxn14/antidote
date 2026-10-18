@@ -10,7 +10,7 @@
      "claim": "Quillon Drives sells servo actuators at $390 per unit and can ship 100 units within 2 weeks.",
      "quote": "Price: $390 per unit; 100 units ship within 2 weeks.",
      "reasoning": "Price and lead time from the product section."},
-    {"belief": "b_quillon_iso9001", "vendor": "v_quillon",
+    {"belief": "b_quillon_iso9001", "vendor": "v_quillon", "standard": "ISO 9001",
      "claim": "Quillon Drives holds ISO 9001 certification.",
      "quote": "Quillon Drives is ISO 9001:2015 certified.",
      "reasoning": "The quality section states ISO 9001, not ISO 13485."}

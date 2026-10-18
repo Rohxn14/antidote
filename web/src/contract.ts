@@ -77,7 +77,9 @@ export interface Finding {
 export interface SecurityAlertData {
   document_id: string;
   document_title: string;
+  reason: string; // why it is under review, in plain words
   findings: Finding[];
+  suspended: string[]; // names of the suppliers suspended with it
 }
 
 export interface ErrorData {
@@ -161,7 +163,7 @@ export interface ReplanRequest {
   pace: number;
 }
 
-export type CaseSlot = "vantor" | "boltline" | "ferrocraft" | "quillon";
+export type CaseSlot = "vantor" | "boltline" | "ferrocraft" | "quillon" | "nexapoint" | "corvane";
 
 export interface CaseSupplier {
   slot: CaseSlot;
@@ -170,6 +172,7 @@ export interface CaseSupplier {
   claims_certificate: boolean;
   registry_confirms: boolean;
   hidden_instructions: boolean;
+  claims_exclusive: boolean; // its page openly claims to be the only certified one
 }
 
 export interface CaseSpec {
@@ -266,10 +269,15 @@ export interface Edge {
   kind: "premise" | "supports";
 }
 
+export type AlertResolution = "open" | "cleared" | "distrusted";
+
 export interface Alert {
   document_id: string;
   document_title: string;
+  reason: string;
   findings: Finding[];
+  suspended: string[];
+  resolution: AlertResolution;
 }
 
 export interface RepairRecord {
@@ -280,9 +288,12 @@ export interface RepairRecord {
   withdrawn: string[];
 }
 
+export type VendorStatus = "suspended" | "blacklisted";
+
 export interface Vendor {
   id: string;
   name: string;
+  status: VendorStatus | null;
 }
 
 export interface StateResponse {
@@ -343,6 +354,12 @@ export interface QuarantineResponse {
   quarantined: string[];
   withdrawn: string[];
   orders_blocked: string[];
+  blacklisted: string[]; // suppliers those documents had suspended
+}
+
+export interface ClearResponse {
+  document_id: string;
+  reinstated: string[]; // suppliers no longer suspended
 }
 
 export interface OrderActionResponse {

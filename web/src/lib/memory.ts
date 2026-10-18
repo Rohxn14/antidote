@@ -5,7 +5,7 @@
 // or action the app reloads the full state.
 import type {
   Alert, AntidoteEvent, CaseSpec, Decision, Document, Edge, Fact, OrderState, Reason, RepairRecord,
-  StateResponse,
+  StateResponse, VendorStatus,
 } from "../contract";
 
 export interface Memory {
@@ -17,6 +17,7 @@ export interface Memory {
   decisions: Record<string, Decision>;
   edges: Edge[];
   vendors: Record<string, string>;
+  standing: Record<string, VendorStatus>; // suppliers suspended or blacklisted, by id
   alerts: Alert[];
   repairs: RepairRecord[];
   latest: string | null; // the fact or decision recorded most recently in this run
@@ -25,7 +26,7 @@ export interface Memory {
 
 export const emptyMemory: Memory = {
   revision: 0, hasRun: false, documents: {}, facts: {}, reasons: {}, decisions: {}, edges: [],
-  vendors: {}, alerts: [], repairs: [], latest: null, builtCase: null,
+  vendors: {}, standing: {}, alerts: [], repairs: [], latest: null, builtCase: null,
 };
 
 export type MemoryAction =
@@ -43,6 +44,9 @@ const byId = <T extends { id: string }>(items: T[]): Record<string, T> =>
 const vendorNames = (state: StateResponse) =>
   Object.fromEntries(state.vendors.map((v) => [v.id, v.name]));
 
+const standingOf = (state: StateResponse) =>
+  Object.fromEntries(state.vendors.flatMap((v) => (v.status ? [[v.id, v.status]] : [])));
+
 export const edgeKey = (e: Edge) => `${e.from_id}>${e.to_id}`;
 
 /** Orders from this amount wait until a trusted document confirms their checks (app/config.py). */
@@ -55,7 +59,8 @@ export function memoryReducer(m: Memory, action: MemoryAction): Memory {
       return {
         revision: s.revision, hasRun: s.has_run, documents: byId(s.documents), facts: byId(s.facts),
         reasons: byId(s.reasons), decisions: byId(s.decisions), edges: s.edges,
-        vendors: vendorNames(s), alerts: s.alerts, repairs: s.repairs, latest: null, builtCase: s.case,
+        vendors: vendorNames(s), standing: standingOf(s), alerts: s.alerts, repairs: s.repairs,
+        latest: null, builtCase: s.case,
       };
     }
     case "documents":
@@ -131,14 +136,12 @@ function applyEvent(m: Memory, e: AntidoteEvent): Memory {
     case "security_alert": {
       const doc = e.data.document_id;
       if (m.alerts.some((a) => a.document_id === doc)) return m;
-      // Open orders resting on the flagged document wait for a person. The gate enforces
-      // this on the server; showing it now spares a slow reload's worth of a live button.
-      const decisions = Object.fromEntries(Object.entries(m.decisions).map(([id, d]) => {
-        const open = d.kind === "purchase_order" && ["draft", "pending_approval", "authorized"].includes(d.state ?? "");
-        const holds = open && !d.held_by.includes(doc) && ancestors(m, id).has(doc);
-        return [id, holds ? { ...d, held_by: [...d.held_by, doc] } : d];
-      }));
-      return { ...m, alerts: [...m.alerts, e.data], decisions };
+      // Under review before anyone decides: the document counts for nothing and its
+      // suppliers are suspended (the reload after the run brings the server's view).
+      const suspended = Object.entries(m.vendors).filter(([, name]) => e.data.suspended.includes(name));
+      const standing = { ...m.standing, ...Object.fromEntries(suspended.map(([id]) => [id, "suspended" as const])) };
+      const documents = m.documents[doc] ? { ...m.documents, [doc]: { ...m.documents[doc], supported: false } } : m.documents;
+      return { ...m, alerts: [...m.alerts, { ...e.data, resolution: "open" }], standing, documents };
     }
     case "run_complete":
       return { ...m, revision: e.data.revision, hasRun: true };

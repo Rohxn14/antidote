@@ -37,6 +37,12 @@ TRUSTED = "trusted"
 UNVERIFIED = "unverified"    # counts for support, but is never a trusted root
 QUARANTINED = "quarantined"  # the only trust level that makes a source invalid
 TRUST_LEVELS = (TRUSTED, UNVERIFIED, QUARANTINED)
+# A source can also be under review (Source.review holds why): it then counts for nothing
+# until a person clears it or distrusts it, but keeps its trust level.
+
+# A supplier's standing (Vendor.status; null when nothing is wrong).
+SUSPENDED = "suspended"      # a document about it is under review: no orders for now
+BLACKLISTED = "blacklisted"  # a person distrusted that document: no orders
 
 EXTRACTION = "extraction"  # Source -> Belief, carries an exact quote
 INFERENCE = "inference"    # Belief(s) -> Belief

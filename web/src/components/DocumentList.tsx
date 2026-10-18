@@ -27,7 +27,7 @@ export function DocumentList({ memory, readingId, onOpen }: {
     (a, b) => ORDER[a.kind] - ORDER[b.kind] || a.title.localeCompare(b.title),
   );
   const facts = factsPerDocument(memory);
-  const flagged = new Set(memory.alerts.map((a) => a.document_id));
+  const review = Object.fromEntries(memory.alerts.map((a) => [a.document_id, a]));
 
   return (
     <Card className="overflow-hidden">
@@ -62,7 +62,14 @@ export function DocumentList({ memory, readingId, onOpen }: {
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     <Badge tone={trust.tone} title={trust.hint}>{trust.label}</Badge>
-                    {flagged.has(d.id) && <Badge tone="red" icon={<ShieldAlert />}>Hidden instructions</Badge>}
+                    {review[d.id]?.resolution === "open" && d.trust !== "quarantined" && (
+                      <Badge tone="red" icon={<ShieldAlert />} title={review[d.id].reason}>Under review</Badge>
+                    )}
+                    {d.vendor_id && memory.standing[d.vendor_id] && (
+                      <Badge tone={memory.standing[d.vendor_id] === "blacklisted" ? "slate" : "amber"}>
+                        {memory.standing[d.vendor_id] === "blacklisted" ? "Supplier blacklisted" : "Supplier suspended"}
+                      </Badge>
+                    )}
                     {reading ? (
                       <span className="text-[11px] font-medium text-indigo-600">Reading…</span>
                     ) : facts[d.id] ? (

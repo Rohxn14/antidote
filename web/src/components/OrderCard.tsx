@@ -130,6 +130,10 @@ export function Guarantees() {
       text: "The agents must quote the document they read. Each fact is stored with the reason it is believed.",
     },
     {
+      Icon: ShieldAlert, title: "Documents are checked before anyone decides",
+      text: "Hidden instructions for AI, or a claim trusted documents contradict, put a page under review: it counts for nothing and its supplier is suspended until you decide.",
+    },
+    {
       Icon: ShieldCheck, title: "Orders are checked against today's memory",
       text: "Approving or placing an order re-runs the check inside FalkorDB. If its reasons no longer hold, it is blocked.",
     },
@@ -290,7 +294,7 @@ export function OrderCard({ orders, memory, lastAction, pending, running, onWhy,
             icon={<Check />}
             loading={pending === "approve"}
             disabled={busy || onHold}
-            title={held.length ? "On hold: deal with the security alert first" : unverified.length ? "On hold: a trusted document must confirm it first" : undefined}
+            title={held.length ? "On hold: deal with the document under review first" : unverified.length ? "On hold: a trusted document must confirm it first" : undefined}
             onClick={() => onDecide(order.id, "approve")}
           >
             Approve

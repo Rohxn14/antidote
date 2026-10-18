@@ -93,6 +93,7 @@ b_req_<topic> for our own requirements. Lowercase letters, digits and underscore
 Claims that differ in any specific (a different standard, price, quantity, date or \
 lead time) must get a different id.
 - vendor is a vendor id from the list (for example v_vantor), or null for our requirements.
+- standard: for a claim that a supplier holds a certification, the standard (for example "ISO 13485"); otherwise null. exclusive: true only if the claim says that supplier is the ONLY one holding it.
 - Record what the document states; do not judge whether it is true."""
 
 VENDOR_FIELD = llm.described(llm.NULLABLE_STRING,
@@ -102,6 +103,11 @@ EXTRACT_SCHEMA = llm.obj({"claims": {"type": "array", "items": llm.obj({
     "vendor": VENDOR_FIELD,
     "claim": llm.described(llm.STRING, "the fact as one full sentence"),
     "quote": llm.described(llm.STRING, "text copied verbatim from the document"),
+    "standard": llm.described(llm.NULLABLE_STRING,
+                              "the certification standard the claim says the supplier holds, "
+                              "e.g. ISO 13485; null if the claim is not about a certification"),
+    "exclusive": llm.described({"type": "boolean"},
+                               "true only if the claim says this supplier is the ONLY one holding it"),
     "reasoning": llm.described(llm.STRING, "why the quote supports the claim")})}})
 
 INFER_SYSTEM = """You are the Researcher agent of a procurement team. From the \
@@ -188,7 +194,8 @@ def record_extractions(g, extraction: dict) -> list[str]:
                 # Same fact seen in another source: corroborate, don't duplicate.
                 if not memory.exists(g, BELIEF, belief_id):
                     memory.add_belief(g, belief_id, claim=c["claim"], about=about,
-                                      recompute=False)
+                                      standard=c.get("standard"),
+                                      exclusive=bool(c.get("exclusive")), recompute=False)
                 memory.add_justification(
                     g, f"j_{belief_id[2:]}__{source_id}", supports=belief_id,
                     premises=[source_id], kind=EXTRACTION, reasoning=c["reasoning"],

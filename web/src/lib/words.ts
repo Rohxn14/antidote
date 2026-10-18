@@ -46,6 +46,7 @@ export const DOC_KIND: Record<DocumentKind, string> = {
 };
 
 const RULES: Record<string, string> = {
+  conflict: "Contradicted by a trusted document",
   html_comment: "Hidden comment in the page's code",
   hidden_text: "Text styled to be invisible",
   fake_message_block: "Poses as a message from your team",

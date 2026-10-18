@@ -3,7 +3,7 @@
 
 The rule is AND inside a justification, OR across justifications:
 
-    valid(Source)          = trust <> 'quarantined'
+    valid(Source)          = trust <> 'quarantined' AND it is not under review
     holds(Justification)   = every PREMISE of it is valid
     valid(Belief/Decision) = at least one Justification that SUPPORTS it holds
 
@@ -19,6 +19,9 @@ Starting from false and only ever switching flags to true is what makes this
 cycle-safe: beliefs that justify each other in a loop can never switch
 themselves on unless a real root (a non-quarantined source) feeds the loop.
 
+A source under review (Source.review, set by the security scan or the conflict
+check) counts for nothing until a person clears or distrusts it.
+
 Everything runs as Cypher inside FalkorDB: one query for the reset and one
 query per round. Python never evaluates the rule; it only repeats rounds
 until FalkorDB reports that nothing changed.
@@ -31,7 +34,7 @@ from app.schema import (BELIEF, DECISION, HOLDS, JUSTIFICATION, PREMISE,
 # (and still runs when the previous MATCH found nothing: count(*) is then 0).
 RESET = f"""
 MATCH (s:{SOURCE})
-SET s.{VALID} = (s.trust <> $quarantined)
+SET s.{VALID} = (s.trust <> $quarantined AND s.review IS NULL)
 WITH count(*) AS sources
 MATCH (j:{JUSTIFICATION})
 SET j.{HOLDS} = false
